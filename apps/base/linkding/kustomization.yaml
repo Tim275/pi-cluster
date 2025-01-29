@@ -3,5 +3,6 @@ kind: Kustomization
 resources:
   - deployment.yaml
   - namespace.yaml
+  - storage.yaml
 ## zeigt auf die beiden yamls
 # und deployed die !
