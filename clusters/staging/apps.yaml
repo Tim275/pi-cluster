@@ -5,8 +5,8 @@ metadata:
   namespace: flux-system
 spec:
   interval: 10m0s
-  #  dependsOn:
-  #  - name: infra-configs
+  # dependsOn:
+  #   - name: infra-configs
   retryInterval: 1m
   timeout: 5m
   sourceRef:
@@ -14,4 +14,8 @@ spec:
     name: flux-system
   path: ./apps/staging
   prune: true
-## is looking for changes
+  ## hier sops hinzufügen
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-age
