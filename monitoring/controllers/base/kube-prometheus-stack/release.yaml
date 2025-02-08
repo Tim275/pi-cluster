@@ -30,38 +30,38 @@ spec:
       - paths: ["/metadata/annotations/prometheus-operator-validated"]
         target:
           kind: PrometheusRule
-  values:
+    values:
     grafana:
       adminPassword: timour
-    ingress:
-      ## If true, Grafana Ingress will be created
-      enabled: true
+      ingress:
+        ## If true, Grafana Ingress will be created
+        enabled: true
 
-      ## IngressClassName for Grafana Ingress.
-      ## Should be provided if Ingress is enable.
-      ingressClassName: traefik
+        ## IngressClassName for Grafana Ingress.
+        ## Should be provided if Ingress is enable.
+        ingressClassName: traefik
 
-      ## Annotations for Grafana Ingress
-      annotations: {}
-      # kubernetes.io/ingress.class: nginx
-      # kubernetes.io/tls-acme: "true"
+        ## Annotations for Grafana Ingress
+        annotations: {}
+        # kubernetes.io/ingress.class: nginx
+        # kubernetes.io/tls-acme: "true"
 
-      ## Labels to be added to the Ingress
-      labels: {}
+        ## Labels to be added to the Ingress
+        labels: {}
 
-      ## Hostnames.
-      ## Must be provided if Ingress is enable.
-      hosts:
-        - grafana.timourhomelab.org
-      #  hosts: []
+        ## Hostnames.
+        ## Must be provided if Ingress is enable.
+        hosts:
+          - grafana.timourhomelab.org
+        #  hosts: []
 
-      ## Path for Grafana ingress (optional - uncomment if needed)
-      # path: /
+        ## Path for Grafana ingress (optional - uncomment if needed)
+        # path: /
 
-      ## TLS configuration for Grafana Ingress
-      ## Secret must be manually created in the namespace
-      tls: []
-      # vorerst empty
-      # - secretName: grafana-general-tls
-      #   hosts:
-      #     - grafana.example.com
+        ## TLS configuration for Grafana Ingress
+        ## Secret must be manually created in the namespace
+        tls: []
+        # vorerst empty
+        # - secretName: grafana-general-tls
+        #   hosts:
+        #     - grafana.example.com
