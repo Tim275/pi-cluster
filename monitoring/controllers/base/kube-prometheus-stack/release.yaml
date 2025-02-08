@@ -58,8 +58,8 @@ spec:
 
         ## TLS configuration for Grafana Ingress
         ## Secret must be manually created in the namespace
-        tls: []
-        # vorerst empty
-        # - secretName: grafana-general-tls
-        #   hosts:
-        #     - grafana.example.com
+        tls:
+          # vorerst empty
+          - secretName: grafana-tls-secret
+            hosts:
+              - grafana.timourhomelab.org
