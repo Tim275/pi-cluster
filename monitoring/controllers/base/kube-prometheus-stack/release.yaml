@@ -9,11 +9,9 @@ spec:
     spec:
       chart: kube-prometheus-stack
       version: "66.2.2"
-
       # version: "66.x (latest)"
       # alternativ: flux updatet es automatisch prometheus und grafana, weil das repo sehr lebendig ist
       # opder 6.5.*
-
       sourceRef:
         kind: HelmRepository
         name: kube-prometheus-stack
@@ -30,7 +28,7 @@ spec:
       - paths: ["/metadata/annotations/prometheus-operator-validated"]
         target:
           kind: PrometheusRule
-    values:
+  values:
     grafana:
       adminPassword: timour
       ingress:
@@ -38,7 +36,7 @@ spec:
         enabled: true
 
         ## IngressClassName for Grafana Ingress.
-        ## Should be provided if Ingress is enable.
+        ## Should be provided if Ingress is enabled.
         ingressClassName: traefik
 
         ## Annotations for Grafana Ingress
@@ -50,7 +48,7 @@ spec:
         labels: {}
 
         ## Hostnames.
-        ## Must be provided if Ingress is enable.
+        ## Must be provided if Ingress is enabled.
         hosts:
           - grafana.timourhomelab.org
         #  hosts: []
