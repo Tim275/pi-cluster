@@ -1,0 +1,7 @@
+apiVersion: v1
+data:
+  RENOVATE_TOKEN: Z2hwX0VGTVA5QnUxbFNkZ05nbnBES203bzNkeDhERUhKbzFKa1B3Yw==
+kind: Secret
+metadata:
+  creationTimestamp: null
+  name: renovate-container-env
