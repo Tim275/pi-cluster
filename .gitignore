@@ -3,3 +3,4 @@ test-secret.yaml
 .sops.yaml
 tls.crt
 tls.key
+keys
