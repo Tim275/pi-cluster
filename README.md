@@ -19,3 +19,9 @@ This repository contains the configuration for operating a self-hosted k3s Kuber
 ## Grafana Monitoring
 
 ![Grafana Monitoring](monitoring/grafana.png)
+
+## TO DO
+
+- Extend the single-node k3s cluster to a multi-node cluster by integrating additional worker nodes.
+- Kubernetes cluster scaling & optimization.
+- Integrate a cloud-native Postgres deployment.
