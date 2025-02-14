@@ -1,0 +1,11 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: postgres-cluster
+  namespace: cnpg-system
+spec:
+  instances: 1
+  # Stelle sicher, dass imageName entweder überschrieben wird oder mit dem Operator harmoniert.
+  imageName: ghcr.io/enterprisedb/postgresql:16.1
+  storage:
+    size: 1Gi
