@@ -9,12 +9,12 @@ spec:
   instances: 3
   monitoring:
     enablePodMonitor: true
-  bootstrap:
-    initdb:
-      database: linkding
-      owner: linkding
-      secret:
-        name: linkding-db-creds
+  #  bootstrap:
+  #    initdb:
+  #      database: linkding
+  #      owner: linkding
+  #      secret:
+  #        name: linkding-db-creds
   storage:
     storageClass: local-path
     size: 200Mi
