@@ -15,8 +15,8 @@ spec:
   bootstrap:
     initdb:
       database: linkding
-      owner: app
-
+      owner: linkding
+  ##
   monitoring:
     enablePodMonitor: true
 
