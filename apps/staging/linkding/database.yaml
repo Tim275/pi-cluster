@@ -4,17 +4,21 @@ metadata:
   name: linkding-db-staging
   namespace: linkding
 spec:
-  description: Postgres cluster for the linkding application
-  imageName: quay.io/enterprisedb/postgresql:16.1
+  description: Postgres database cluster for linkding
+  imageName: ghcr.io/cloudnative-pg/postgresql:16.6-30-bookworm
   instances: 3
+
+  inheritedMetadata:
+    labels:
+      app: linkding-database
+
+  bootstrap:
+    initdb:
+      database: linkding
+      owner: linkding
+
   monitoring:
     enablePodMonitor: true
-  #  bootstrap:
-  #    initdb:
-  #      database: linkding
-  #      owner: linkding
-  #      secret:
-  #        name: linkding-db-creds
+
   storage:
-    storageClass: local-path
-    size: 200Mi
+    size: 1Gi
