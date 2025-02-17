@@ -28,13 +28,10 @@ spec:
             - name: linkding-data
               mountPath: /etc/linkding/data
           envFrom:
-            # Bestehendes Secret für weitere Variablen
-            - secretRef:
-                name: linkding-container-env
-            # NEU: Einbindung des Superuser-Secrets
+            # Nur das Superuser-Secret für DB-Zugang einbinden
             - secretRef:
                 name: linkding-superuser
-            # NEU: Einbindung der ConfigMap (für DB-Parameter)
+            # Zusätzlich die ConfigMap für andere DB-Parameter (Engine, Host, Port)
             - configMapRef:
                 name: linkding-configmap
       volumes:

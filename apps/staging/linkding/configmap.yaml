@@ -1,9 +1,9 @@
 apiVersion: v1
-data:
-  LD_DB_ENGINE: postgres
-  LD_DB_HOST: linkding-db-staging-rw
-  LD_DB_PORT: "5432"
 kind: ConfigMap
 metadata:
-  creationTimestamp: null
   name: linkding-configmap
+  namespace: linkding
+data:
+  LD_DB_ENGINE: "postgres"
+  LD_DB_HOST: "linkding-db-staging-rw"
+  LD_DB_PORT: "5432"
