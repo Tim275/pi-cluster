@@ -27,13 +27,28 @@ spec:
           volumeMounts:
             - name: linkding-data
               mountPath: /etc/linkding/data
-          envFrom:
-            # Nur das Superuser-Secret für DB-Zugang einbinden
-            - secretRef:
-                name: linkding-superuser
-            # Zusätzlich die ConfigMap für andere DB-Parameter (Engine, Host, Port)
-            - configMapRef:
-                name: linkding-configmap
+          env:
+            - name: LD_DB_ENGINE
+              value: "postgres"
+            - name: LD_DB_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: linkding-configmap
+                  key: LD_DB_HOST
+            - name: LD_DB_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: linkding-configmap
+                  key: LD_DB_PORT
+            - name: LD_DB_NAME
+              value: "app"
+            - name: LD_DB_USER
+              value: "app"
+            - name: LD_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: linkding-superuser
+                  key: LD_SUPERUSER_PASSWORD
       volumes:
         - name: linkding-data
           persistentVolumeClaim:
