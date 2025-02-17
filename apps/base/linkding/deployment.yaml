@@ -19,36 +19,31 @@ spec:
         runAsGroup: 33 # www-data group ID
       containers:
         - name: linkding
-          image: sissbruecker/linkding:1.38.0
-          ports:
-            - containerPort: 9090
-          securityContext:
-            allowPrivilegeEscalation: false
-          volumeMounts:
-            - name: linkding-data
-              mountPath: /etc/linkding/data
+          image: sissbruecker/linkding:1.37.0
           env:
-            - name: LD_DB_ENGINE
-              value: "postgres"
-            - name: LD_DB_HOST
-              valueFrom:
-                configMapKeyRef:
-                  name: linkding-configmap
-                  key: LD_DB_HOST
-            - name: LD_DB_PORT
-              valueFrom:
-                configMapKeyRef:
-                  name: linkding-configmap
-                  key: LD_DB_PORT
-            - name: LD_DB_NAME
-              value: "app"
-            - name: LD_DB_USER
-              value: "app"
+            # Diese Variablen werden direkt aus dem von CloudNativePG erzeugten Secret gezogen.
             - name: LD_DB_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: linkding-superuser
-                  key: LD_SUPERUSER_PASSWORD
+                  name: linkding-database-cluster-app
+                  key: password
+            - name: LD_DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: linkding-database-cluster-app
+                  key: user
+          envFrom:
+            - secretRef:
+                name: linkding-secret
+            - configMapRef:
+                name: linkding-configmap
+          ports:
+            - containerPort: 9090
+          volumeMounts:
+            - name: linkding-data
+              mountPath: /etc/linkding/data
+          securityContext:
+            allowPrivilegeEscalation: false
       volumes:
         - name: linkding-data
           persistentVolumeClaim:
