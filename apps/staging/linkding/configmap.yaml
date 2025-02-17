@@ -4,6 +4,7 @@ metadata:
   name: linkding-configmap
   namespace: linkding
 data:
-  LD_DB_HOST: "linkding-db-staging-rw" # sollte dem Service-Namen entsprechen
+  LD_DB_ENGINE: "postgres"
+  LD_DB_DATABASE: "linkding" # Name der Datenbank
+  LD_DB_HOST: "linkding-db-staging-rw" # MUSS exakt mit dem Secret übereinstimmen
   LD_DB_PORT: "5432"
-  # Eventuell weitere nicht-sensible Einstellungen, z.B. LD_DB_ENGINE, SITE_BASE_URL etc.
