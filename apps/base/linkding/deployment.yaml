@@ -21,7 +21,6 @@ spec:
         - name: linkding
           image: sissbruecker/linkding:1.37.0
           env:
-            # Diese Variablen werden direkt aus dem von CloudNativePG erzeugten Secret gezogen.
             - name: LD_DB_PASSWORD
               valueFrom:
                 secretKeyRef:
@@ -34,7 +33,7 @@ spec:
                   key: user
           envFrom:
             - secretRef:
-                name: linkding-secret
+                name: linkding-superuser
             - configMapRef:
                 name: linkding-configmap
           ports:
