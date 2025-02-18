@@ -5,6 +5,6 @@ metadata:
   namespace: linkding
 data:
   LD_DB_ENGINE: "postgres"
-  LD_DB_DATABASE: "linkding" # Name der Datenbank
-  LD_DB_HOST: "linkding-db-staging-rw" # MUSS exakt mit dem Secret übereinstimmen
+  LD_DB_NAME: "linkding" # Statt LD_DB_DATABASE
+  LD_DB_HOST: "linkding-db-staging-rw"
   LD_DB_PORT: "5432"
