@@ -19,7 +19,7 @@ spec:
         runAsGroup: 33 # www-data group ID
       containers:
         - name: linkding
-          image: sissbruecker/linkding:1.38.0
+          image: sissbruecker/linkding:1.38.1
           envFrom:
             - secretRef:
                 name: linkding-superuser
