@@ -7,7 +7,7 @@ spec:
   description: Postgres database cluster for linkding
   imageName: ghcr.io/cloudnative-pg/postgresql:16.6-30-bookworm
   instances: 3
-  #
+
   inheritedMetadata:
     labels:
       app: linkding-database
@@ -16,9 +16,26 @@ spec:
     initdb:
       database: linkding
       owner: linkding
-  ##
+
   monitoring:
     enablePodMonitor: true
 
   storage:
     size: 1Gi
+
+  # Korrigierte Backup-Konfiguration
+  backup:
+    barmanObjectStore:
+      destinationPath: "s3://piclusterhomelab/linkding/"
+      s3Credentials:
+        accessKeyId:
+          name: aws-creds
+          key: ACCESS_KEY_ID
+        secretAccessKey:
+          name: aws-creds
+          key: ACCESS_SECRET_KEY
+      wal:
+        compression: gzip
+      data:
+        compression: gzip
+    retentionPolicy: 7d
