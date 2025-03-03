@@ -54,7 +54,7 @@ Everything needed to run my cluster & deploy my applications
         <th>Description</th>
     </tr>
     <tr>
-        <td><img width="32" src="https://cdn.jsdelivr.net/gh/cilium/cilium/Documentation/images/logo-solo.svg"></td>
+        <td><img width="32" src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ3UVEC-B6F97ezOTFuAG7Hmf5UzEvWy2qk8A&s"></td>
         <td><a href="https://cilium.io/">Cilium</a></td>
         <td>eBPF-based networking, observability and security for Kubernetes</td>
     </tr>
@@ -89,10 +89,10 @@ Everything needed to run my cluster & deploy my applications
         <td>Automated dependency updates</td>
     </tr>
     <tr>
-        <td><img width="32" src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/svg/amazon-s3.svg"></td>
-        <td><a href="https://aws.amazon.com/s3/">AWS S3</a></td>
-        <td>Cloud object storage for database backups and disaster recovery</td>
-    </tr>
+    <td><img width="32" src="https://cdn.prod.website-files.com/5eb586cf8a64e8125e18ebe7/62fced424b98d03e45ff79ed_AWS%20S3-sq.png"></td>
+    <td><a href="https://aws.amazon.com/s3/">AWS S3</a></td>
+    <td>Cloud object storage for database backups and disaster recovery</td>
+</tr>
 </table>
 ## Networking
 
