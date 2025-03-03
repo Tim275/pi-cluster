@@ -1,5 +1,5 @@
 # Pi optimierte Konfiguration
-kubeProxyReplacement: "strict"
+kubeProxyReplacement: "partial"
 k8sServiceHost: "192.168.68.53" # IP des Master-Nodes
 k8sServicePort: 6443
 
