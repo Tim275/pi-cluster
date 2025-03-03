@@ -53,8 +53,8 @@ Everything needed to run my cluster & deploy my applications
         <th>Name</th>
         <th>Description</th>
     </tr>
-    <tr>
-        <td><img width="32" src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ3UVEC-B6F97ezOTFuAG7Hmf5UzEvWy2qk8A&s"></td>
+   <tr>
+        <td><img width="32" src="https://cdn.jsdelivr.net/gh/cilium/cilium/Documentation/images/logo-solo.svg"></td>
         <td><a href="https://cilium.io/">Cilium</a></td>
         <td>eBPF-based networking, observability and security for Kubernetes</td>
     </tr>
