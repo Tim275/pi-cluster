@@ -54,6 +54,11 @@ Everything needed to run my cluster & deploy my applications
         <th>Description</th>
     </tr>
     <tr>
+        <td><img width="32" src="https://cdn.jsdelivr.net/gh/cilium/cilium/Documentation/images/logo-solo.svg"></td>
+        <td><a href="https://cilium.io/">Cilium</a></td>
+        <td>eBPF-based networking, observability and security for Kubernetes</td>
+    </tr>
+    <tr>
         <td><img width="32" src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/cloudflare-zero-trust.png"></td>
         <td><a href="https://developers.cloudflare.com/cloudflare-one/">Cloudflare Zero Trust</a></td>
         <td>Used for private tunnels to expose public services (without requiring a public IP).</td>
@@ -89,7 +94,6 @@ Everything needed to run my cluster & deploy my applications
         <td>Cloud object storage for database backups and disaster recovery</td>
     </tr>
 </table>
-
 ## Networking
 
 I use [K3s](https://k3s.io/) with its built-in networking capabilities, which provides a simple yet powerful solution for container networking.
