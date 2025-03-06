@@ -1,0 +1,83 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: elasticsearch
+  namespace: logging
+spec:
+  interval: 15m
+  chart:
+    spec:
+      chart: elasticsearch
+      version: "7.17.3"
+      sourceRef:
+        kind: HelmRepository
+        name: elastic
+        namespace: logging
+  values:
+    clusterName: "elasticsearch"
+    nodeGroup: "master"
+
+    # Set to 2 for your two-node cluster
+    replicas: 2
+    minimumMasterNodes: 1
+
+    # Use hard anti-affinity to force distribution
+    antiAffinity: "hard"
+
+    # Topology spread ensures pods are distributed across nodes
+    topologySpreadConstraints:
+      - maxSkew: 1
+        topologyKey: kubernetes.io/hostname
+        whenUnsatisfiable: DoNotSchedule
+        labelSelector:
+          matchLabels:
+            app: elasticsearch-master
+
+    # Node assignment to control exactly which pods go where
+    nodeSelector: {}
+
+    # Use node affinity to specify which nodes can run ES pods
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: kubernetes.io/hostname
+                operator: In
+                values:
+                  - master
+                  - p2
+
+    # Resources optimized for Raspberry Pi 4
+    resources:
+      requests:
+        cpu: "500m"
+        memory: "1Gi"
+      limits:
+        cpu: "1"
+        memory: "1.5Gi"
+
+    # JVM settings to match Raspberry Pi constraints
+    esJavaOpts: "-Xmx512m -Xms512m"
+
+    # Storage configuration
+    volumeClaimTemplate:
+      accessModes: ["ReadWriteOnce"]
+      storageClassName: "local-path"
+      resources:
+        requests:
+          storage: 10Gi
+
+    # Security settings
+    esConfig:
+      elasticsearch.yml: |
+        xpack.security.enabled: true
+        xpack.security.authc:
+          api_key.enabled: true
+          anonymous:
+            username: anonymous
+            roles: superuser
+            authz_exception: false
+
+    # Expose via service for internal access
+    service:
+      type: ClusterIP

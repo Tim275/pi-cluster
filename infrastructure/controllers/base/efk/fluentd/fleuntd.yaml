@@ -1,0 +1,59 @@
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: fluent
+  namespace: logging
+spec:
+  interval: 1h
+  url: https://fluent.github.io/helm-charts
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: fluentd
+  namespace: logging
+spec:
+  interval: 15m
+  chart:
+    spec:
+      chart: fluentd
+      version: "0.5.0" # Using newer version to avoid PodSecurityPolicy issues
+      sourceRef:
+        kind: HelmRepository
+        name: fluent
+        namespace: logging
+  values:
+    # Run DaemonSet to collect logs from all nodes
+    kind: DaemonSet
+
+    # Disable PodSecurityPolicy which is deprecated
+    podSecurityPolicy:
+      enabled: false
+
+    # Resources for Raspberry Pi
+    resources:
+      limits:
+        cpu: 200m
+        memory: 300Mi
+      requests:
+        cpu: 100m
+        memory: 200Mi
+
+    # Elasticsearch output configuration
+    configMaps:
+      output.conf: |-
+        <match **>
+          @type elasticsearch
+          host elasticsearch-master
+          port 9200
+          logstash_format true
+          logstash_prefix fluentd
+          include_tag_key true
+          user "#{ENV['ELASTICSEARCH_USERNAME']}"
+          password "#{ENV['ELASTICSEARCH_PASSWORD']}"
+          tag_key @log_name
+          flush_interval 5s
+          retry_limit 30
+          retry_wait 10s
+          max_retry_wait 30m
+        </match>
