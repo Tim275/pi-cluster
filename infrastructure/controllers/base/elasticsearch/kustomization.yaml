@@ -1,6 +1,8 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
-  - elasticsearch
-  - fluentd
-  - kibana
+  - namespace.yaml
+  - repository.yaml
+  - elasticsearch/release.yaml
+  - fluentd/release.yaml
+  - kibana/release.yaml
