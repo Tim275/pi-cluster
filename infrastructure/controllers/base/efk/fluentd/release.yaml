@@ -17,14 +17,27 @@ spec:
   chart:
     spec:
       chart: fluentd
-      version: "0.5.0" # Using newer version to avoid PodSecurityPolicy issues
+      version: "0.5.0"
       sourceRef:
         kind: HelmRepository
         name: fluent
         namespace: logging
   values:
-    # Run DaemonSet to collect logs from all nodes
-    kind: DaemonSet
+    # Run as a single deployment instead of DaemonSet
+    kind: Deployment
+    replicas: 1
+
+    # Place on worker node (p2)
+    affinity:
+      nodeAffinity:
+        preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            preference:
+              matchExpressions:
+                - key: kubernetes.io/hostname
+                  operator: In
+                  values:
+                    - p2
 
     # Disable PodSecurityPolicy which is deprecated
     podSecurityPolicy:
@@ -49,11 +62,26 @@ spec:
           logstash_format true
           logstash_prefix fluentd
           include_tag_key true
-          user "#{ENV['ELASTICSEARCH_USERNAME']}"
-          password "#{ENV['ELASTICSEARCH_PASSWORD']}"
+          # Simple authentication without environment variables
+          user elastic
+          password changeme
           tag_key @log_name
           flush_interval 5s
           retry_limit 30
           retry_wait 10s
           max_retry_wait 30m
         </match>
+
+      # Input configuration
+      input.conf: |-
+        <source>
+          @type tail
+          path /var/log/containers/*.log
+          pos_file /var/log/fluentd-containers.log.pos
+          tag kubernetes.*
+          read_from_head true
+          <parse>
+            @type json
+            time_format %Y-%m-%dT%H:%M:%S.%NZ
+          </parse>
+        </source>
