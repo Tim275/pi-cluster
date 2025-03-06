@@ -4,4 +4,3 @@ resources:
   - renovate
   - cloudnativepg
   - cilium
-  # - elasticsearch
