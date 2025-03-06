@@ -1,0 +1,61 @@
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: fluent
+  namespace: efk-system
+spec:
+  interval: 1h
+  url: https://fluent.github.io/helm-charts
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: fluentd
+  namespace: efk-system
+spec:
+  interval: 15m
+  chart:
+    spec:
+      chart: fluentd
+      version: "0.4.0"
+      sourceRef:
+        kind: HelmRepository
+        name: fluent
+        namespace: efk-system
+  values:
+    # Raspberry Pi optimized resources
+    resources:
+      limits:
+        cpu: 200m
+        memory: 256Mi
+      requests:
+        cpu: 100m
+        memory: 128Mi
+
+    # Elasticsearch output configuration
+    configMaps:
+      output.conf: |-
+        <match **>
+          @type elasticsearch
+          host elasticsearch-master
+          port 9200
+          logstash_format true
+          logstash_prefix fluentd
+          include_tag_key true
+          tag_key @log_name
+          flush_interval 1s
+        </match>
+
+      # Kubernetes container logs collection
+      input.conf: |-
+        <source>
+          @type tail
+          path /var/log/containers/*.log
+          pos_file /var/log/fluentd-containers.log.pos
+          tag kubernetes.*
+          read_from_head true
+          <parse>
+            @type json
+            time_format %Y-%m-%dT%H:%M:%S.%NZ
+          </parse>
+        </source>

@@ -5,3 +5,4 @@ resources:
   - ../../base/renovate/
   - ../../base/cloudnativepg/
   - ../../base/cilium/
+  - ../../base/elasticsearch/
