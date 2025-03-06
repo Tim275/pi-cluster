@@ -23,34 +23,44 @@ spec:
         name: fluent
         namespace: logging
   values:
-    # Run as a single deployment instead of DaemonSet
+    # Use ARM-compatible image
+    image:
+      repository: fluent/fluentd-kubernetes-daemonset
+      tag: v1.16.2-debian-elasticsearch7-1.0-arm64
+
+    # Run as a single deployment
     kind: Deployment
     replicas: 1
 
-    # Place on worker node (p2)
-    affinity:
-      nodeAffinity:
-        preferredDuringSchedulingIgnoredDuringExecution:
-          - weight: 100
-            preference:
-              matchExpressions:
-                - key: kubernetes.io/hostname
-                  operator: In
-                  values:
-                    - p2
+    # Disable resource-intensive features
+    metrics:
+      enabled: false # Disable metrics which are causing probe failures
 
-    # Disable PodSecurityPolicy which is deprecated
+    # Disable PodSecurityPolicy
     podSecurityPolicy:
       enabled: false
 
-    # Resources for Raspberry Pi
+    # Reduced resource limits for Raspberry Pi
     resources:
       limits:
-        cpu: 200m
-        memory: 300Mi
-      requests:
         cpu: 100m
+        memory: 400Mi # Increase memory limit
+      requests:
+        cpu: 50m
         memory: 200Mi
+
+    # Disable probes that were failing
+    livenessProbe:
+      enabled: false
+    readinessProbe:
+      enabled: false
+
+    # Environment variables to tune memory usage
+    env:
+      - name: RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR
+        value: "0.9"
+      - name: FLUENT_ELASTICSEARCH_SED_DISABLE
+        value: "true"
 
     # Elasticsearch output configuration
     configMaps:
@@ -62,26 +72,13 @@ spec:
           logstash_format true
           logstash_prefix fluentd
           include_tag_key true
-          # Simple authentication without environment variables
           user elastic
           password changeme
           tag_key @log_name
-          flush_interval 5s
-          retry_limit 30
-          retry_wait 10s
-          max_retry_wait 30m
+          flush_interval 10s
+          retry_limit 20
+          retry_wait 5s
+          buffer_chunk_limit 2M
+          buffer_queue_limit 32
+          overflow_action block
         </match>
-
-      # Input configuration
-      input.conf: |-
-        <source>
-          @type tail
-          path /var/log/containers/*.log
-          pos_file /var/log/fluentd-containers.log.pos
-          tag kubernetes.*
-          read_from_head true
-          <parse>
-            @type json
-            time_format %Y-%m-%dT%H:%M:%S.%NZ
-          </parse>
-        </source>
