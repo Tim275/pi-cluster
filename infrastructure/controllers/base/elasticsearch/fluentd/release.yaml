@@ -17,13 +17,17 @@ spec:
   chart:
     spec:
       chart: fluentd
-      version: "0.4.0"
+      # Update to a newer version
+      version: "0.5.0"
       sourceRef:
         kind: HelmRepository
         name: fluent
         namespace: efk-system
   values:
-    # Raspberry Pi optimized resources
+    # Disable PodSecurityPolicy
+    podSecurityPolicy:
+      enabled: false
+
     resources:
       limits:
         cpu: 200m
@@ -32,7 +36,6 @@ spec:
         cpu: 100m
         memory: 128Mi
 
-    # Elasticsearch output configuration
     configMaps:
       output.conf: |-
         <match **>
@@ -45,17 +48,3 @@ spec:
           tag_key @log_name
           flush_interval 1s
         </match>
-
-      # Kubernetes container logs collection
-      input.conf: |-
-        <source>
-          @type tail
-          path /var/log/containers/*.log
-          pos_file /var/log/fluentd-containers.log.pos
-          tag kubernetes.*
-          read_from_head true
-          <parse>
-            @type json
-            time_format %Y-%m-%dT%H:%M:%S.%NZ
-          </parse>
-        </source>
