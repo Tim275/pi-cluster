@@ -5,4 +5,4 @@ resources:
   - ../../base/renovate/
   - ../../base/cloudnativepg/
   - ../../base/cilium/
-  - ./efk
+  - ../../base/efk
