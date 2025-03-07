@@ -17,52 +17,45 @@ spec:
   chart:
     spec:
       chart: fluentd
-      version: "0.5.0"
+      version: "0.3.9" # Using older stable version
       sourceRef:
         kind: HelmRepository
         name: fluent
         namespace: logging
   values:
-    # Use ARM-compatible image
+    # Use standard image (known to work on ARM)
     image:
       repository: fluent/fluentd-kubernetes-daemonset
-      tag: v1.16.2-debian-elasticsearch7-1.0-arm64
+      tag: "v1.14.6-debian-elasticsearch7-1.1"
+      pullPolicy: Always
 
-    # Run as a single deployment
+    # Run as single deployment
     kind: Deployment
     replicas: 1
 
-    # Disable resource-intensive features
-    metrics:
-      enabled: false # Disable metrics which are causing probe failures
-
-    # Disable PodSecurityPolicy
+    # Very simple configuration for reliability
     podSecurityPolicy:
       enabled: false
 
-    # Reduced resource limits for Raspberry Pi
     resources:
       limits:
-        cpu: 100m
-        memory: 400Mi # Increase memory limit
-      requests:
         cpu: 50m
-        memory: 200Mi
+        memory: 256Mi
+      requests:
+        cpu: 25m
+        memory: 128Mi
 
-    # Disable probes that were failing
+    # Disable features
+    metrics:
+      enabled: false
+    autoscaling:
+      enabled: false
     livenessProbe:
       enabled: false
     readinessProbe:
       enabled: false
 
-    # Environment variables to tune memory usage
-    env:
-      - name: RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR
-        value: "0.9"
-      - name: FLUENT_ELASTICSEARCH_SED_DISABLE
-        value: "true"
-
-    # Elasticsearch output configuration
+    # Simple output config
     configMaps:
       output.conf: |-
         <match **>
@@ -70,15 +63,6 @@ spec:
           host elasticsearch-master
           port 9200
           logstash_format true
-          logstash_prefix fluentd
           include_tag_key true
-          user elastic
-          password changeme
-          tag_key @log_name
-          flush_interval 10s
-          retry_limit 20
-          retry_wait 5s
-          buffer_chunk_limit 2M
-          buffer_queue_limit 32
-          overflow_action block
+          flush_interval 30s
         </match>
