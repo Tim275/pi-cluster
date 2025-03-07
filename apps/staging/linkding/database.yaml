@@ -6,7 +6,7 @@ metadata:
 spec:
   description: Postgres database cluster for linkding
   imageName: ghcr.io/cloudnative-pg/postgresql:16.6-30-bookworm
-  instances: 2
+  instances: 1
 
   inheritedMetadata:
     labels:
@@ -20,8 +20,12 @@ spec:
   monitoring:
     enablePodMonitor: true
 
-  storage:
+  storage: # Fixed indentation - this should be at the same level as monitoring
     size: 1Gi
+    pvcTemplate:
+      accessModes:
+        - ReadWriteOnce
+    deletionPolicy: delete # This will delete PVCs when pods are removed
 
   backup:
     barmanObjectStore:
