@@ -1,12 +1,3 @@
-apiVersion: source.toolkit.fluxcd.io/v1
-kind: HelmRepository
-metadata:
-  name: fluent
-  namespace: logging
-spec:
-  interval: 1h
-  url: https://fluent.github.io/helm-charts
----
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
@@ -23,30 +14,24 @@ spec:
         name: fluent
         namespace: logging
   values:
-    # Basic configuration for ARM device
     image:
       repository: fluent/fluentd-kubernetes-daemonset
       tag: "v1.14.6-debian-elasticsearch7-1.1"
       pullPolicy: IfNotPresent
 
-    # Run as normal deployment
     kind: Deployment
     replicas: 1
 
-    # CRITICAL: Explicitly set probe configuration to null to override defaults
+    # Disable problematic probes
     livenessProbe: null
     readinessProbe: null
 
-    # Disable security policy
     podSecurityPolicy:
       enabled: false
 
-    # Completely disable metrics that are causing issues
     metrics:
       enabled: false
-      serviceMonitor: false
 
-    # Conservative resource limits
     resources:
       limits:
         cpu: 100m
@@ -55,7 +40,31 @@ spec:
         cpu: 50m
         memory: 128Mi
 
-    # Basic fluentd configuration
+    # Mount the secret for authentication
+    extraVolumeMounts:
+      - name: elastic-credentials
+        mountPath: /etc/elastic-credentials
+        readOnly: true
+
+    extraVolumes:
+      - name: elastic-credentials
+        secret:
+          secretName: elastic-credentials
+
+    # Set environment variables from the secret
+    env:
+      - name: ELASTICSEARCH_USERNAME
+        valueFrom:
+          secretKeyRef:
+            name: elastic-credentials
+            key: username
+      - name: ELASTICSEARCH_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            name: elastic-credentials
+            key: password
+
+    # Configure Elasticsearch with credentials from environment variables
     configMaps:
       output.conf: |-
         <match **>
@@ -65,11 +74,12 @@ spec:
           scheme http
           logstash_format true
           include_tag_key true
-          # Modern format for buffer configuration
+          user "#{ENV['ELASTICSEARCH_USERNAME']}"
+          password "#{ENV['ELASTICSEARCH_PASSWORD']}"
           <buffer>
             @type memory
             flush_interval 30s
-            retry_limit 3
+            retry_limit 5
           </buffer>
         </match>
 
