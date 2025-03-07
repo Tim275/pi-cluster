@@ -17,35 +17,36 @@ spec:
   chart:
     spec:
       chart: fluentd
-      version: "0.3.9" # Using older stable version
+      version: "0.3.9"
       sourceRef:
         kind: HelmRepository
         name: fluent
         namespace: logging
   values:
-    # Use standard image (known to work on ARM)
+    # Use a confirmed ARM-compatible image
     image:
       repository: fluent/fluentd-kubernetes-daemonset
       tag: "v1.14.6-debian-elasticsearch7-1.1"
-      pullPolicy: Always
+      pullPolicy: IfNotPresent # Changed from Always to prevent rate limits
 
-    # Run as single deployment
+    # Single collector deployment
     kind: Deployment
     replicas: 1
 
-    # Very simple configuration for reliability
+    # Minimalist configuration
     podSecurityPolicy:
       enabled: false
 
+    # Lower resource limits to ensure it runs
     resources:
       limits:
-        cpu: 50m
-        memory: 256Mi
+        cpu: 100m
+        memory: 200Mi
       requests:
-        cpu: 25m
+        cpu: 50m
         memory: 128Mi
 
-    # Disable features
+    # Disable all optional features
     metrics:
       enabled: false
     autoscaling:
@@ -55,14 +56,31 @@ spec:
     readinessProbe:
       enabled: false
 
-    # Simple output config
+    # Basic Elasticsearch output with minimal config
     configMaps:
       output.conf: |-
         <match **>
           @type elasticsearch
           host elasticsearch-master
           port 9200
+          path ""
+          scheme http
+          ssl_verify false
           logstash_format true
           include_tag_key true
+          buffer_type memory
+          retry_limit 3
           flush_interval 30s
         </match>
+
+      # Simplified input config
+      input.conf: |-
+        <source>
+          @type tail
+          path /var/log/containers/*.log
+          pos_file /var/log/fluentd-containers.log.pos
+          tag kubernetes.*
+          <parse>
+            @type json
+          </parse>
+        </source>
