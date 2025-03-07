@@ -23,21 +23,30 @@ spec:
         name: fluent
         namespace: logging
   values:
-    # Use a confirmed ARM-compatible image
+    # Basic configuration for ARM device
     image:
       repository: fluent/fluentd-kubernetes-daemonset
       tag: "v1.14.6-debian-elasticsearch7-1.1"
-      pullPolicy: IfNotPresent # Changed from Always to prevent rate limits
+      pullPolicy: IfNotPresent
 
-    # Single collector deployment
+    # Run as normal deployment
     kind: Deployment
     replicas: 1
 
-    # Minimalist configuration
+    # CRITICAL: Explicitly set probe configuration to null to override defaults
+    livenessProbe: null
+    readinessProbe: null
+
+    # Disable security policy
     podSecurityPolicy:
       enabled: false
 
-    # Lower resource limits to ensure it runs
+    # Completely disable metrics that are causing issues
+    metrics:
+      enabled: false
+      serviceMonitor: false
+
+    # Conservative resource limits
     resources:
       limits:
         cpu: 100m
@@ -46,34 +55,24 @@ spec:
         cpu: 50m
         memory: 128Mi
 
-    # Disable all optional features
-    metrics:
-      enabled: false
-    autoscaling:
-      enabled: false
-    livenessProbe:
-      enabled: false
-    readinessProbe:
-      enabled: false
-
-    # Basic Elasticsearch output with minimal config
+    # Basic fluentd configuration
     configMaps:
       output.conf: |-
         <match **>
           @type elasticsearch
           host elasticsearch-master
           port 9200
-          path ""
           scheme http
-          ssl_verify false
           logstash_format true
           include_tag_key true
-          buffer_type memory
-          retry_limit 3
-          flush_interval 30s
+          # Modern format for buffer configuration
+          <buffer>
+            @type memory
+            flush_interval 30s
+            retry_limit 3
+          </buffer>
         </match>
 
-      # Simplified input config
       input.conf: |-
         <source>
           @type tail
