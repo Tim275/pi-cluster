@@ -13,31 +13,43 @@ spec:
         kind: HelmRepository
         name: elastic
         namespace: logging
+  install:
+    remediation:
+      retries: 3
   values:
     elasticsearchHosts: "http://elasticsearch-master:9200"
 
-    # Authentication
-    kibanaConfig:
-      kibana.yml: |
-        elasticsearch.username: elastic
-        elasticsearch.password: ${ELASTICSEARCH_PASSWORD}
-
     extraEnvs:
-      - name: ELASTICSEARCH_PASSWORD
+      - name: "ELASTICSEARCH_USERNAME"
+        valueFrom:
+          secretKeyRef:
+            name: elasticsearch-credentials
+            key: username
+      - name: "ELASTICSEARCH_PASSWORD"
         valueFrom:
           secretKeyRef:
             name: elasticsearch-credentials
             key: password
 
-    # Resources for Raspberry Pi
+    # Kibana ingress configuration - matching your Grafana pattern
+    ingress:
+      enabled: true
+      ingressClassName: traefik
+      annotations: {}
+      hosts:
+        - kibana.timourhomelab.org
+      tls: [] # No TLS certificate, as requested
+
+    # Resources suitable for Raspberry Pi
     resources:
       requests:
         cpu: 200m
-        memory: 500Mi
+        memory: 512Mi
       limits:
         cpu: 500m
-        memory: 1Gi
+        memory: 1024Mi
 
-    # Run on a specific node
-    nodeSelector:
-      kubernetes.io/hostname: master
+    # Service type
+    service:
+      type: ClusterIP
+      port: 5601
