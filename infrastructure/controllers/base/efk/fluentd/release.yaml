@@ -1,3 +1,4 @@
+# File: homelabtm/pi-cluster/infrastructure/controllers/base/efk/fluentd/release.yaml
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
@@ -8,79 +9,58 @@ spec:
   chart:
     spec:
       chart: fluentd
-      version: "2.8.0"
+      version: "0.3.9"
       sourceRef:
         kind: HelmRepository
         name: fluent
         namespace: logging
+      interval: 1h
   values:
-    ## Fluentd config
-    configMaps:
-      config.conf: |-
-        # Logs collection and output configuration
-        <source>
-          @type forward
-          port 24224
-          bind 0.0.0.0
-        </source>
+    image:
+      repository: fluent/fluentd-kubernetes-daemonset
+      tag: "v1.14.6-debian-elasticsearch7-1.1"
+      pullPolicy: IfNotPresent
 
-        <source>
-          @type tail
-          path /var/log/containers/*.log
-          pos_file /var/log/fluentd-containers.log.pos
-          tag kubernetes.*
-          read_from_head true
-          <parse>
-            @type json
-            time_format %Y-%m-%dT%H:%M:%S.%NZ
-          </parse>
-        </source>
+    # Make it run as DaemonSet to collect logs from all nodes
+    kind: DaemonSet
 
-        <filter kubernetes.**>
-          @type kubernetes_metadata
-          @id filter_kube_metadata
-        </filter>
+    # Raspberry Pi resource limits
+    resources:
+      limits:
+        cpu: 100m
+        memory: 200Mi
+      requests:
+        cpu: 50m
+        memory: 128Mi
 
-        <match **>
-          @type elasticsearch
-          host elasticsearch-master
-          port 9200
-          user elastic
-          password ${ELASTIC_PASSWORD}
-          scheme https
-          ssl_verify false
-          index_name fluentd-${tag}-%Y.%m.%d
-          logstash_format true
-          logstash_prefix fluentd
-          <buffer>
-            flush_thread_count 4
-            flush_interval 5s
-            chunk_limit_size 2M
-            queue_limit_length 32
-            retry_max_interval 30
-            retry_forever true
-          </buffer>
-        </match>
-
+    # Connect to Elasticsearch
     env:
-      # Pass Elasticsearch password to Fluentd
-      - name: ELASTIC_PASSWORD
+      - name: FLUENT_ELASTICSEARCH_HOST
+        value: "elasticsearch-master"
+      - name: FLUENT_ELASTICSEARCH_PORT
+        value: "9200"
+      - name: FLUENT_ELASTICSEARCH_SCHEME
+        value: "http"
+      - name: FLUENT_ELASTICSEARCH_USER
         valueFrom:
           secretKeyRef:
             name: elasticsearch-credentials
-            key: ELASTIC_PASSWORD
+            key: username
+      - name: FLUENT_ELASTICSEARCH_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            name: elasticsearch-credentials
+            key: password
 
-    # Set resource limits for Raspberry Pi
-    resources:
-      limits:
-        cpu: 200m
-        memory: 512Mi
-      requests:
-        cpu: 100m
-        memory: 200Mi
-
-    # Run on all nodes to collect logs
+    # Run on all nodes including control plane
     tolerations:
+      - key: node-role.kubernetes.io/control-plane
+        operator: Exists
+        effect: NoSchedule
       - key: node-role.kubernetes.io/master
         operator: Exists
         effect: NoSchedule
+
+    # Disable problematic probes for Pi
+    livenessProbe: null
+    readinessProbe: null
