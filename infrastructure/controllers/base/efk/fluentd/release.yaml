@@ -14,21 +14,20 @@ spec:
         name: fluent
         namespace: logging
   values:
+    # Run as DaemonSet to collect logs from all nodes
+    kind: DaemonSet
+
     image:
       repository: fluent/fluentd-kubernetes-daemonset
       tag: "v1.14.6-debian-elasticsearch7-1.1"
 
-    # Run as DaemonSet to collect logs from all nodes
-    kind: DaemonSet
-
-    # Resources for Raspberry Pi
     resources:
-      limits:
-        cpu: 100m
-        memory: 200Mi
       requests:
         cpu: 50m
         memory: 128Mi
+      limits:
+        cpu: 100m
+        memory: 256Mi
 
     # Connect to Elasticsearch
     env:
@@ -48,3 +47,12 @@ spec:
           secretKeyRef:
             name: elasticsearch-credentials
             key: password
+
+    # Allow running on all nodes
+    tolerations:
+      - key: node-role.kubernetes.io/control-plane
+        operator: Exists
+        effect: NoSchedule
+      - key: node-role.kubernetes.io/master
+        operator: Exists
+        effect: NoSchedule
