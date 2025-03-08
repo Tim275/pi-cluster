@@ -17,10 +17,9 @@ spec:
     remediation:
       retries: 3
   values:
-    # Run as DaemonSet to collect logs from all nodes
     kind: DaemonSet
 
-    # Security configuration
+    # Disable Pod Security Policy
     rbac:
       create: true
       pspEnabled: false
@@ -28,95 +27,28 @@ spec:
     podSecurityPolicy:
       enabled: false
 
+    # Skip health probes
+    livenessProbe: null
+    readinessProbe: null
+
+    # Add an explicit nameOverride
     nameOverride: fluentd-logging
 
-    # Give container privileges to access log files
+    # Basic resources
+    resources:
+      requests:
+        cpu: 50m
+        memory: 200Mi
+      limits:
+        cpu: 200m
+        memory: 512Mi
+
+    # Permission to access logs
     securityContext:
       privileged: true
       runAsUser: 0
 
-    # Disable health probes that are failing
-    livenessProbe: null
-    readinessProbe: null
-
-    # Use the standard image
-    image:
-      repository: fluent/fluentd-kubernetes-daemonset
-      tag: "v1.14.6-debian-elasticsearch7-1.0"
-
-    # Resources
-    resources:
-      requests:
-        cpu: 100m
-        memory: 256Mi
-      limits:
-        cpu: 300m
-        memory: 768Mi
-
-    # Simplified configuration that avoids parsing loops
-    configMapConfigs:
-      fluent.conf: |-
-        # Prevent fluentd from handling its own logs to avoid infinite loops
-        <match fluentd**>
-          @type null
-        </match>
-
-        # Throw away problematic logs that cause parsing errors 
-        <match **fluent**>
-          @type null
-        </match>
-
-        # Container logs - more reliable parsing
-        <source>
-          @type tail
-          path /var/log/containers/*.log
-          pos_file /var/log/fluentd-containers.log.pos
-          tag kubernetes.*
-          read_from_head true
-          <parse>
-            @type regexp
-            expression /^(?<time>.+) (?<stream>stdout|stderr) [PF] (?<log>.*)$/
-            time_format %Y-%m-%dT%H:%M:%S.%NZ
-            keep_time_key true
-          </parse>
-        </source>
-
-        # Handle kubernetes metadata
-        <filter kubernetes.**>
-          @type kubernetes_metadata
-          annotation_match [".*"]
-        </filter>
-
-        # Send logs to Elasticsearch
-        <match kubernetes.**>
-          @type elasticsearch
-          host "#{ENV['FLUENT_ELASTICSEARCH_HOST']}"
-          port "#{ENV['FLUENT_ELASTICSEARCH_PORT']}"
-          scheme "#{ENV['FLUENT_ELASTICSEARCH_SCHEME']}"
-          user "#{ENV['FLUENT_ELASTICSEARCH_USER']}"
-          password "#{ENV['FLUENT_ELASTICSEARCH_PASSWORD']}"
-          
-          logstash_format true
-          logstash_prefix kubernetes
-          include_tag_key true
-          type_name fluentd
-          
-          <buffer>
-            @type file
-            path /var/log/fluentd-buffers/kubernetes.buffer
-            flush_mode interval
-            retry_type exponential_backoff
-            flush_thread_count 2
-            flush_interval 5s
-            retry_forever false
-            retry_max_interval 30
-            chunk_limit_size 2M
-            queue_limit_length 32
-            overflow_action block
-          </buffer>
-        </match>
-
-    # Environment variables for connection
+    # Environment variables for Elasticsearch connection
     env:
       - name: FLUENT_ELASTICSEARCH_HOST
         value: "elasticsearch-master"
@@ -134,22 +66,3 @@ spec:
           secretKeyRef:
             name: elasticsearch-credentials
             key: password
-
-    # Create persistent buffer directory
-    extraVolumes:
-      - name: fluentd-buffer
-        hostPath:
-          path: /var/log/fluentd-buffers
-          type: DirectoryOrCreate
-
-    extraVolumeMounts:
-      - name: fluentd-buffer
-        mountPath: /var/log/fluentd-buffers
-
-    tolerations:
-      - key: node-role.kubernetes.io/control-plane
-        operator: Exists
-        effect: NoSchedule
-      - key: node-role.kubernetes.io/master
-        operator: Exists
-        effect: NoSchedule
