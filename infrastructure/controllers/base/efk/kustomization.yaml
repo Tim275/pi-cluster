@@ -4,6 +4,7 @@ kind: Kustomization
 resources:
   - namespace.yaml
   - repository.yaml
+  - fluent-repository.yaml # Add this new line
   - elastic-credentials.yaml
   - elasticsearch
   - kibana

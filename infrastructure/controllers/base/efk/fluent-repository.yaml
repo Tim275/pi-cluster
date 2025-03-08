@@ -1,0 +1,9 @@
+# File: homelabtm/pi-cluster/infrastructure/controllers/base/efk/fluent-repository.yaml
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: fluent
+  namespace: logging
+spec:
+  interval: 1h
+  url: https://fluent.github.io/helm-charts
