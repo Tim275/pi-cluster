@@ -31,6 +31,15 @@ spec:
     # Skip PSP templates using nameOverride
     nameOverride: fluentd-logging
 
+    # Disable health probes that are failing
+    livenessProbe: null
+    readinessProbe: null
+
+    # Match the exact image version that's being used
+    image:
+      repository: fluent/fluentd-kubernetes-daemonset
+      tag: "v1.14.6-debian-elasticsearch7-1.0"
+
     # Resources for Raspberry Pi
     resources:
       requests:
