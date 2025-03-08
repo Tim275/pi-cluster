@@ -8,93 +8,79 @@ spec:
   chart:
     spec:
       chart: fluentd
-      version: "0.3.9"
+      version: "2.8.0"
       sourceRef:
         kind: HelmRepository
         name: fluent
         namespace: logging
   values:
-    image:
-      repository: fluent/fluentd-kubernetes-daemonset
-      tag: "v1.14.6-debian-elasticsearch7-1.1"
-      pullPolicy: IfNotPresent
-
-    # Change to DaemonSet for collecting logs from all nodes
-    kind: DaemonSet
-
-    # Disable problematic probes
-    livenessProbe: null
-    readinessProbe: null
-
-    podSecurityPolicy:
-      enabled: false
-
-    metrics:
-      enabled: false
-
-    # Resources for Raspberry Pi
-    resources:
-      limits:
-        cpu: 100m
-        memory: 200Mi
-      requests:
-        cpu: 50m
-        memory: 128Mi
-
-    # Mount the secret for authentication
-    extraVolumeMounts:
-      - name: elastic-credentials
-        mountPath: /etc/elastic-credentials
-        readOnly: true
-
-    extraVolumes:
-      - name: elastic-credentials
-        secret:
-          secretName: elasticsearch-credentials
-
-    # Set environment variables from the secret
-    env:
-      - name: ELASTICSEARCH_USERNAME
-        valueFrom:
-          secretKeyRef:
-            name: elasticsearch-credentials
-            key: username
-      - name: ELASTICSEARCH_PASSWORD
-        valueFrom:
-          secretKeyRef:
-            name: elasticsearch-credentials
-            key: password
-      - name: K8S_NODE_NAME
-        valueFrom:
-          fieldRef:
-            fieldPath: spec.nodeName
-
-    # Configure Elasticsearch with credentials from environment variables
+    ## Fluentd config
     configMaps:
-      output.conf: |-
-        <match **>
-          @type elasticsearch
-          host elasticsearch-master
-          port 9200
-          scheme http
-          logstash_format true
-          include_tag_key true
-          user "#{ENV['ELASTICSEARCH_USERNAME']}"
-          password "#{ENV['ELASTICSEARCH_PASSWORD']}"
-          <buffer>
-            @type memory
-            flush_interval 30s
-            retry_limit 5
-          </buffer>
-        </match>
+      config.conf: |-
+        # Logs collection and output configuration
+        <source>
+          @type forward
+          port 24224
+          bind 0.0.0.0
+        </source>
 
-      input.conf: |-
         <source>
           @type tail
           path /var/log/containers/*.log
           pos_file /var/log/fluentd-containers.log.pos
           tag kubernetes.*
+          read_from_head true
           <parse>
             @type json
+            time_format %Y-%m-%dT%H:%M:%S.%NZ
           </parse>
         </source>
+
+        <filter kubernetes.**>
+          @type kubernetes_metadata
+          @id filter_kube_metadata
+        </filter>
+
+        <match **>
+          @type elasticsearch
+          host elasticsearch-master
+          port 9200
+          user elastic
+          password ${ELASTIC_PASSWORD}
+          scheme https
+          ssl_verify false
+          index_name fluentd-${tag}-%Y.%m.%d
+          logstash_format true
+          logstash_prefix fluentd
+          <buffer>
+            flush_thread_count 4
+            flush_interval 5s
+            chunk_limit_size 2M
+            queue_limit_length 32
+            retry_max_interval 30
+            retry_forever true
+          </buffer>
+        </match>
+
+    env:
+      # Pass Elasticsearch password to Fluentd
+      - name: ELASTIC_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            name: elasticsearch-credentials
+            key: ELASTIC_PASSWORD
+
+    # Set resource limits for Raspberry Pi
+    resources:
+      limits:
+        cpu: 200m
+        memory: 512Mi
+      requests:
+        cpu: 100m
+        memory: 200Mi
+
+    # Run on all nodes to collect logs
+    tolerations:
+      - key: node-role.kubernetes.io/master
+        operator: Exists
+        effect: NoSchedule
