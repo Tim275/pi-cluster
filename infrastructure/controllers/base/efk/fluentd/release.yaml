@@ -1,8 +1,50 @@
-# In homelabtm/pi-cluster/infrastructure/controllers/base/efk/fluentd/release.yaml
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: fluentd
+  namespace: logging
 spec:
+  interval: 15m
   chart:
     spec:
+      chart: fluentd
+      version: "0.3.9"
       sourceRef:
         kind: HelmRepository
-        name: fluent # This must match the repository name
+        name: fluent
         namespace: logging
+  values:
+    image:
+      repository: fluent/fluentd-kubernetes-daemonset
+      tag: "v1.14.6-debian-elasticsearch7-1.1"
+
+    # Run as DaemonSet to collect logs from all nodes
+    kind: DaemonSet
+
+    # Resources for Raspberry Pi
+    resources:
+      limits:
+        cpu: 100m
+        memory: 200Mi
+      requests:
+        cpu: 50m
+        memory: 128Mi
+
+    # Connect to Elasticsearch
+    env:
+      - name: FLUENT_ELASTICSEARCH_HOST
+        value: "elasticsearch-master"
+      - name: FLUENT_ELASTICSEARCH_PORT
+        value: "9200"
+      - name: FLUENT_ELASTICSEARCH_SCHEME
+        value: "http"
+      - name: FLUENT_ELASTICSEARCH_USER
+        valueFrom:
+          secretKeyRef:
+            name: elasticsearch-credentials
+            key: username
+      - name: FLUENT_ELASTICSEARCH_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            name: elasticsearch-credentials
+            key: password
