@@ -43,16 +43,17 @@ spec:
                   - p2
 
     # Resources optimized for Raspberry Pi
+    # Update in elasticsearch/release.yaml
     resources:
       requests:
+        cpu: "250m"
+        memory: "512Mi"
+      limits:
         cpu: "500m"
         memory: "1Gi"
-      limits:
-        cpu: "1"
-        memory: "1.5Gi"
 
-    # JVM settings for Raspberry Pi
-    esJavaOpts: "-Xmx512m -Xms512m"
+    # Reduce JVM heap size
+    esJavaOpts: "-Xmx256m -Xms256m"
 
     # Storage configuration
     volumeClaimTemplate:

@@ -1,4 +1,5 @@
-apiVersion: source.toolkit.fluxcd.io/v1beta1
+# File: homelabtm/pi-cluster/infrastructure/controllers/base/efk/repository.yaml
+apiVersion: source.toolkit.fluxcd.io/v1
 kind: HelmRepository
 metadata:
   name: elastic

@@ -1,0 +1,15 @@
+# File: homelabtm/pi-cluster/infrastructure/controllers/base/efk/elasticsearch/services.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: elasticsearch-web
+  namespace: logging
+spec:
+  selector:
+    app.kubernetes.io/name: elasticsearch-master
+  ports:
+    - port: 9200
+      targetPort: 9200
+      protocol: TCP
+      name: http
+  type: ClusterIP
