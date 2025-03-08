@@ -20,7 +20,7 @@ spec:
     # Run as DaemonSet to collect logs from all nodes
     kind: DaemonSet
 
-    # Completely disable Pod Security Policy
+    # Security configuration
     rbac:
       create: true
       pspEnabled: false
@@ -28,61 +28,95 @@ spec:
     podSecurityPolicy:
       enabled: false
 
-    # Skip PSP templates using nameOverride
     nameOverride: fluentd-logging
+
+    # Give container privileges to access log files
+    securityContext:
+      privileged: true
+      runAsUser: 0
 
     # Disable health probes that are failing
     livenessProbe: null
     readinessProbe: null
 
-    # Match the exact image version that's being used
+    # Use the standard image
     image:
       repository: fluent/fluentd-kubernetes-daemonset
       tag: "v1.14.6-debian-elasticsearch7-1.0"
 
-    # Increase memory limits to prevent OOMKilled
+    # Resources
     resources:
       requests:
-        cpu: 50m
-        memory: 200Mi
+        cpu: 100m
+        memory: 256Mi
       limits:
-        cpu: 200m
-        memory: 512Mi
+        cpu: 300m
+        memory: 768Mi
 
-    # Fluentd buffer optimization to reduce memory usage
+    # Simplified configuration that avoids parsing loops
     configMapConfigs:
-      system.conf: |-
-        <system>
-          root_dir /tmp/fluentd-buffers/
-          <log>
-            format json
-            level info
-          </log>
-        </system>
+      fluent.conf: |-
+        # Prevent fluentd from handling its own logs to avoid infinite loops
+        <match fluentd**>
+          @type null
+        </match>
 
-      buffer.conf: |-
-        <match **>
+        # Throw away problematic logs that cause parsing errors 
+        <match **fluent**>
+          @type null
+        </match>
+
+        # Container logs - more reliable parsing
+        <source>
+          @type tail
+          path /var/log/containers/*.log
+          pos_file /var/log/fluentd-containers.log.pos
+          tag kubernetes.*
+          read_from_head true
+          <parse>
+            @type regexp
+            expression /^(?<time>.+) (?<stream>stdout|stderr) [PF] (?<log>.*)$/
+            time_format %Y-%m-%dT%H:%M:%S.%NZ
+            keep_time_key true
+          </parse>
+        </source>
+
+        # Handle kubernetes metadata
+        <filter kubernetes.**>
+          @type kubernetes_metadata
+          annotation_match [".*"]
+        </filter>
+
+        # Send logs to Elasticsearch
+        <match kubernetes.**>
           @type elasticsearch
           host "#{ENV['FLUENT_ELASTICSEARCH_HOST']}"
           port "#{ENV['FLUENT_ELASTICSEARCH_PORT']}"
-          scheme "#{ENV['FLUENT_ELASTICSEARCH_SCHEME'] || 'http'}"
-          user "#{ENV['FLUENT_ELASTICSEARCH_USER'] || use_default}"
-          password "#{ENV['FLUENT_ELASTICSEARCH_PASSWORD'] || use_default}"
+          scheme "#{ENV['FLUENT_ELASTICSEARCH_SCHEME']}"
+          user "#{ENV['FLUENT_ELASTICSEARCH_USER']}"
+          password "#{ENV['FLUENT_ELASTICSEARCH_PASSWORD']}"
           
-          # Buffer settings to reduce memory usage
+          logstash_format true
+          logstash_prefix kubernetes
+          include_tag_key true
+          type_name fluentd
+          
           <buffer>
             @type file
-            path /var/log/fluentd-buffers/kubernetes.system.buffer
+            path /var/log/fluentd-buffers/kubernetes.buffer
             flush_mode interval
+            retry_type exponential_backoff
+            flush_thread_count 2
             flush_interval 5s
-            chunk_limit_size 2M
-            queue_limit_length 8
-            retry_max_interval 30
             retry_forever false
+            retry_max_interval 30
+            chunk_limit_size 2M
+            queue_limit_length 32
+            overflow_action block
           </buffer>
         </match>
 
-    # Connect to Elasticsearch
+    # Environment variables for connection
     env:
       - name: FLUENT_ELASTICSEARCH_HOST
         value: "elasticsearch-master"
@@ -101,7 +135,17 @@ spec:
             name: elasticsearch-credentials
             key: password
 
-    # Allow running on all nodes
+    # Create persistent buffer directory
+    extraVolumes:
+      - name: fluentd-buffer
+        hostPath:
+          path: /var/log/fluentd-buffers
+          type: DirectoryOrCreate
+
+    extraVolumeMounts:
+      - name: fluentd-buffer
+        mountPath: /var/log/fluentd-buffers
+
     tolerations:
       - key: node-role.kubernetes.io/control-plane
         operator: Exists
