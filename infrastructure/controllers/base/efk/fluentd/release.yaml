@@ -13,14 +13,23 @@ spec:
         kind: HelmRepository
         name: fluent
         namespace: logging
+  install:
+    remediation:
+      retries: 3
   values:
     # Run as DaemonSet to collect logs from all nodes
     kind: DaemonSet
 
-    # Disable PodSecurityPolicy which is removed in Kubernetes 1.25+
+    # Completely disable Pod Security Policy
     rbac:
       create: true
       pspEnabled: false
+
+    podSecurityPolicy:
+      enabled: false
+
+    # Skip PSP templates using nameOverride
+    nameOverride: fluentd-logging
 
     # Resources for Raspberry Pi
     resources:
