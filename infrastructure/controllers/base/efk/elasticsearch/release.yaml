@@ -74,9 +74,17 @@ spec:
         xpack.security.authc:
           api_key.enabled: true
           anonymous:
-            username: anonymous
+            username: elastic
             roles: superuser
             authz_exception: false
+
+    # Add credentials from Secret
+    extraEnvs:
+      - name: ELASTIC_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            name: elasticsearch-credentials
+            key: ELASTIC_PASSWORD
 
     # Expose via service for internal access
     service:
