@@ -20,12 +20,11 @@ spec:
   monitoring:
     enablePodMonitor: true
 
-  storage: # Fixed indentation - this should be at the same level as monitoring
+  storage:
     size: 1Gi
     pvcTemplate:
       accessModes:
         - ReadWriteOnce
-    deletionPolicy: delete # This will delete PVCs when pods are removed
 
   backup:
     barmanObjectStore:
@@ -37,8 +36,4 @@ spec:
         secretAccessKey:
           name: aws-creds
           key: ACCESS_SECRET_KEY
-      wal:
-        compression: gzip
-      data:
-        compression: gzip
     retentionPolicy: 7d
