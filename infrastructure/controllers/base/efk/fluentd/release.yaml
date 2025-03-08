@@ -19,8 +19,8 @@ spec:
       tag: "v1.14.6-debian-elasticsearch7-1.1"
       pullPolicy: IfNotPresent
 
-    kind: Deployment
-    replicas: 1
+    # Change to DaemonSet for collecting logs from all nodes
+    kind: DaemonSet
 
     # Disable problematic probes
     livenessProbe: null
@@ -32,6 +32,7 @@ spec:
     metrics:
       enabled: false
 
+    # Resources for Raspberry Pi
     resources:
       limits:
         cpu: 100m
@@ -49,20 +50,24 @@ spec:
     extraVolumes:
       - name: elastic-credentials
         secret:
-          secretName: elastic-credentials
+          secretName: elasticsearch-credentials
 
     # Set environment variables from the secret
     env:
       - name: ELASTICSEARCH_USERNAME
         valueFrom:
           secretKeyRef:
-            name: elastic-credentials
+            name: elasticsearch-credentials
             key: username
       - name: ELASTICSEARCH_PASSWORD
         valueFrom:
           secretKeyRef:
-            name: elastic-credentials
+            name: elasticsearch-credentials
             key: password
+      - name: K8S_NODE_NAME
+        valueFrom:
+          fieldRef:
+            fieldPath: spec.nodeName
 
     # Configure Elasticsearch with credentials from environment variables
     configMaps:

@@ -17,14 +17,12 @@ spec:
     clusterName: "elasticsearch"
     nodeGroup: "master"
 
-    # Set to 2 for your two-node cluster
+    # Two master nodes for high availability
     replicas: 2
     minimumMasterNodes: 1
 
-    # Use hard anti-affinity to force distribution
+    # Force distribution of pods across nodes
     antiAffinity: "hard"
-
-    # Topology spread ensures pods are distributed across nodes
     topologySpreadConstraints:
       - maxSkew: 1
         topologyKey: kubernetes.io/hostname
@@ -33,10 +31,7 @@ spec:
           matchLabels:
             app: elasticsearch-master
 
-    # Node assignment to control exactly which pods go where
-    nodeSelector: {}
-
-    # Use node affinity to specify which nodes can run ES pods
+    # Node affinity to specify which nodes can run ES pods
     nodeAffinity:
       requiredDuringSchedulingIgnoredDuringExecution:
         nodeSelectorTerms:
@@ -47,7 +42,7 @@ spec:
                   - master
                   - p2
 
-    # Resources optimized for Raspberry Pi 4
+    # Resources optimized for Raspberry Pi
     resources:
       requests:
         cpu: "500m"
@@ -56,7 +51,7 @@ spec:
         cpu: "1"
         memory: "1.5Gi"
 
-    # JVM settings to match Raspberry Pi constraints
+    # JVM settings for Raspberry Pi
     esJavaOpts: "-Xmx512m -Xms512m"
 
     # Storage configuration
@@ -85,7 +80,3 @@ spec:
           secretKeyRef:
             name: elasticsearch-credentials
             key: ELASTIC_PASSWORD
-
-    # Expose via service for internal access
-    service:
-      type: ClusterIP
