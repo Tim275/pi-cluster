@@ -4,11 +4,11 @@ metadata:
   name: kibana-ingress
   namespace: logging
   annotations:
-    traefik.ingress.kubernetes.io/router.entrypoints: web
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
 spec:
   ingressClassName: traefik
   rules:
-    - host: kibana.timourhomelab.org # Change to your domain
+    - host: kibana.timourhomelab.org
       http:
         paths:
           - path: /
@@ -18,3 +18,7 @@ spec:
                 name: kibana-kibana
                 port:
                   number: 5601
+  tls:
+    - secretName: kibana-tls-secret
+      hosts:
+        - kibana.timourhomelab.org
