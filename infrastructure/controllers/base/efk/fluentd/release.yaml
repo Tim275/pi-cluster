@@ -17,10 +17,12 @@ spec:
     # Run as DaemonSet to collect logs from all nodes
     kind: DaemonSet
 
-    image:
-      repository: fluent/fluentd-kubernetes-daemonset
-      tag: "v1.14.6-debian-elasticsearch7-1.1"
+    # Disable PodSecurityPolicy which is removed in Kubernetes 1.25+
+    rbac:
+      create: true
+      pspEnabled: false
 
+    # Resources for Raspberry Pi
     resources:
       requests:
         cpu: 50m
