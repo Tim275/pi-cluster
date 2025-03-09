@@ -31,14 +31,14 @@ spec:
             name: elasticsearch-credentials
             key: password
 
-    # Kibana ingress configuration - matching your Grafana pattern
+    # Disable the default ingress
     ingress:
-      enabled: true
-      ingressClassName: traefik
-      annotations: {}
-      hosts:
-        - kibana.timourhomelab.org
-      tls: [] # No TLS certificate, as requested
+      enabled: false
+
+    # Kibana service configuration - using secure ClusterIP
+    service:
+      type: ClusterIP
+      port: 5601
 
     # Resources suitable for Raspberry Pi
     resources:
@@ -48,8 +48,3 @@ spec:
       limits:
         cpu: 500m
         memory: 1024Mi
-
-    # Service type
-    service:
-      type: ClusterIP
-      port: 5601
