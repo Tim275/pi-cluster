@@ -31,20 +31,11 @@ spec:
             name: elasticsearch-credentials
             key: password
 
-    # Disable the default ingress
+    # Disable built-in ingress, we'll use our own
     ingress:
       enabled: false
 
-    # Kibana service configuration - using secure ClusterIP
+    # Keep it as ClusterIP like Grafana
     service:
       type: ClusterIP
       port: 5601
-
-    # Resources suitable for Raspberry Pi
-    resources:
-      requests:
-        cpu: 200m
-        memory: 512Mi
-      limits:
-        cpu: 500m
-        memory: 1024Mi
