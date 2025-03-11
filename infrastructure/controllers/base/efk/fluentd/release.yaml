@@ -1,54 +1,80 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: fluentd
+  name: logstash
   namespace: logging
 spec:
   interval: 15m
   chart:
     spec:
-      chart: fluentd
-      version: "0.3.9"
+      chart: logstash
+      version: "7.17.3"
       sourceRef:
         kind: HelmRepository
-        name: fluent
+        name: elastic
         namespace: logging
   install:
     remediation:
       retries: 3
   values:
-    kind: DaemonSet
+    image: "docker.elastic.co/logstash/logstash"
+    imageTag: "8.8.2"
 
-    # Basic settings
-    rbac:
-      create: true
-    livenessProbe: null
-    readinessProbe: null
-    nameOverride: fluentd-logging
+    logstashConfig:
+      logstash.yml: |
+        http.host: 0.0.0.0
+        log.level: error
+        config.reload.automatic: true
 
-    # Use very minimal resources
-    resources:
-      requests:
-        cpu: 50m
-        memory: 128Mi
-      limits:
-        cpu: 100m
-        memory: 256Mi
+    logstashPipeline:
+      logstash.conf: |
+        input {
+          file {
+            path => ["/var/log/containers/*.log"]
+            exclude => ["/var/log/containers/*logstash*", "/var/log/containers/*fluent*", "/var/log/containers/*elastic*"]
+            sincedb_path => "/var/log/logstash/sincedb"
+            codec => "json"
+            type => "container"
+          }
+        }
 
-    securityContext:
-      privileged: true
-      runAsUser: 0
+        filter {
+          # Skip logs with excessive backslashes to avoid recursion
+          if [log] =~ /\\{4,}/ {
+            drop {}
+          }
+          
+          # Add kubernetes metadata
+          mutate {
+            add_field => {
+              "kubernetes_namespace" => "%{[kubernetes][namespace_name]}"
+              "kubernetes_pod" => "%{[kubernetes][pod_name]}"
+              "kubernetes_container" => "%{[kubernetes][container_name]}"
+            }
+          }
+        }
 
-    # Run on all nodes
-    tolerations:
-      - key: node-role.kubernetes.io/master
-        operator: Exists
-        effect: NoSchedule
-      - key: node-role.kubernetes.io/control-plane
-        operator: Exists
-        effect: NoSchedule
+        output {
+          elasticsearch {
+            hosts => ["elasticsearch-master:9200"]
+            user => "${ELASTICSEARCH_USER}"
+            password => "${ELASTICSEARCH_PASSWORD}"
+            index => "k8s-logs-%{+YYYY.MM.dd}"
+          }
+        }
 
-    # Mount logs
+    extraEnvs:
+      - name: ELASTICSEARCH_USER
+        valueFrom:
+          secretKeyRef:
+            name: elasticsearch-credentials
+            key: username
+      - name: ELASTICSEARCH_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            name: elasticsearch-credentials
+            key: password
+
     extraVolumes:
       - name: varlog
         hostPath:
@@ -56,6 +82,12 @@ spec:
       - name: varlibdockercontainers
         hostPath:
           path: /var/lib/docker/containers
+      - name: logstash-pipeline
+        configMap:
+          name: logstash-pipeline
+          items:
+            - key: logstash.conf
+              path: logstash.conf
 
     extraVolumeMounts:
       - name: varlog
@@ -63,71 +95,22 @@ spec:
       - name: varlibdockercontainers
         mountPath: /var/lib/docker/containers
         readOnly: true
+      - name: logstash-pipeline
+        mountPath: /usr/share/logstash/pipeline
+        readOnly: true
 
-    configMapConfigs:
-      fluent.conf: |-
-        <system>
-          log_level fatal
-        </system>
+    resources:
+      requests:
+        cpu: 200m
+        memory: 512Mi
+      limits:
+        cpu: 500m
+        memory: 1Gi
 
-        # Just collect logs from containers you care about, with no parsing
-        <source>
-          @type tail
-          path /var/log/containers/*.log
-          exclude_path ["/var/log/containers/*fluentd*", "/var/log/containers/*elastic*", "/var/log/containers/*logging*", "/var/log/containers/*kibana*"]
-          pos_file /var/log/kubernetes.log.pos
-          tag raw.kubernetes
-          read_from_head true
-          <parse>
-            @type none
-          </parse>
-        </source>
-
-        # Only if you want separate indices by namespace
-        <match raw.kubernetes>
-          @type rewrite_tag_filter
-          <rule>
-            key $.kubernetes.namespace_name
-            pattern ^(.+)$
-            tag $1
-          </rule>
-        </match>
-
-        # Send to Elasticsearch with no further processing
-        <match **>
-          @type elasticsearch
-          host elasticsearch-master
-          port 9200
-          scheme http
-          user "#{ENV['FLUENT_ELASTICSEARCH_USER']}"
-          password "#{ENV['FLUENT_ELASTICSEARCH_PASSWORD']}"
-          index_name ${tag}
-          
-          <buffer>
-            @type file
-            path /var/log/fluentd-buffer
-            flush_mode interval
-            flush_interval 10s
-            chunk_limit_size 2M
-            total_limit_size 256M
-            retry_max_interval 30
-            retry_forever false
-          </buffer>
-        </match>
-
-    plugins:
-      - fluent-plugin-rewrite-tag-filter
-
-    env:
-      - name: FLUENT_ELASTICSEARCH_USER
-        valueFrom:
-          secretKeyRef:
-            name: elasticsearch-credentials
-            key: username
-      - name: FLUENT_ELASTICSEARCH_PASSWORD
-        valueFrom:
-          secretKeyRef:
-            name: elasticsearch-credentials
-            key: password
-      - name: FLUENT_LOG_LEVEL
-        value: "fatal"
+    tolerations:
+      - key: node-role.kubernetes.io/master
+        operator: Exists
+        effect: NoSchedule
+      - key: node-role.kubernetes.io/control-plane
+        operator: Exists
+        effect: NoSchedule
