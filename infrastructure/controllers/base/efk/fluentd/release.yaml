@@ -8,49 +8,43 @@ spec:
   chart:
     spec:
       chart: logstash
-      version: "7.17.3"
+      version: "7.17.3" # or your preferred version
       sourceRef:
         kind: HelmRepository
         name: elastic
         namespace: logging
-  install:
-    remediation:
-      retries: 3
   values:
     image: "docker.elastic.co/logstash/logstash"
-    imageTag: "8.8.2"
+    imageTag: "7.17.3" # Match with your Elasticsearch version
 
-    # Use DaemonSet for coverage on all nodes
-    kind: DaemonSet
-
-    logstashConfig:
-      logstash.yml: |
-        http.host: 0.0.0.0
-        log.level: error
-        config.reload.automatic: true
-
-    # Pipeline configuration that will create logstash-logstash-pipeline ConfigMap
     logstashPipeline:
       logstash.conf: |
         input {
           file {
-            path => ["/var/log/containers/*.log"]
-            exclude => ["/var/log/containers/*logstash*", "/var/log/containers/*fluent*", "/var/log/containers/*elastic*"]
-            sincedb_path => "/var/log/logstash/sincedb"
+            path => "/var/log/containers/*.log"
+            exclude => ["/var/log/containers/*fluentd*", "/var/log/containers/*logstash*", "/var/log/containers/*elastic*"]
+            start_position => "beginning"
+            sincedb_path => "/usr/share/logstash/data/sincedb"
             codec => "json"
             type => "container"
           }
         }
 
         filter {
-          # Skip logs with excessive backslashes to avoid recursion
+          # Skip logs with excessive backslashes
           if [log] =~ /\\{4,}/ {
             drop {}
           }
           
-          # Extract kubernetes metadata from the file path
+          # Extract kubernetes metadata
           grok {
             match => { "path" => "/var/log/containers/%{DATA:pod_name}_%{DATA:namespace}_%{GREEDYDATA:container_name}\.log" }
+          }
+          
+          # Add timestamps
+          date {
+            match => ["timestamp", "ISO8601"]
+            target => "@timestamp"
           }
         }
 
@@ -59,11 +53,26 @@ spec:
             hosts => ["elasticsearch-master:9200"]
             user => "${ELASTICSEARCH_USER}"
             password => "${ELASTICSEARCH_PASSWORD}"
-            index => "k8s-logs-%{+YYYY.MM.dd}"
+            index => "logs-%{+YYYY.MM.dd}"
           }
         }
 
-    extraEnvs:
+    extraVolumes:
+      - name: varlog
+        hostPath:
+          path: /var/log
+      - name: containers
+        hostPath:
+          path: /var/lib/docker/containers
+
+    extraVolumeMounts:
+      - name: varlog
+        mountPath: /var/log
+      - name: containers
+        mountPath: /var/lib/docker/containers
+        readOnly: true
+
+    env:
       - name: ELASTICSEARCH_USER
         valueFrom:
           secretKeyRef:
@@ -75,33 +84,5 @@ spec:
             name: elasticsearch-credentials
             key: password
 
-    extraVolumes:
-      - name: varlog
-        hostPath:
-          path: /var/log
-      - name: varlibdockercontainers
-        hostPath:
-          path: /var/lib/docker/containers
-
-    extraVolumeMounts:
-      - name: varlog
-        mountPath: /var/log
-      - name: varlibdockercontainers
-        mountPath: /var/lib/docker/containers
-        readOnly: true
-
-    resources:
-      requests:
-        cpu: 200m
-        memory: 512Mi
-      limits:
-        cpu: 500m
-        memory: 1Gi
-
-    tolerations:
-      - key: node-role.kubernetes.io/master
-        operator: Exists
-        effect: NoSchedule
-      - key: node-role.kubernetes.io/control-plane
-        operator: Exists
-        effect: NoSchedule
+    persistence:
+      enabled: true
