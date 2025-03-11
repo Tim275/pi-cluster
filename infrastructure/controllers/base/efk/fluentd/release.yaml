@@ -18,10 +18,10 @@ spec:
   install:
     timeout: 10m
   values:
-    # Use Deployment for simplicity
+    # Use Deployment
     kind: Deployment
 
-    # Minimal resource requirements
+    # Resources
     resources:
       requests:
         cpu: 100m
@@ -30,41 +30,48 @@ spec:
         cpu: 500m
         memory: 512Mi
 
-    # Simplified Java settings
+    # Java settings
     logstashJavaOpts: "-Xms128m -Xmx256m"
 
-    # Disable persistence
+    # No persistence
     persistence:
       enabled: false
 
-    # Use standard user (avoid privilege issues)
+    # IMPORTANT: Fixed security context for Elastic images
     securityContext:
+      runAsUser: 1000 # Must be explicit
       runAsNonRoot: true
-      runAsUser: 1000
 
     podSecurityContext:
-      fsGroup: 1000
       runAsUser: 1000
+      fsGroup: 1000
 
-    # Set up correct volume mapping
+    # Volume setup
     extraVolumes:
-      - name: logstash-temp
+      - name: logstash-data
         emptyDir: {}
 
     extraVolumeMounts:
-      - name: logstash-temp
+      - name: logstash-data
         mountPath: /usr/share/logstash/data
 
-    # Simple init container to prepare directories
+    # Init container with proper permissions
     extraInitContainers:
-      - name: init-permissions
-        image: busybox:latest
-        command: ["sh", "-c", "mkdir -p /tmp/data && chmod -R 777 /tmp/data"]
+      - name: setup-dirs
+        image: busybox
+        command:
+          [
+            "sh",
+            "-c",
+            "mkdir -p /logstash-data/sincedb && chmod -R 777 /logstash-data",
+          ]
+        securityContext:
+          runAsUser: 1000 # Non-root
         volumeMounts:
-          - name: logstash-temp
-            mountPath: /tmp/data
+          - name: logstash-data
+            mountPath: /logstash-data
 
-    # Basic Logstash configuration
+    # Simple configuration
     logstashConfig:
       logstash.yml: |
         http.host: "0.0.0.0"
@@ -72,12 +79,13 @@ spec:
         log.level: info
         pipeline.workers: 1
 
-    # Minimal pipeline that should work
+    # HTTP input instead of file input (no permissions needed)
     logstashPipeline:
       logstash.conf: |
         input {
           http {
             port => 8080
+            codec => json
           }
         }
 
@@ -90,7 +98,6 @@ spec:
           }
         }
 
-    # Authentication
     extraEnv:
       - name: ELASTICSEARCH_USER
         valueFrom:
@@ -103,7 +110,7 @@ spec:
             name: elasticsearch-credentials
             key: password
 
-    # Add the HTTP port to the service
+    # Service configuration
     service:
       type: ClusterIP
       ports:
@@ -111,7 +118,3 @@ spec:
           port: 8080
           protocol: TCP
           targetPort: 8080
-        - name: api
-          port: 9600
-          protocol: TCP
-          targetPort: 9600
