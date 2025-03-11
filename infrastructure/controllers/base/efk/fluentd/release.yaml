@@ -8,35 +8,55 @@ spec:
   chart:
     spec:
       chart: fluentd
-      # Try a more recent stable version
-      version: "0.4.2"
+      version: "0.3.7" # Ältere stabile Version für bessere Kompatibilität
       sourceRef:
         kind: HelmRepository
         name: fluent
         namespace: logging
   values:
-    image:
-      tag: "v1.16-debian-1"
-
+    # DaemonSet für alle Nodes
     kind: DaemonSet
 
-    # Simplify the configuration to avoid YAML parsing errors
+    # Sehr einfache Konfiguration
+    configMapConfigs:
+      fluent.conf: |
+        # Einfache Eingabe
+        <source>
+          @type tail
+          path /var/log/containers/*.log
+          pos_file /var/log/fluentd-containers.log.pos
+          tag kubernetes.*
+          read_from_head true
+          <parse>
+            @type json
+          </parse>
+        </source>
+
+        # K8s Metadaten hinzufügen
+        <filter kubernetes.**>
+          @type kubernetes_metadata
+        </filter>
+
+        # Nach Elasticsearch senden
+        <match kubernetes.**>
+          @type elasticsearch
+          host elasticsearch-master
+          port 9200
+          user "#{ENV['ELASTICSEARCH_USERNAME']}"
+          password "#{ENV['ELASTICSEARCH_PASSWORD']}"
+          index_name fluentd-%Y%m%d
+        </match>
+
+    # Auf allen Nodes laufen
     tolerations:
-      - key: node-role.kubernetes.io/master
-        operator: Exists
-        effect: NoSchedule
       - key: node-role.kubernetes.io/control-plane
         operator: Exists
         effect: NoSchedule
+      - key: node-role.kubernetes.io/master
+        operator: Exists
+        effect: NoSchedule
 
-    securityContext:
-      privileged: true
-      runAsUser: 0
-
-    livenessProbe: null
-    readinessProbe: null
-
-    # Configure volumes
+    # Zugriff auf Logs
     extraVolumeMounts:
       - name: varlog
         mountPath: /var/log
@@ -52,55 +72,33 @@ spec:
         hostPath:
           path: /var/lib/docker/containers
 
-    # Environment variables
+    # Als Root laufen (für Log-Zugriff)
+    securityContext:
+      runAsUser: 0
+
+    # Benötigte Plugins
+    plugins:
+      - fluent-plugin-kubernetes_metadata_filter
+      - fluent-plugin-elasticsearch
+
+    # Pi-freundliche Ressourcen
+    resources:
+      requests:
+        cpu: 50m
+        memory: 100Mi
+      limits:
+        cpu: 100m
+        memory: 200Mi
+
+    # Credentials aus Secret
     env:
-      - name: FLUENT_ELASTICSEARCH_USER
+      - name: ELASTICSEARCH_USERNAME
         valueFrom:
           secretKeyRef:
             name: elasticsearch-credentials
             key: username
-      - name: FLUENT_ELASTICSEARCH_PASSWORD
+      - name: ELASTICSEARCH_PASSWORD
         valueFrom:
           secretKeyRef:
             name: elasticsearch-credentials
             key: password
-
-    # Fluentd configuration as separate item to avoid indentation issues
-    configMapConfigs:
-      fluentd.conf: |
-        <source>
-          @type tail
-          path /var/log/containers/*.log
-          exclude_path ["/var/log/containers/*fluentd*", "/var/log/containers/*elastic*"]
-          pos_file /var/log/fluentd-containers.log.pos
-          tag kubernetes.*
-          read_from_head true
-          <parse>
-            @type json
-            time_key time
-            time_format %Y-%m-%dT%H:%M:%S.%NZ
-          </parse>
-        </source>
-
-        <filter kubernetes.**>
-          @type kubernetes_metadata
-        </filter>
-
-        <match kubernetes.**>
-          @type elasticsearch
-          host elasticsearch-master
-          port 9200
-          user "#{ENV['FLUENT_ELASTICSEARCH_USER']}"
-          password "#{ENV['FLUENT_ELASTICSEARCH_PASSWORD']}"
-          scheme http
-          index_name k8s-logs-%Y%m%d
-        </match>
-
-    # Set appropriate resource limits
-    resources:
-      requests:
-        cpu: 100m
-        memory: 200Mi
-      limits:
-        cpu: 200m
-        memory: 400Mi
