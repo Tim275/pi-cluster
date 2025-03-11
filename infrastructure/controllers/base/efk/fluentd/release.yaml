@@ -13,42 +13,44 @@ spec:
         kind: HelmRepository
         name: elastic
         namespace: logging
+  # Force delete the old release completely
+  uninstall:
+    keepHistory: false
+  # Give plenty of time for installation
   install:
-    timeout: 10m
-  upgrade:
-    timeout: 10m
-  # Important: Use emptyDir instead of PVC
+    timeout: 15m
+    remediation:
+      retries: 3
   values:
-    replicas: 1
-    image: "docker.elastic.co/logstash/logstash"
-    imageTag: "7.17.3"
-
     # Use Deployment instead of StatefulSet
     kind: Deployment
 
-    # Disable persistence to avoid PVC issues
+    # Disable default persistence
     persistence:
       enabled: false
 
-    # Reduced resource limits
+    # Lower Java heap size for Pi
+    logstashJavaOpts: "-Xmx256m -Xms128m"
+
+    # Lower resource requirements
     resources:
       requests:
         cpu: 100m
-        memory: 256Mi
+        memory: 200Mi
       limits:
-        cpu: 500m
-        memory: 512Mi
+        cpu: 200m
+        memory: 300Mi
 
-    # Fix securityContext to avoid "breaks non-root policy" error
+    # Explicitly run as root to access logs
     securityContext:
-      runAsUser: null
-      privileged: false
+      runAsUser: 0
+      privileged: true
 
     podSecurityContext:
-      runAsUser: null
-      fsGroup: null
+      runAsUser: 0
+      fsGroup: 0
 
-    # Mount temp volume for sincedb
+    # Use emptyDir for data
     extraVolumes:
       - name: varlog
         hostPath:
@@ -69,9 +71,9 @@ spec:
       - name: logstash-data
         mountPath: /usr/share/logstash/data
 
-    # Fix volume mount name to match
+    # Support stateful operations with init container
     extraInitContainers:
-      - name: init-sincedb
+      - name: setup-dirs
         image: busybox
         command:
           [
@@ -79,72 +81,31 @@ spec:
             "-c",
             "mkdir -p /usr/share/logstash/data/sincedb && chmod -R 777 /usr/share/logstash/data",
           ]
-        securityContext:
-          runAsUser: 0
         volumeMounts:
           - name: logstash-data
             mountPath: /usr/share/logstash/data
+        securityContext:
+          runAsUser: 0
 
-    extraEnv:
-      - name: LS_JAVA_OPTS
-        value: "-Xms256m -Xmx256m"
-      - name: ELASTICSEARCH_USER
-        valueFrom:
-          secretKeyRef:
-            name: elasticsearch-credentials
-            key: username
-      - name: ELASTICSEARCH_PASSWORD
-        valueFrom:
-          secretKeyRef:
-            name: elasticsearch-credentials
-            key: password
-
+    # Basic configuration
     logstashConfig:
       logstash.yml: |
         http.host: "0.0.0.0"
         path.data: /usr/share/logstash/data
-        path.logs: /usr/share/logstash/logs
         log.level: info
         pipeline.workers: 1
-        pipeline.batch.size: 125
+        pipeline.batch.size: 50
 
+    # Extremely simplified pipeline to start with
     logstashPipeline:
       logstash.conf: |
         input {
           file {
             path => "/var/log/containers/*.log"
-            exclude => ["/var/log/containers/*fluentd*", "/var/log/containers/*logstash*", "/var/log/containers/*elastic*", "/var/log/containers/*kibana*"]
+            exclude => ["/var/log/containers/*logstash*", "/var/log/containers/*elastic*", "/var/log/containers/*kibana*"]
             sincedb_path => "/usr/share/logstash/data/sincedb"
-            start_position => "beginning"
             codec => "json"
-            tags => ["kubernetes"]
-          }
-        }
-
-        filter {
-          grok {
-            match => { "path" => "/var/log/containers/%{DATA:pod_name}_%{DATA:namespace}_%{GREEDYDATA:container_name}\.log" }
-            remove_field => ["path"]
-          }
-          
-          if [log] =~ /\\{5,}/ {
-            drop {}
-          }
-          
-          mutate {
-            add_field => {
-              "kubernetes" => {
-                "namespace" => "%{namespace}",
-                "pod" => "%{pod_name}",
-                "container" => "%{container_name}"
-              }
-            }
-            remove_field => ["namespace", "pod_name", "container_name"]
-          }
-          
-          date {
-            match => ["time", "ISO8601"]
-            remove_field => ["time"]
+            start_position => "beginning"
           }
         }
 
@@ -156,3 +117,16 @@ spec:
             index => "logs-%{+YYYY.MM.dd}"
           }
         }
+
+    # Environment variables
+    extraEnv:
+      - name: ELASTICSEARCH_USER
+        valueFrom:
+          secretKeyRef:
+            name: elasticsearch-credentials
+            key: username
+      - name: ELASTICSEARCH_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            name: elasticsearch-credentials
+            key: password
