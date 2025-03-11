@@ -73,9 +73,23 @@ spec:
         mountPath: /var/lib/docker/containers
         readOnly: true
 
+    # Add plugins for better log handling
+    plugins:
+      - fluent-plugin-rewrite-tag-filter
+      - fluent-plugin-parser
+      - fluent-plugin-concat
+
     # Custom Fluentd config for separate indices
     configMapConfigs:
       fluent.conf: |-
+        # System config to handle long logs
+        <system>
+          log_level info
+          <log>
+            format json
+          </log>
+        </system>
+
         # Container logs source
         <source>
           @type tail
@@ -85,7 +99,10 @@ spec:
           read_from_head true
           <parse>
             @type json
+            json_parser json
             time_format %Y-%m-%dT%H:%M:%S.%NZ
+            time_key time
+            keep_time_key true
           </parse>
         </source>
 
@@ -97,6 +114,15 @@ spec:
           ca_file /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
           skip_labels false
           skip_annotations false
+        </filter>
+
+        # Truncate extremely long log lines
+        <filter kubernetes.**>
+          @type record_transformer
+          enable_ruby true
+          <record>
+            message ${record["message"].to_s.length > 32768 ? record["message"].to_s[0..32767] + "... (truncated)" : record["message"]}
+          </record>
         </filter>
 
         # Route logs by namespace more reliably
@@ -134,6 +160,7 @@ spec:
           password "#{ENV['FLUENT_ELASTICSEARCH_PASSWORD']}"
           index_name linkding-%{+YYYY.MM.dd}
           include_timestamp true
+          buffer_chunk_limit 16M
         </match>
 
         # Send audiobookshelf logs to dedicated index
@@ -146,6 +173,7 @@ spec:
           password "#{ENV['FLUENT_ELASTICSEARCH_PASSWORD']}"
           index_name audiobookshelf-%{+YYYY.MM.dd}
           include_timestamp true
+          buffer_chunk_limit 16M
         </match>
 
         # Send master node logs to dedicated index
@@ -158,6 +186,7 @@ spec:
           password "#{ENV['FLUENT_ELASTICSEARCH_PASSWORD']}"
           index_name master-node-%{+YYYY.MM.dd}
           include_timestamp true
+          buffer_chunk_limit 16M
         </match>
 
         # Send p2 node logs to dedicated index
@@ -170,6 +199,7 @@ spec:
           password "#{ENV['FLUENT_ELASTICSEARCH_PASSWORD']}"
           index_name worker-node-%{+YYYY.MM.dd}
           include_timestamp true
+          buffer_chunk_limit 16M
         </match>
 
         # Catch all other logs
@@ -182,6 +212,7 @@ spec:
           password "#{ENV['FLUENT_ELASTICSEARCH_PASSWORD']}"
           index_name other-logs-%{+YYYY.MM.dd}
           include_timestamp true
+          buffer_chunk_limit 16M
         </match>
 
     # Environment variables for Elasticsearch connection
@@ -202,6 +233,14 @@ spec:
           secretKeyRef:
             name: elasticsearch-credentials
             key: password
+      # Prevent buffer overflow with large logs
+      - name: FLUENT_CONTAINER_TAIL_EXCLUDE_PATH
+        value: '["/var/log/containers/fluentd-*"]'
+      - name: FLUENT_CONTAINER_TAIL_PARSER_TYPE
+        value: "json"
+      # Increase buffer limits for large logs
+      - name: FLUENT_ELASTICSEARCH_BUFFER_CHUNK_LIMIT_SIZE
+        value: "16M"
       # Add plugin for rewrite_tag_filter
       - name: FLUENTD_SYSTEMD_CONF
         value: "disable"
