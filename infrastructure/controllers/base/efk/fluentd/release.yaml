@@ -8,46 +8,53 @@ spec:
   chart:
     spec:
       chart: fluentd
-      version: "0.3.7" # Ältere stabile Version für bessere Kompatibilität
+      version: "0.3.9" # Using a newer stable version
       sourceRef:
         kind: HelmRepository
         name: fluent
         namespace: logging
   values:
-    # DaemonSet für alle Nodes
     kind: DaemonSet
 
-    # Sehr einfache Konfiguration
     configMapConfigs:
-      fluent.conf: |
-        # Einfache Eingabe
+      fluent.conf: |-
         <source>
           @type tail
           path /var/log/containers/*.log
+          exclude_path ["/var/log/containers/*fluentd*", "/var/log/containers/*elastic*", "/var/log/containers/*kibana*"]
           pos_file /var/log/fluentd-containers.log.pos
           tag kubernetes.*
           read_from_head true
           <parse>
             @type json
+            time_format %Y-%m-%dT%H:%M:%S.%NZ
+            keep_time_key true
           </parse>
         </source>
 
-        # K8s Metadaten hinzufügen
         <filter kubernetes.**>
           @type kubernetes_metadata
         </filter>
 
-        # Nach Elasticsearch senden
         <match kubernetes.**>
           @type elasticsearch
           host elasticsearch-master
           port 9200
-          user "#{ENV['ELASTICSEARCH_USERNAME']}"
-          password "#{ENV['ELASTICSEARCH_PASSWORD']}"
+          user "#{ENV['FLUENT_ELASTICSEARCH_USER']}"
+          password "#{ENV['FLUENT_ELASTICSEARCH_PASSWORD']}"
           index_name fluentd-%Y%m%d
+          
+          <buffer>
+            @type file
+            path /var/log/fluentd-buffer
+            flush_mode interval
+            flush_interval 10s
+            retry_max_interval 30
+            chunk_limit_size 2M
+            total_limit_size 256M
+          </buffer>
         </match>
 
-    # Auf allen Nodes laufen
     tolerations:
       - key: node-role.kubernetes.io/control-plane
         operator: Exists
@@ -56,7 +63,6 @@ spec:
         operator: Exists
         effect: NoSchedule
 
-    # Zugriff auf Logs
     extraVolumeMounts:
       - name: varlog
         mountPath: /var/log
@@ -72,16 +78,13 @@ spec:
         hostPath:
           path: /var/lib/docker/containers
 
-    # Als Root laufen (für Log-Zugriff)
     securityContext:
+      privileged: true
       runAsUser: 0
 
-    # Benötigte Plugins
     plugins:
       - fluent-plugin-kubernetes_metadata_filter
-      - fluent-plugin-elasticsearch
 
-    # Pi-freundliche Ressourcen
     resources:
       requests:
         cpu: 50m
@@ -90,15 +93,16 @@ spec:
         cpu: 100m
         memory: 200Mi
 
-    # Credentials aus Secret
     env:
-      - name: ELASTICSEARCH_USERNAME
+      - name: FLUENT_ELASTICSEARCH_USER
         valueFrom:
           secretKeyRef:
             name: elasticsearch-credentials
             key: username
-      - name: ELASTICSEARCH_PASSWORD
+      - name: FLUENT_ELASTICSEARCH_PASSWORD
         valueFrom:
           secretKeyRef:
             name: elasticsearch-credentials
             key: password
+      - name: FLUENT_LOG_LEVEL
+        value: "fatal"
