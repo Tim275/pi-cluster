@@ -99,8 +99,33 @@ spec:
           skip_annotations false
         </filter>
 
-        # Route linkding namespace logs to a separate index
-        <match kubernetes.var.log.containers.**_linkding_**.log>
+        # Route logs by namespace more reliably
+        <match kubernetes.**>
+          @type rewrite_tag_filter
+          <rule>
+            key $.kubernetes.namespace_name
+            pattern ^(linkding)$
+            tag linkding.${tag}
+          </rule>
+          <rule>
+            key $.kubernetes.namespace_name
+            pattern ^(audiobookshelf)$
+            tag audiobookshelf.${tag}
+          </rule>
+          <rule>
+            key $.kubernetes.host
+            pattern ^(.+)$
+            tag kube.$1.${tag}
+          </rule>
+          <rule>
+            key message
+            pattern .*
+            tag other.${tag}
+          </rule>
+        </match>
+
+        # Send linkding logs to dedicated index
+        <match linkding.**>
           @type elasticsearch
           host "#{ENV['FLUENT_ELASTICSEARCH_HOST']}"
           port "#{ENV['FLUENT_ELASTICSEARCH_PORT']}"
@@ -111,8 +136,8 @@ spec:
           include_timestamp true
         </match>
 
-        # Route audiobookshelf namespace logs to a separate index
-        <match kubernetes.var.log.containers.**_audiobookshelf_**.log>
+        # Send audiobookshelf logs to dedicated index
+        <match audiobookshelf.**>
           @type elasticsearch
           host "#{ENV['FLUENT_ELASTICSEARCH_HOST']}"
           port "#{ENV['FLUENT_ELASTICSEARCH_PORT']}"
@@ -123,19 +148,40 @@ spec:
           include_timestamp true
         </match>
 
-        # Route master node logs to a separate index
+        # Send master node logs to dedicated index
+        <match kube.master.**>
+          @type elasticsearch
+          host "#{ENV['FLUENT_ELASTICSEARCH_HOST']}"
+          port "#{ENV['FLUENT_ELASTICSEARCH_PORT']}"
+          scheme "#{ENV['FLUENT_ELASTICSEARCH_SCHEME']}"
+          user "#{ENV['FLUENT_ELASTICSEARCH_USER']}"
+          password "#{ENV['FLUENT_ELASTICSEARCH_PASSWORD']}"
+          index_name master-node-%{+YYYY.MM.dd}
+          include_timestamp true
+        </match>
+
+        # Send p2 node logs to dedicated index
+        <match kube.p2.**>
+          @type elasticsearch
+          host "#{ENV['FLUENT_ELASTICSEARCH_HOST']}"
+          port "#{ENV['FLUENT_ELASTICSEARCH_PORT']}"
+          scheme "#{ENV['FLUENT_ELASTICSEARCH_SCHEME']}"
+          user "#{ENV['FLUENT_ELASTICSEARCH_USER']}"
+          password "#{ENV['FLUENT_ELASTICSEARCH_PASSWORD']}"
+          index_name worker-node-%{+YYYY.MM.dd}
+          include_timestamp true
+        </match>
+
+        # Catch all other logs
         <match **>
-          @type copy
-          <store>
-            @type elasticsearch
-            host "#{ENV['FLUENT_ELASTICSEARCH_HOST']}"
-            port "#{ENV['FLUENT_ELASTICSEARCH_PORT']}"
-            scheme "#{ENV['FLUENT_ELASTICSEARCH_SCHEME']}"
-            user "#{ENV['FLUENT_ELASTICSEARCH_USER']}"
-            password "#{ENV['FLUENT_ELASTICSEARCH_PASSWORD']}"
-            index_name ${record['kubernetes.host'] == 'master' ? 'master' : 'worker'}-node-%{+YYYY.MM.dd}
-            include_timestamp true
-          </store>
+          @type elasticsearch
+          host "#{ENV['FLUENT_ELASTICSEARCH_HOST']}"
+          port "#{ENV['FLUENT_ELASTICSEARCH_PORT']}"
+          scheme "#{ENV['FLUENT_ELASTICSEARCH_SCHEME']}"
+          user "#{ENV['FLUENT_ELASTICSEARCH_USER']}"
+          password "#{ENV['FLUENT_ELASTICSEARCH_PASSWORD']}"
+          index_name other-logs-%{+YYYY.MM.dd}
+          include_timestamp true
         </match>
 
     # Environment variables for Elasticsearch connection
@@ -156,3 +202,6 @@ spec:
           secretKeyRef:
             name: elasticsearch-credentials
             key: password
+      # Add plugin for rewrite_tag_filter
+      - name: FLUENTD_SYSTEMD_CONF
+        value: "disable"
