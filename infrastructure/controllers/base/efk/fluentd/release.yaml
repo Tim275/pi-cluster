@@ -78,13 +78,14 @@ spec:
       - fluent-plugin-rewrite-tag-filter
       - fluent-plugin-parser
       - fluent-plugin-concat
+      - fluent-plugin-grep
 
     # Custom Fluentd config for separate indices
     configMapConfigs:
       fluent.conf: |-
         # System config to handle long logs
         <system>
-          log_level warn
+          log_level error
           <log>
             format json
           </log>
@@ -112,20 +113,27 @@ spec:
           </parse>
         </source>
 
+        # Drop logs with excessive backslashes completely
+        <filter kubernetes.**>
+          @type grep
+          <exclude>
+            key log
+            pattern /\\{8,}/
+          </exclude>
+        </filter>
+
         # Heavily simplify logs with excessive backslashes
         <filter kubernetes.**>
           @type record_transformer
           enable_ruby true
           <record>
             message ${
-              if record["log"] && record["log"].to_s.include?("\\\\\\\\\\\\\\\\\\\\\\\\\\\\")
-                "Log with excessive backslashes truncated for system stability"
-              elsif record["log"]
-                record["log"].to_s
-              elsif record["message"]
-                record["message"].to_s
+              if record["log"].nil?
+                record["message"] || "Empty log entry"
+              elsif record["log"].to_s.include?("\\\\\\\\") || record["log"].to_s.length > 10000
+                "Log entry truncated - contained excessive backslashes or was too long"
               else
-                "No message content"
+                record["log"].to_s.gsub(/\\{3,}/, "[ESCAPED CONTENT]")
               end
             }
           </record>
@@ -223,7 +231,7 @@ spec:
             key: password
       # Prevent buffer overflow with large logs
       - name: FLUENT_CONTAINER_TAIL_EXCLUDE_PATH
-        value: '["/var/log/containers/fluentd-*"]'
+        value: '["/var/log/containers/fluentd-*", "/var/log/containers/*logging*", "/var/log/containers/*elasticsearch*"]'
       - name: FLUENT_CONTAINER_TAIL_PARSER_TYPE
         value: "json"
       # Increase buffer limits for large logs
@@ -234,7 +242,7 @@ spec:
         value: "disable"
       # Add these environment variables for better stability
       - name: FLUENT_LOG_LEVEL
-        value: "warn"
+        value: "error"
       - name: FLUENT_ELASTICSEARCH_RECONNECT_ON_ERROR
         value: "true"
       - name: FLUENT_ELASTICSEARCH_REQUEST_TIMEOUT
