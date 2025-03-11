@@ -27,28 +27,28 @@ spec:
     podSecurityPolicy:
       enabled: false
 
-    # Skip health probes
+    # Skip health probes for better stability
     livenessProbe: null
     readinessProbe: null
 
     # Add an explicit nameOverride
     nameOverride: fluentd-logging
 
-    # Basic resources
+    # Increase resources for stability
     resources:
       requests:
-        cpu: 50m
-        memory: 200Mi
+        cpu: 100m
+        memory: 300Mi
       limits:
-        cpu: 200m
-        memory: 512Mi
+        cpu: 300m
+        memory: 600Mi
 
     # Permission to access logs
     securityContext:
       privileged: true
       runAsUser: 0
 
-    # CRITICAL: Add tolerations to run on all nodes
+    # Run on all nodes
     tolerations:
       - key: node-role.kubernetes.io/master
         operator: Exists
@@ -57,7 +57,7 @@ spec:
         operator: Exists
         effect: NoSchedule
 
-    # CRITICAL: Add volume mounts to access logs
+    # Access container logs
     extraVolumes:
       - name: varlog
         hostPath:
@@ -73,145 +73,114 @@ spec:
         mountPath: /var/lib/docker/containers
         readOnly: true
 
-    # Add plugins for better log handling
+    # Required plugins
     plugins:
       - fluent-plugin-rewrite-tag-filter
-      - fluent-plugin-parser
-      - fluent-plugin-concat
-      - fluent-plugin-grep
+      - fluent-plugin-kubernetes_metadata_filter
 
-    # Custom Fluentd config for separate indices
+    # Simple, reliable Fluentd config
     configMapConfigs:
       fluent.conf: |-
-        # System config to handle long logs
         <system>
           log_level error
-          <log>
-            format json
-          </log>
           suppress_repeated_stacktrace true
           ignore_repeated_log_interval 60
-          emit_error_log_interval 60
-          suppress_config_dump true
         </system>
 
-        # Container logs source with better error handling
+        # Container logs source - simplified parser
         <source>
           @type tail
           path /var/log/containers/*.log
+          exclude_path ["/var/log/containers/fluentd-*.log", "/var/log/containers/*logging*.log"]
           pos_file /var/log/fluentd-containers.log.pos
-          tag kubernetes.*
+          tag raw.kubernetes.*
           read_from_head true
-          skip_refresh_on_startup true
-          refresh_interval 60
-          read_bytes_limit_per_second 16777216  # 16MB/s
           <parse>
-            @type regexp
-            expression /^(?<time>.+) (?<stream>stdout|stderr) (?<logtag>[F|P]) (?<log>.*)$/
-            time_format %Y-%m-%dT%H:%M:%S.%NZ
+            @type json
+            time_key time
             keep_time_key true
           </parse>
         </source>
 
-        # Drop logs with excessive backslashes completely
-        <filter kubernetes.**>
-          @type grep
-          <exclude>
-            key log
-            pattern /\\{8,}/
-          </exclude>
-        </filter>
-
-        # Heavily simplify logs with excessive backslashes
-        <filter kubernetes.**>
-          @type record_transformer
-          enable_ruby true
-          <record>
-            message ${
-              if record["log"].nil?
-                record["message"] || "Empty log entry"
-              elsif record["log"].to_s.include?("\\\\\\\\") || record["log"].to_s.length > 10000
-                "Log entry truncated - contained excessive backslashes or was too long"
-              else
-                record["log"].to_s.gsub(/\\{3,}/, "[ESCAPED CONTENT]")
-              end
-            }
-          </record>
-          remove_keys log
-        </filter>
+        # Prevent processing Fluentd's own logs
+        <match raw.kubernetes.fluentd**>
+          @type null
+        </match>
 
         # Add Kubernetes metadata
-        <filter kubernetes.**>
+        <filter raw.kubernetes.**>
           @type kubernetes_metadata
           kubernetes_url https://#{ENV['KUBERNETES_SERVICE_HOST']}:#{ENV['KUBERNETES_SERVICE_PORT']}
           bearer_token_file /var/run/secrets/kubernetes.io/serviceaccount/token
           ca_file /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
-          skip_labels false
-          skip_annotations false
         </filter>
 
-        # Truncate extremely long log lines
-        <filter kubernetes.**>
+        # Limit log size
+        <filter raw.kubernetes.**>
           @type record_transformer
           enable_ruby true
           <record>
-            message ${record["message"].to_s.length > 8192 ? record["message"].to_s[0..8192] + "... (truncated)" : record["message"]}
+            log ${record["log"].to_s.length > 32768 ? record["log"].to_s[0..32767] + "... (truncated)" : record["log"]}
           </record>
         </filter>
 
-        # Rest of your configuration remains the same
-        # Route logs by namespace more reliably
-        <match kubernetes.**>
+        # Route by namespace and node
+        <match raw.kubernetes.**>
           @type rewrite_tag_filter
           <rule>
             key $.kubernetes.namespace_name
             pattern ^(linkding)$
-            tag linkding.${tag}
+            tag k8s.linkding
           </rule>
           <rule>
             key $.kubernetes.namespace_name
             pattern ^(audiobookshelf)$
-            tag audiobookshelf.${tag}
+            tag k8s.audiobookshelf
           </rule>
           <rule>
             key $.kubernetes.host
-            pattern ^(.+)$
-            tag kube.$1.${tag}
+            pattern ^(master|control-plane)$
+            tag k8s.master
           </rule>
           <rule>
-            key message
-            pattern .*
-            tag other.${tag}
+            key $.kubernetes.host
+            pattern ^(p2)$
+            tag k8s.worker
+          </rule>
+          <rule>
+            key $.kubernetes.namespace_name
+            pattern ^(.+)$
+            tag k8s.namespace.$1
           </rule>
         </match>
 
-        # Elasticsearch output configuration
-        <match **>
+        # Output to Elasticsearch
+        <match k8s.**>
           @type elasticsearch
           host "#{ENV['FLUENT_ELASTICSEARCH_HOST']}"
           port "#{ENV['FLUENT_ELASTICSEARCH_PORT']}"
           scheme "#{ENV['FLUENT_ELASTICSEARCH_SCHEME']}"
           user "#{ENV['FLUENT_ELASTICSEARCH_USER']}"
           password "#{ENV['FLUENT_ELASTICSEARCH_PASSWORD']}"
-          
-          # Use tag-based index names for your separate namespaces
           index_name ${tag}
+          reconnect_on_error true
+          reload_connections true
+          request_timeout 30s
           
           <buffer tag>
             @type file
             path /var/log/fluentd-buffers/kubernetes.buffer
             flush_mode interval
-            retry_type exponential_backoff
-            flush_thread_count 2
             flush_interval 5s
+            flush_thread_count 2
+            retry_type exponential_backoff
             retry_forever false
             retry_max_interval 30
-            chunk_limit_size 16M
+            chunk_limit_size 8M
             queue_limit_length 32
           </buffer>
         </match>
 
-    # Environment variables for Elasticsearch connection
     env:
       - name: FLUENT_ELASTICSEARCH_HOST
         value: "elasticsearch-master"
@@ -229,23 +198,3 @@ spec:
           secretKeyRef:
             name: elasticsearch-credentials
             key: password
-      # Prevent buffer overflow with large logs
-      - name: FLUENT_CONTAINER_TAIL_EXCLUDE_PATH
-        value: '["/var/log/containers/fluentd-*", "/var/log/containers/*logging*", "/var/log/containers/*elasticsearch*"]'
-      - name: FLUENT_CONTAINER_TAIL_PARSER_TYPE
-        value: "json"
-      # Increase buffer limits for large logs
-      - name: FLUENT_ELASTICSEARCH_BUFFER_CHUNK_LIMIT_SIZE
-        value: "16M"
-      # Add plugin for rewrite_tag_filter
-      - name: FLUENTD_SYSTEMD_CONF
-        value: "disable"
-      # Add these environment variables for better stability
-      - name: FLUENT_LOG_LEVEL
-        value: "error"
-      - name: FLUENT_ELASTICSEARCH_RECONNECT_ON_ERROR
-        value: "true"
-      - name: FLUENT_ELASTICSEARCH_REQUEST_TIMEOUT
-        value: "30s"
-      - name: FLUENT_ELASTICSEARCH_RELOAD_CONNECTIONS
-        value: "true"
