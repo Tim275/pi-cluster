@@ -20,12 +20,16 @@ spec:
     image: "docker.elastic.co/logstash/logstash"
     imageTag: "8.8.2"
 
+    # Use DaemonSet for coverage on all nodes
+    kind: DaemonSet
+
     logstashConfig:
       logstash.yml: |
         http.host: 0.0.0.0
         log.level: error
         config.reload.automatic: true
 
+    # Pipeline configuration that will create logstash-logstash-pipeline ConfigMap
     logstashPipeline:
       logstash.conf: |
         input {
@@ -44,13 +48,9 @@ spec:
             drop {}
           }
           
-          # Add kubernetes metadata
-          mutate {
-            add_field => {
-              "kubernetes_namespace" => "%{[kubernetes][namespace_name]}"
-              "kubernetes_pod" => "%{[kubernetes][pod_name]}"
-              "kubernetes_container" => "%{[kubernetes][container_name]}"
-            }
+          # Extract kubernetes metadata from the file path
+          grok {
+            match => { "path" => "/var/log/containers/%{DATA:pod_name}_%{DATA:namespace}_%{GREEDYDATA:container_name}\.log" }
           }
         }
 
@@ -82,21 +82,12 @@ spec:
       - name: varlibdockercontainers
         hostPath:
           path: /var/lib/docker/containers
-      - name: logstash-pipeline
-        configMap:
-          name: logstash-pipeline
-          items:
-            - key: logstash.conf
-              path: logstash.conf
 
     extraVolumeMounts:
       - name: varlog
         mountPath: /var/log
       - name: varlibdockercontainers
         mountPath: /var/lib/docker/containers
-        readOnly: true
-      - name: logstash-pipeline
-        mountPath: /usr/share/logstash/pipeline
         readOnly: true
 
     resources:
