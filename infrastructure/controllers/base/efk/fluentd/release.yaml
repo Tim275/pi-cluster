@@ -84,27 +84,53 @@ spec:
       fluent.conf: |-
         # System config to handle long logs
         <system>
-          log_level info
+          log_level warn
           <log>
             format json
           </log>
+          suppress_repeated_stacktrace true
+          ignore_repeated_log_interval 60
+          emit_error_log_interval 60
+          suppress_config_dump true
         </system>
 
-        # Container logs source
+        # Container logs source with better error handling
         <source>
           @type tail
           path /var/log/containers/*.log
           pos_file /var/log/fluentd-containers.log.pos
           tag kubernetes.*
           read_from_head true
+          skip_refresh_on_startup true
+          refresh_interval 60
+          read_bytes_limit_per_second 16777216  # 16MB/s
           <parse>
-            @type json
-            json_parser json
+            @type regexp
+            expression /^(?<time>.+) (?<stream>stdout|stderr) (?<logtag>[F|P]) (?<log>.*)$/
             time_format %Y-%m-%dT%H:%M:%S.%NZ
-            time_key time
             keep_time_key true
           </parse>
         </source>
+
+        # Heavily simplify logs with excessive backslashes
+        <filter kubernetes.**>
+          @type record_transformer
+          enable_ruby true
+          <record>
+            message ${
+              if record["log"] && record["log"].to_s.include?("\\\\\\\\\\\\\\\\\\\\\\\\\\\\")
+                "Log with excessive backslashes truncated for system stability"
+              elsif record["log"]
+                record["log"].to_s
+              elsif record["message"]
+                record["message"].to_s
+              else
+                "No message content"
+              end
+            }
+          </record>
+          remove_keys log
+        </filter>
 
         # Add Kubernetes metadata
         <filter kubernetes.**>
@@ -121,10 +147,11 @@ spec:
           @type record_transformer
           enable_ruby true
           <record>
-            message ${record["message"].to_s.length > 32768 ? record["message"].to_s[0..32767] + "... (truncated)" : record["message"]}
+            message ${record["message"].to_s.length > 8192 ? record["message"].to_s[0..8192] + "... (truncated)" : record["message"]}
           </record>
         </filter>
 
+        # Rest of your configuration remains the same
         # Route logs by namespace more reliably
         <match kubernetes.**>
           @type rewrite_tag_filter
@@ -150,59 +177,7 @@ spec:
           </rule>
         </match>
 
-        # Send linkding logs to dedicated index
-        <match linkding.**>
-          @type elasticsearch
-          host "#{ENV['FLUENT_ELASTICSEARCH_HOST']}"
-          port "#{ENV['FLUENT_ELASTICSEARCH_PORT']}"
-          scheme "#{ENV['FLUENT_ELASTICSEARCH_SCHEME']}"
-          user "#{ENV['FLUENT_ELASTICSEARCH_USER']}"
-          password "#{ENV['FLUENT_ELASTICSEARCH_PASSWORD']}"
-          index_name linkding-%{+YYYY.MM.dd}
-          include_timestamp true
-          buffer_chunk_limit 16M
-        </match>
-
-        # Send audiobookshelf logs to dedicated index
-        <match audiobookshelf.**>
-          @type elasticsearch
-          host "#{ENV['FLUENT_ELASTICSEARCH_HOST']}"
-          port "#{ENV['FLUENT_ELASTICSEARCH_PORT']}"
-          scheme "#{ENV['FLUENT_ELASTICSEARCH_SCHEME']}"
-          user "#{ENV['FLUENT_ELASTICSEARCH_USER']}"
-          password "#{ENV['FLUENT_ELASTICSEARCH_PASSWORD']}"
-          index_name audiobookshelf-%{+YYYY.MM.dd}
-          include_timestamp true
-          buffer_chunk_limit 16M
-        </match>
-
-        # Send master node logs to dedicated index
-        <match kube.master.**>
-          @type elasticsearch
-          host "#{ENV['FLUENT_ELASTICSEARCH_HOST']}"
-          port "#{ENV['FLUENT_ELASTICSEARCH_PORT']}"
-          scheme "#{ENV['FLUENT_ELASTICSEARCH_SCHEME']}"
-          user "#{ENV['FLUENT_ELASTICSEARCH_USER']}"
-          password "#{ENV['FLUENT_ELASTICSEARCH_PASSWORD']}"
-          index_name master-node-%{+YYYY.MM.dd}
-          include_timestamp true
-          buffer_chunk_limit 16M
-        </match>
-
-        # Send p2 node logs to dedicated index
-        <match kube.p2.**>
-          @type elasticsearch
-          host "#{ENV['FLUENT_ELASTICSEARCH_HOST']}"
-          port "#{ENV['FLUENT_ELASTICSEARCH_PORT']}"
-          scheme "#{ENV['FLUENT_ELASTICSEARCH_SCHEME']}"
-          user "#{ENV['FLUENT_ELASTICSEARCH_USER']}"
-          password "#{ENV['FLUENT_ELASTICSEARCH_PASSWORD']}"
-          index_name worker-node-%{+YYYY.MM.dd}
-          include_timestamp true
-          buffer_chunk_limit 16M
-        </match>
-
-        # Catch all other logs
+        # Elasticsearch output configuration
         <match **>
           @type elasticsearch
           host "#{ENV['FLUENT_ELASTICSEARCH_HOST']}"
@@ -210,9 +185,22 @@ spec:
           scheme "#{ENV['FLUENT_ELASTICSEARCH_SCHEME']}"
           user "#{ENV['FLUENT_ELASTICSEARCH_USER']}"
           password "#{ENV['FLUENT_ELASTICSEARCH_PASSWORD']}"
-          index_name other-logs-%{+YYYY.MM.dd}
-          include_timestamp true
-          buffer_chunk_limit 16M
+          
+          # Use tag-based index names for your separate namespaces
+          index_name ${tag}
+          
+          <buffer tag>
+            @type file
+            path /var/log/fluentd-buffers/kubernetes.buffer
+            flush_mode interval
+            retry_type exponential_backoff
+            flush_thread_count 2
+            flush_interval 5s
+            retry_forever false
+            retry_max_interval 30
+            chunk_limit_size 16M
+            queue_limit_length 32
+          </buffer>
         </match>
 
     # Environment variables for Elasticsearch connection
@@ -244,3 +232,12 @@ spec:
       # Add plugin for rewrite_tag_filter
       - name: FLUENTD_SYSTEMD_CONF
         value: "disable"
+      # Add these environment variables for better stability
+      - name: FLUENT_LOG_LEVEL
+        value: "warn"
+      - name: FLUENT_ELASTICSEARCH_RECONNECT_ON_ERROR
+        value: "true"
+      - name: FLUENT_ELASTICSEARCH_REQUEST_TIMEOUT
+        value: "30s"
+      - name: FLUENT_ELASTICSEARCH_RELOAD_CONNECTIONS
+        value: "true"
