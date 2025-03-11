@@ -19,25 +19,24 @@ spec:
   values:
     kind: DaemonSet
 
+    # Basic settings
     rbac:
       create: true
       pspEnabled: false
-
     podSecurityPolicy:
       enabled: false
-
     livenessProbe: null
     readinessProbe: null
-
     nameOverride: fluentd-logging
 
+    # Allocate more memory to handle parsing
     resources:
       requests:
         cpu: 100m
-        memory: 300Mi
+        memory: 400Mi
       limits:
-        cpu: 300m
-        memory: 600Mi
+        cpu: 400m
+        memory: 800Mi
 
     securityContext:
       privileged: true
@@ -51,6 +50,7 @@ spec:
         operator: Exists
         effect: NoSchedule
 
+    # Standard log volume mounts
     extraVolumes:
       - name: varlog
         hostPath:
@@ -66,30 +66,79 @@ spec:
         mountPath: /var/lib/docker/containers
         readOnly: true
 
+    # Required plugins
     plugins:
       - fluent-plugin-kubernetes_metadata_filter
+      - fluent-plugin-multi-format-parser
 
+    # Improved configuration with backslash handling
     configMapConfigs:
       fluent.conf: |-
         <system>
-          log_level fatal
+          log_level error
+          # Prevent excessive retry logs
+          suppress_repeated_stacktrace true
+          ignore_repeated_log_interval 60
         </system>
 
-        # Only collect application logs, exclude ALL logging infrastructure
+        # Source configuration with improved parsing
         <source>
           @type tail
           path /var/log/containers/*.log
+          # Critical: Exclude fluentd's own logs to prevent recursion
           exclude_path ["/var/log/containers/*fluentd*", "/var/log/containers/*logging*", "/var/log/containers/*elastic*", "/var/log/containers/*kibana*"]
           pos_file /var/log/kubernetes.log.pos
-          tag kubernetes
+          tag kubernetes.*
           read_from_head true
+          # Simple JSON parsing first to avoid regex issues
           <parse>
-            @type none
+            @type json
+            time_format %Y-%m-%dT%H:%M:%S.%NZ
           </parse>
+          # Prevent crashes from malformed data
+          emit_unmatched_lines true
         </source>
 
-        # Write directly to ES with simplest setup possible
-        <match kubernetes>
+        # Prevent processing fluentd's own logs (second line of defense)
+        <match kubernetes.var.log.containers.fluentd**>
+          @type null
+        </match>
+
+        # Handle excessive backslashes by copying only necessary fields
+        <filter kubernetes.**>
+          @type record_transformer
+          enable_ruby true
+          <record>
+            # Copy only needed fields, sanitize message
+            message ${
+              # For logs with excessive backslashes
+              if record["log"] && record["log"].to_s.include?("\\\\\\")
+                "Log entry with excessive escaping - content sanitized"
+              # For normal logs that have the 'log' field
+              elsif record["log"]
+                record["log"].to_s.length > 32768 ? record["log"].to_s[0..32767] + "... (truncated)" : record["log"].to_s
+              # Fall back to existing message or empty string
+              else
+                record["message"] || ""
+              end
+            }
+            stream ${record["stream"] || "-"}
+            time ${record["time"] || Time.now.utc.iso8601}
+          </record>
+          # Remove problematic fields to prevent recursive parsing
+          remove_keys log
+        </filter>
+
+        # Add Kubernetes metadata
+        <filter kubernetes.**>
+          @type kubernetes_metadata
+          skip_labels false
+          skip_master_url true
+          skip_container_metadata false
+        </filter>
+
+        # Final output to Elasticsearch
+        <match kubernetes.**>
           @type elasticsearch
           host "elasticsearch-master"
           port "9200"
@@ -98,17 +147,22 @@ spec:
           password "#{ENV['FLUENT_ELASTICSEARCH_PASSWORD']}"
           index_name "k8s-logs-#{Time.now.strftime('%Y.%m.%d')}"
           
+          # Improved buffer settings
           <buffer>
             @type file
             path /var/log/fluentd-buffer
             flush_mode interval
             flush_interval 5s
+            flush_thread_count 2
             chunk_limit_size 8M
+            total_limit_size 512M
+            overflow_action block
             retry_max_interval 30
             retry_forever false
           </buffer>
         </match>
 
+    # Environment variables
     env:
       - name: FLUENT_ELASTICSEARCH_USER
         valueFrom:
@@ -121,4 +175,4 @@ spec:
             name: elasticsearch-credentials
             key: password
       - name: FLUENT_LOG_LEVEL
-        value: "fatal"
+        value: "error"
