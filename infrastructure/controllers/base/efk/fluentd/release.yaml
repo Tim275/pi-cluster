@@ -22,25 +22,24 @@ spec:
     # Basic settings
     rbac:
       create: true
-      pspEnabled: false
-    podSecurityPolicy:
-      enabled: false
     livenessProbe: null
     readinessProbe: null
     nameOverride: fluentd-logging
 
+    # Use very minimal resources
     resources:
       requests:
-        cpu: 100m
-        memory: 400Mi
+        cpu: 50m
+        memory: 128Mi
       limits:
-        cpu: 400m
-        memory: 800Mi
+        cpu: 100m
+        memory: 256Mi
 
     securityContext:
       privileged: true
       runAsUser: 0
 
+    # Run on all nodes
     tolerations:
       - key: node-role.kubernetes.io/master
         operator: Exists
@@ -49,6 +48,7 @@ spec:
         operator: Exists
         effect: NoSchedule
 
+    # Mount logs
     extraVolumes:
       - name: varlog
         hostPath:
@@ -64,53 +64,59 @@ spec:
         mountPath: /var/lib/docker/containers
         readOnly: true
 
-    plugins: []
-
     configMapConfigs:
       fluent.conf: |-
         <system>
           log_level fatal
         </system>
 
-        # Use raw approach - no parsing at all
+        # Just collect logs from containers you care about, with no parsing
         <source>
           @type tail
           path /var/log/containers/*.log
-          exclude_path [
-            "/var/log/containers/*fluentd*",
-            "/var/log/containers/*elastic*",
-            "/var/log/containers/*logging*",
-            "/var/log/containers/*kibana*"
-          ]
+          exclude_path ["/var/log/containers/*fluentd*", "/var/log/containers/*elastic*", "/var/log/containers/*logging*", "/var/log/containers/*kibana*"]
           pos_file /var/log/kubernetes.log.pos
-          tag k8s.*
+          tag raw.kubernetes
           read_from_head true
           <parse>
             @type none
           </parse>
         </source>
 
-        # Direct output to Elasticsearch with minimal processing
-        <match k8s.**>
+        # Only if you want separate indices by namespace
+        <match raw.kubernetes>
+          @type rewrite_tag_filter
+          <rule>
+            key $.kubernetes.namespace_name
+            pattern ^(.+)$
+            tag $1
+          </rule>
+        </match>
+
+        # Send to Elasticsearch with no further processing
+        <match **>
           @type elasticsearch
           host elasticsearch-master
           port 9200
           scheme http
           user "#{ENV['FLUENT_ELASTICSEARCH_USER']}"
           password "#{ENV['FLUENT_ELASTICSEARCH_PASSWORD']}"
-          index_name k8s-rawlogs
+          index_name ${tag}
           
           <buffer>
             @type file
             path /var/log/fluentd-buffer
             flush_mode interval
-            flush_interval 5s
-            flush_thread_count 1
-            chunk_limit_size 8M
+            flush_interval 10s
+            chunk_limit_size 2M
+            total_limit_size 256M
             retry_max_interval 30
             retry_forever false
           </buffer>
         </match>
+
+    plugins:
+      - fluent-plugin-rewrite-tag-filter
 
     env:
       - name: FLUENT_ELASTICSEARCH_USER
