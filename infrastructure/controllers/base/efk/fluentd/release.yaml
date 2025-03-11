@@ -17,24 +17,48 @@ spec:
     image: "docker.elastic.co/logstash/logstash"
     imageTag: "7.17.3"
 
-    # Diese Zeile einzufügen behebt den HTTP-API-Fehler
     logstashConfig:
       logstash.yml: |
         http.host: "0.0.0.0"
-        http.port: 9600
-        api.enabled: true
+        path.data: /usr/share/logstash/data
+        path.logs: /usr/share/logstash/logs
         log.level: info
 
-    # Pipeline-Konfiguration vereinfacht
     logstashPipeline:
       logstash.conf: |
         input {
           file {
             path => "/var/log/containers/*.log"
-            exclude => ["/var/log/containers/*fluentd*", "/var/log/containers/*logstash*", "/var/log/containers/*elastic*"]
-            start_position => "beginning"
+            exclude => ["/var/log/containers/*fluentd*", "/var/log/containers/*logstash*", "/var/log/containers/*elastic*", "/var/log/containers/*kibana*"]
             sincedb_path => "/usr/share/logstash/data/sincedb"
-            codec => "json"
+            start_position => "beginning"
+            codec => "json_lines"
+            tags => ["kubernetes"]
+          }
+        }
+
+        filter {
+          # Parse Kubernetes metadata from file path
+          grok {
+            match => { "path" => "/var/log/containers/%{DATA:pod_name}_%{DATA:namespace}_%{GREEDYDATA:container_name}\.log" }
+          }
+          
+          # Handle and clean up the log field
+          if [log] {
+            # Skip logs with excessive backslashes (common issue with recursive logging)
+            if [log] =~ /\\{5,}/ {
+              drop {}
+            }
+            
+            # Move log field to message
+            mutate {
+              rename => { "log" => "message" }
+              add_field => {
+                "kubernetes_namespace" => "%{namespace}"
+                "kubernetes_pod" => "%{pod_name}"
+                "kubernetes_container" => "%{container_name}"
+              }
+            }
           }
         }
 
@@ -43,7 +67,8 @@ spec:
             hosts => ["elasticsearch-master:9200"]
             user => "${ELASTICSEARCH_USER}"
             password => "${ELASTICSEARCH_PASSWORD}"
-            index => "logs-%{+YYYY.MM.dd}"
+            index => "%{[kubernetes_namespace]}-%{+YYYY.MM.dd}"
+            template_overwrite => true
           }
         }
 
@@ -62,7 +87,19 @@ spec:
         mountPath: /var/lib/docker/containers
         readOnly: true
 
-    env:
+    securityContext:
+      runAsUser: 0 # Root access is required to read container logs
+      privileged: true
+
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+
+    extraEnv:
       - name: ELASTICSEARCH_USER
         valueFrom:
           secretKeyRef:
@@ -73,15 +110,5 @@ spec:
           secretKeyRef:
             name: elasticsearch-credentials
             key: password
-
-    persistence:
-      enabled: true
-
-    # Health checks weniger strikt machen
-    readinessProbe:
-      httpGet:
-        path: /
-        port: http
-      initialDelaySeconds: 120
-      timeoutSeconds: 10
-      periodSeconds: 30
+      - name: LS_JAVA_OPTS
+        value: "-Xmx256m -Xms256m"
