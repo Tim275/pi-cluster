@@ -27,14 +27,14 @@ spec:
     podSecurityPolicy:
       enabled: false
 
-    # Skip health probes for better stability
+    # Skip health probes
     livenessProbe: null
     readinessProbe: null
 
     # Add an explicit nameOverride
     nameOverride: fluentd-logging
 
-    # Increase resources for stability
+    # Increase resources
     resources:
       requests:
         cpu: 100m
@@ -77,35 +77,60 @@ spec:
     plugins:
       - fluent-plugin-rewrite-tag-filter
       - fluent-plugin-kubernetes_metadata_filter
+      - fluent-plugin-grep
 
-    # Simple, reliable Fluentd config
     configMapConfigs:
       fluent.conf: |-
+        # Set to critical to drastically reduce logging
         <system>
-          log_level error
+          log_level critical
           suppress_repeated_stacktrace true
-          ignore_repeated_log_interval 60
+          ignore_repeated_log_interval 120
+          emit_error_log_interval 120
         </system>
 
-        # Container logs source - simplified parser
+        # Container logs source with extremely conservative settings
         <source>
           @type tail
           path /var/log/containers/*.log
-          exclude_path ["/var/log/containers/fluentd-*.log", "/var/log/containers/*logging*.log"]
+          # Aggressively exclude problematic logs
+          exclude_path ["/var/log/containers/fluentd-*", "/var/log/containers/*logging*", "/var/log/containers/*elasticsearch*", "/var/log/containers/kibana*"]
           pos_file /var/log/fluentd-containers.log.pos
           tag raw.kubernetes.*
           read_from_head true
+          # Strict parsing to avoid backslash issues
           <parse>
-            @type json
-            time_key time
-            keep_time_key true
+            @type regexp
+            expression /^(?<time>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d+Z) (?<stream>stdout|stderr) [^ ]* (?<log>.*)$/
+            time_format %Y-%m-%dT%H:%M:%S.%NZ
           </parse>
         </source>
 
-        # Prevent processing Fluentd's own logs
-        <match raw.kubernetes.fluentd**>
-          @type null
-        </match>
+        # Initial aggressive filter for backslash hell
+        <filter raw.kubernetes.**>
+          @type grep
+          <exclude>
+            key log
+            pattern /\\{4,}|pattern not matched/
+          </exclude>
+        </filter>
+
+        # Safety valve - completely null output for any remaining problematic logs
+        <filter raw.kubernetes.**>
+          @type record_transformer
+          enable_ruby true
+          <record>
+            log ${
+              if !record["log"] 
+                "-"
+              elsif record["log"].to_s.include?("\\\\") || record["log"].to_s.include?("pattern not matched") || record["log"].to_s.length > 5000
+                "[Log contained escape sequences or was too long - content removed]"
+              else
+                record["log"].to_s
+              end
+            }
+          </record>
+        </filter>
 
         # Add Kubernetes metadata
         <filter raw.kubernetes.**>
@@ -115,46 +140,22 @@ spec:
           ca_file /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
         </filter>
 
-        # Limit log size
-        <filter raw.kubernetes.**>
-          @type record_transformer
-          enable_ruby true
-          <record>
-            log ${record["log"].to_s.length > 32768 ? record["log"].to_s[0..32767] + "... (truncated)" : record["log"]}
-          </record>
-        </filter>
-
-        # Route by namespace and node
+        # Route by namespace
         <match raw.kubernetes.**>
           @type rewrite_tag_filter
-          <rule>
-            key $.kubernetes.namespace_name
-            pattern ^(linkding)$
-            tag k8s.linkding
-          </rule>
-          <rule>
-            key $.kubernetes.namespace_name
-            pattern ^(audiobookshelf)$
-            tag k8s.audiobookshelf
-          </rule>
-          <rule>
-            key $.kubernetes.host
-            pattern ^(master|control-plane)$
-            tag k8s.master
-          </rule>
-          <rule>
-            key $.kubernetes.host
-            pattern ^(p2)$
-            tag k8s.worker
-          </rule>
           <rule>
             key $.kubernetes.namespace_name
             pattern ^(.+)$
             tag k8s.namespace.$1
           </rule>
+          <rule>
+            key $.kubernetes.pod_name
+            pattern ^(.+)$
+            tag k8s.pod.$1
+          </rule>
         </match>
 
-        # Output to Elasticsearch
+        # Output to Elasticsearch 
         <match k8s.**>
           @type elasticsearch
           host "#{ENV['FLUENT_ELASTICSEARCH_HOST']}"
@@ -164,20 +165,17 @@ spec:
           password "#{ENV['FLUENT_ELASTICSEARCH_PASSWORD']}"
           index_name ${tag}
           reconnect_on_error true
-          reload_connections true
           request_timeout 30s
           
           <buffer tag>
             @type file
             path /var/log/fluentd-buffers/kubernetes.buffer
-            flush_mode interval
-            flush_interval 5s
-            flush_thread_count 2
-            retry_type exponential_backoff
-            retry_forever false
-            retry_max_interval 30
             chunk_limit_size 8M
-            queue_limit_length 32
+            flush_mode interval
+            flush_interval 10s
+            flush_thread_count 1
+            retry_max_interval 30
+            retry_forever false
           </buffer>
         </match>
 
@@ -198,3 +196,8 @@ spec:
           secretKeyRef:
             name: elasticsearch-credentials
             key: password
+      # Critical environment variables to avoid recursion issues
+      - name: FLUENT_LOG_LEVEL
+        value: "critical"
+      - name: FLUENT_CONTAINER_TAIL_EXCLUDE_PATH
+        value: '["/var/log/containers/fluentd-*", "/var/log/containers/*logging*", "/var/log/containers/*fluentd*", "/var/log/containers/*elasticsearch*"]'
