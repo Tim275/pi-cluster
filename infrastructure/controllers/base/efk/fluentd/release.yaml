@@ -1,4 +1,4 @@
-apiVersion: helm.toolkit.fluxcd.io/v2
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
 kind: HelmRelease
 metadata:
   name: fluentd
@@ -16,7 +16,6 @@ spec:
   values:
     kind: DaemonSet
 
-    # Einfaches Pod-Setup
     tolerations:
       - key: node-role.kubernetes.io/master
         operator: Exists
@@ -25,16 +24,13 @@ spec:
         operator: Exists
         effect: NoSchedule
 
-    # Kritisch: Root-Berechtigungen für Log-Zugriff
     securityContext:
       privileged: true
       runAsUser: 0
 
-    # Health Checks deaktivieren für einfacheres Setup
     livenessProbe: null
     readinessProbe: null
 
-    # Ressourcenlimits
     resources:
       requests:
         cpu: 100m
@@ -43,7 +39,6 @@ spec:
         cpu: 200m
         memory: 400Mi
 
-    # Volume-Mounts für Log-Zugriff
     extraVolumes:
       - name: varlog
         hostPath:
@@ -59,19 +54,15 @@ spec:
         mountPath: /var/lib/docker/containers
         readOnly: true
 
-    # Benötigte Plugins
     plugins:
       - fluent-plugin-kubernetes_metadata_filter
 
-    # Die eigentliche Fluentd-Konfiguration
     configMapConfigs:
       fluent.conf: |-
         <system>
-          # Minimalste Logging-Stufe, um Rekursion zu vermeiden
           log_level fatal
         </system>
 
-        # Container-Logs einsammeln, eigene Logs ausschließen
         <source>
           @type tail
           path /var/log/containers/*.log
@@ -87,12 +78,10 @@ spec:
           </parse>
         </source>
 
-        # Kubernetes-Metadaten hinzufügen
         <filter kubernetes.**>
           @type kubernetes_metadata
         </filter>
 
-        # Direkt an Elasticsearch senden
         <match kubernetes.**>
           @type elasticsearch
           host "elasticsearch-master"
@@ -100,19 +89,16 @@ spec:
           scheme "http"
           user "#{ENV['FLUENT_ELASTICSEARCH_USER']}"
           password "#{ENV['FLUENT_ELASTICSEARCH_PASSWORD']}"
-          index_name "k8s-logs.${tag}.%Y%m%d"
+          index_name "k8s-logs-%Y%m%d"
           
-          <buffer tag, time>
+          <buffer>
             @type file
             path /var/log/fluentd-buffer
             flush_mode interval
             flush_interval 10s
-            flush_thread_count 1
-            retry_type exponential_backoff
             retry_max_interval 30
             chunk_limit_size 2M
             total_limit_size 256M
-            overflow_action block
           </buffer>
         </match>
 
@@ -128,4 +114,4 @@ spec:
             name: elasticsearch-credentials
             key: password
       - name: FLUENT_LOG_LEVEL
-        value: "fatal" # Loggt nur kritische Fehler
+        value: "fatal"
