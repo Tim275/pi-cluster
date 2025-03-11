@@ -8,14 +8,19 @@ spec:
   chart:
     spec:
       chart: fluentd
-      version: "0.3.9"
+      # Try a more recent stable version
+      version: "0.4.2"
       sourceRef:
         kind: HelmRepository
         name: fluent
         namespace: logging
   values:
+    image:
+      tag: "v1.16-debian-1"
+
     kind: DaemonSet
 
+    # Simplify the configuration to avoid YAML parsing errors
     tolerations:
       - key: node-role.kubernetes.io/master
         operator: Exists
@@ -31,13 +36,13 @@ spec:
     livenessProbe: null
     readinessProbe: null
 
-    resources:
-      requests:
-        cpu: 100m
-        memory: 200Mi
-      limits:
-        cpu: 200m
-        memory: 400Mi
+    # Configure volumes
+    extraVolumeMounts:
+      - name: varlog
+        mountPath: /var/log
+      - name: varlibdockercontainers
+        mountPath: /var/lib/docker/containers
+        readOnly: true
 
     extraVolumes:
       - name: varlog
@@ -47,61 +52,7 @@ spec:
         hostPath:
           path: /var/lib/docker/containers
 
-    extraVolumeMounts:
-      - name: varlog
-        mountPath: /var/log
-      - name: varlibdockercontainers
-        mountPath: /var/lib/docker/containers
-        readOnly: true
-
-    plugins:
-      - fluent-plugin-kubernetes_metadata_filter
-
-    configMapConfigs:
-      fluent.conf: |-
-        <system>
-          log_level fatal
-        </system>
-
-        <source>
-          @type tail
-          path /var/log/containers/*.log
-          exclude_path ["/var/log/containers/*fluentd*", "/var/log/containers/*elastic*"]
-          pos_file /var/log/fluentd-containers.log.pos
-          tag kubernetes.*
-          read_from_head true
-          <parse>
-            @type regexp
-            expression /^(?<time>.+) (?<stream>stdout|stderr) [^ ]* (?<log>.*)$/
-            time_format %Y-%m-%dT%H:%M:%S.%NZ
-            keep_time_key true
-          </parse>
-        </source>
-
-        <filter kubernetes.**>
-          @type kubernetes_metadata
-        </filter>
-
-        <match kubernetes.**>
-          @type elasticsearch
-          host "elasticsearch-master"
-          port "9200"
-          scheme "http"
-          user "#{ENV['FLUENT_ELASTICSEARCH_USER']}"
-          password "#{ENV['FLUENT_ELASTICSEARCH_PASSWORD']}"
-          index_name "k8s-logs-%Y%m%d"
-          
-          <buffer>
-            @type file
-            path /var/log/fluentd-buffer
-            flush_mode interval
-            flush_interval 10s
-            retry_max_interval 30
-            chunk_limit_size 2M
-            total_limit_size 256M
-          </buffer>
-        </match>
-
+    # Environment variables
     env:
       - name: FLUENT_ELASTICSEARCH_USER
         valueFrom:
@@ -113,5 +64,43 @@ spec:
           secretKeyRef:
             name: elasticsearch-credentials
             key: password
-      - name: FLUENT_LOG_LEVEL
-        value: "fatal"
+
+    # Fluentd configuration as separate item to avoid indentation issues
+    configMapConfigs:
+      fluentd.conf: |
+        <source>
+          @type tail
+          path /var/log/containers/*.log
+          exclude_path ["/var/log/containers/*fluentd*", "/var/log/containers/*elastic*"]
+          pos_file /var/log/fluentd-containers.log.pos
+          tag kubernetes.*
+          read_from_head true
+          <parse>
+            @type json
+            time_key time
+            time_format %Y-%m-%dT%H:%M:%S.%NZ
+          </parse>
+        </source>
+
+        <filter kubernetes.**>
+          @type kubernetes_metadata
+        </filter>
+
+        <match kubernetes.**>
+          @type elasticsearch
+          host elasticsearch-master
+          port 9200
+          user "#{ENV['FLUENT_ELASTICSEARCH_USER']}"
+          password "#{ENV['FLUENT_ELASTICSEARCH_PASSWORD']}"
+          scheme http
+          index_name k8s-logs-%Y%m%d
+        </match>
+
+    # Set appropriate resource limits
+    resources:
+      requests:
+        cpu: 100m
+        memory: 200Mi
+      limits:
+        cpu: 200m
+        memory: 400Mi
