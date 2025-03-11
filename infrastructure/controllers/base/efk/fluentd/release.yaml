@@ -1,3 +1,4 @@
+# File: homelabtm/pi-cluster/infrastructure/controllers/base/efk/fluentd/release.yaml
 apiVersion: helm.toolkit.fluxcd.io/v2beta1
 kind: HelmRelease
 metadata:
@@ -8,7 +9,7 @@ spec:
   chart:
     spec:
       chart: fluentd
-      version: "0.3.9" # Using a newer stable version
+      version: "0.3.9"
       sourceRef:
         kind: HelmRepository
         name: fluent
