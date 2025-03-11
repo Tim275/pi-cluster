@@ -43,14 +43,12 @@ spec:
             match => { "path" => "/var/log/containers/%{DATA:pod_name}_%{DATA:namespace}_%{GREEDYDATA:container_name}\.log" }
           }
           
-          # Handle and clean up the log field
           if [log] {
-            # Skip logs with excessive backslashes (common issue with recursive logging)
+            # Skip logs with excessive backslashes
             if [log] =~ /\\{5,}/ {
               drop {}
             }
             
-            # Move log field to message
             mutate {
               rename => { "log" => "message" }
               add_field => {
@@ -83,13 +81,18 @@ spec:
     extraVolumeMounts:
       - name: varlog
         mountPath: /var/log
+        readOnly: true # Added readOnly to avoid permission issues
       - name: containers
         mountPath: /var/lib/docker/containers
         readOnly: true
 
+    # Remove runAsUser: 0 and use fsGroup instead
+    podSecurityContext:
+      fsGroup: 1000
+
     securityContext:
-      runAsUser: 0 # Root access is required to read container logs
-      privileged: true
+      # Remove runAsUser: 0
+      privileged: false # Changed to false for security
 
     resources:
       requests:
@@ -112,3 +115,17 @@ spec:
             key: password
       - name: LS_JAVA_OPTS
         value: "-Xmx256m -Xms256m"
+
+    # Add initContainer to fix permissions using officially approved pattern
+    extraInitContainers:
+      - name: logstash-init
+        image: busybox
+        command:
+          [
+            "sh",
+            "-c",
+            "mkdir -p /usr/share/logstash/data/sincedb && chmod -R 777 /usr/share/logstash/data",
+          ]
+        volumeMounts:
+          - name: logstash-data
+            mountPath: /usr/share/logstash/data
