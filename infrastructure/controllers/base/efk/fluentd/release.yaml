@@ -15,60 +15,40 @@ spec:
         namespace: logging
   install:
     timeout: 10m
-    remediation:
-      retries: 3
-  # Force recreate instead of trying to patch an existing StatefulSet
-  uninstall:
-    keepHistory: false
   upgrade:
-    remediation:
-      retries: 3
     timeout: 10m
+  # Important: Use emptyDir instead of PVC
   values:
     replicas: 1
     image: "docker.elastic.co/logstash/logstash"
     imageTag: "7.17.3"
 
-    # Use Deployment instead of StatefulSet - more flexible for upgrades
+    # Use Deployment instead of StatefulSet
     kind: Deployment
 
-    # Simple log directory structure
+    # Disable persistence to avoid PVC issues
     persistence:
-      enabled: true
-      storageClassName: "local-path"
-      accessMode: "ReadWriteOnce"
-      size: "2Gi"
+      enabled: false
 
-    # Resource limits to ensure it can schedule
+    # Reduced resource limits
     resources:
       requests:
         cpu: 100m
-        memory: 512Mi
+        memory: 256Mi
       limits:
-        cpu: 1000m
-        memory: 1Gi
+        cpu: 500m
+        memory: 512Mi
 
-    # Important for container log access
+    # Fix securityContext to avoid "breaks non-root policy" error
     securityContext:
-      runAsUser: 0
-      privileged: true
+      runAsUser: null
+      privileged: false
 
     podSecurityContext:
-      runAsUser: 0
-      fsGroup: 0
+      runAsUser: null
+      fsGroup: null
 
-    # Longer timeouts for startup
-    readinessProbe:
-      initialDelaySeconds: 60
-      periodSeconds: 10
-      timeoutSeconds: 5
-
-    livenessProbe:
-      initialDelaySeconds: 60
-      periodSeconds: 20
-      timeoutSeconds: 5
-
-    # Mount container logs
+    # Mount temp volume for sincedb
     extraVolumes:
       - name: varlog
         hostPath:
@@ -76,6 +56,8 @@ spec:
       - name: varlibdockercontainers
         hostPath:
           path: /var/lib/docker/containers
+      - name: logstash-data
+        emptyDir: {}
 
     extraVolumeMounts:
       - name: varlog
@@ -84,8 +66,10 @@ spec:
       - name: varlibdockercontainers
         mountPath: /var/lib/docker/containers
         readOnly: true
+      - name: logstash-data
+        mountPath: /usr/share/logstash/data
 
-    # Initialize sincedb directory for file inputs
+    # Fix volume mount name to match
     extraInitContainers:
       - name: init-sincedb
         image: busybox
@@ -95,14 +79,15 @@ spec:
             "-c",
             "mkdir -p /usr/share/logstash/data/sincedb && chmod -R 777 /usr/share/logstash/data",
           ]
+        securityContext:
+          runAsUser: 0
         volumeMounts:
-          - name: data
+          - name: logstash-data
             mountPath: /usr/share/logstash/data
 
-    # Optimized JVM settings
     extraEnv:
       - name: LS_JAVA_OPTS
-        value: "-Xms256m -Xmx512m"
+        value: "-Xms256m -Xmx256m"
       - name: ELASTICSEARCH_USER
         valueFrom:
           secretKeyRef:
@@ -114,17 +99,15 @@ spec:
             name: elasticsearch-credentials
             key: password
 
-    # Basic configuration
     logstashConfig:
       logstash.yml: |
         http.host: "0.0.0.0"
         path.data: /usr/share/logstash/data
         path.logs: /usr/share/logstash/logs
         log.level: info
-        pipeline.workers: 2
+        pipeline.workers: 1
         pipeline.batch.size: 125
 
-    # Simple pipeline configuration
     logstashPipeline:
       logstash.conf: |
         input {
@@ -139,18 +122,15 @@ spec:
         }
 
         filter {
-          # Extract pod metadata from file path
           grok {
             match => { "path" => "/var/log/containers/%{DATA:pod_name}_%{DATA:namespace}_%{GREEDYDATA:container_name}\.log" }
             remove_field => ["path"]
           }
-
-          # Skip excessive backslashes that cause recursion
+          
           if [log] =~ /\\{5,}/ {
             drop {}
           }
-
-          # Basic kubernetes metadata
+          
           mutate {
             add_field => {
               "kubernetes" => {
@@ -161,8 +141,7 @@ spec:
             }
             remove_field => ["namespace", "pod_name", "container_name"]
           }
-
-          # Make sure we have a timestamp
+          
           date {
             match => ["time", "ISO8601"]
             remove_field => ["time"]
@@ -175,9 +154,5 @@ spec:
             user => "${ELASTICSEARCH_USER}"
             password => "${ELASTICSEARCH_PASSWORD}"
             index => "logs-%{+YYYY.MM.dd}"
-            
-            # Use simple retry policy
-            retry_on_conflict => 5
-            action => "index"
           }
         }
