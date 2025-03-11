@@ -8,15 +8,24 @@ spec:
   chart:
     spec:
       chart: logstash
-      version: "7.17.3" # or your preferred version
+      version: "7.17.3"
       sourceRef:
         kind: HelmRepository
         name: elastic
         namespace: logging
   values:
     image: "docker.elastic.co/logstash/logstash"
-    imageTag: "7.17.3" # Match with your Elasticsearch version
+    imageTag: "7.17.3"
 
+    # Diese Zeile einzufügen behebt den HTTP-API-Fehler
+    logstashConfig:
+      logstash.yml: |
+        http.host: "0.0.0.0"
+        http.port: 9600
+        api.enabled: true
+        log.level: info
+
+    # Pipeline-Konfiguration vereinfacht
     logstashPipeline:
       logstash.conf: |
         input {
@@ -26,25 +35,6 @@ spec:
             start_position => "beginning"
             sincedb_path => "/usr/share/logstash/data/sincedb"
             codec => "json"
-            type => "container"
-          }
-        }
-
-        filter {
-          # Skip logs with excessive backslashes
-          if [log] =~ /\\{4,}/ {
-            drop {}
-          }
-          
-          # Extract kubernetes metadata
-          grok {
-            match => { "path" => "/var/log/containers/%{DATA:pod_name}_%{DATA:namespace}_%{GREEDYDATA:container_name}\.log" }
-          }
-          
-          # Add timestamps
-          date {
-            match => ["timestamp", "ISO8601"]
-            target => "@timestamp"
           }
         }
 
@@ -86,3 +76,12 @@ spec:
 
     persistence:
       enabled: true
+
+    # Health checks weniger strikt machen
+    readinessProbe:
+      httpGet:
+        path: /
+        port: http
+      initialDelaySeconds: 120
+      timeoutSeconds: 10
+      periodSeconds: 30
