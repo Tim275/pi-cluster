@@ -1,4 +1,4 @@
-# File: homelabtm/pi-cluster/infrastructure/controllers/base/efk/fluentd/release.yaml
+# File: infrastructure/controllers/base/efk/fluentd/release.yaml
 apiVersion: helm.toolkit.fluxcd.io/v2beta1
 kind: HelmRelease
 metadata:
@@ -17,6 +17,7 @@ spec:
   values:
     kind: DaemonSet
 
+    # Optimized configuration for Raspberry Pi
     configMapConfigs:
       fluent.conf: |-
         <source>
@@ -35,6 +36,7 @@ spec:
 
         <filter kubernetes.**>
           @type kubernetes_metadata
+          @id filter_kube_metadata
         </filter>
 
         <match kubernetes.**>
@@ -53,9 +55,11 @@ spec:
             retry_max_interval 30
             chunk_limit_size 2M
             total_limit_size 256M
+            flush_thread_count 2
           </buffer>
         </match>
 
+    # Allow execution on all nodes
     tolerations:
       - key: node-role.kubernetes.io/control-plane
         operator: Exists
@@ -64,6 +68,7 @@ spec:
         operator: Exists
         effect: NoSchedule
 
+    # Mount container logs
     extraVolumeMounts:
       - name: varlog
         mountPath: /var/log
@@ -79,6 +84,7 @@ spec:
         hostPath:
           path: /var/lib/docker/containers
 
+    # Required for log access
     securityContext:
       privileged: true
       runAsUser: 0
@@ -86,6 +92,7 @@ spec:
     plugins:
       - fluent-plugin-kubernetes_metadata_filter
 
+    # Lightweight resource settings for Pi
     resources:
       requests:
         cpu: 50m

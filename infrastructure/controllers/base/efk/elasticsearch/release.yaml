@@ -1,3 +1,4 @@
+# File: infrastructure/controllers/base/efk/elasticsearch/release.yaml
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
@@ -17,62 +18,40 @@ spec:
     clusterName: "elasticsearch"
     nodeGroup: "master"
 
-    # Two master nodes for high availability
+    # 2-node cluster configuration
     replicas: 2
     minimumMasterNodes: 1
 
-    # Force distribution of pods across nodes
-    antiAffinity: "hard"
-    topologySpreadConstraints:
-      - maxSkew: 1
-        topologyKey: kubernetes.io/hostname
-        whenUnsatisfiable: DoNotSchedule
-        labelSelector:
-          matchLabels:
-            app: elasticsearch-master
-
-    # Node affinity to specify which nodes can run ES pods
-    nodeAffinity:
-      requiredDuringSchedulingIgnoredDuringExecution:
-        nodeSelectorTerms:
-          - matchExpressions:
-              - key: kubernetes.io/hostname
-                operator: In
-                values:
-                  - master
-                  - p2
+    # Ensure pods are distributed across your nodes
+    antiAffinity: "soft"
 
     # Resources optimized for Raspberry Pi
-    # Update in elasticsearch/release.yaml
     resources:
       requests:
-        cpu: "250m"
+        cpu: "200m"
         memory: "512Mi"
       limits:
         cpu: "500m"
         memory: "1Gi"
 
-    # Reduce JVM heap size
+    # Reduce JVM heap size for Raspberry Pi
     esJavaOpts: "-Xmx256m -Xms256m"
 
-    # Storage configuration
+    # Storage configuration using local-path storage class
     volumeClaimTemplate:
       accessModes: ["ReadWriteOnce"]
       storageClassName: "local-path"
       resources:
         requests:
-          storage: 10Gi
+          storage: 5Gi
 
     # Security settings
     esConfig:
       elasticsearch.yml: |
         xpack.security.enabled: true
-        xpack.security.authc:
-          api_key.enabled: true
-          anonymous:
-            username: elastic
-            roles: superuser
-            authz_exception: false
+        xpack.security.transport.ssl.enabled: false
+        xpack.security.http.ssl.enabled: false
+        xpack.monitoring.collection.enabled: true
 
     # Add credentials from Secret
     extraEnvs:
