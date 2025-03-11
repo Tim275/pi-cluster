@@ -48,6 +48,96 @@ spec:
       privileged: true
       runAsUser: 0
 
+    # CRITICAL: Add tolerations to run on all nodes
+    tolerations:
+      - key: node-role.kubernetes.io/master
+        operator: Exists
+        effect: NoSchedule
+      - key: node-role.kubernetes.io/control-plane
+        operator: Exists
+        effect: NoSchedule
+
+    # CRITICAL: Add volume mounts to access logs
+    extraVolumes:
+      - name: varlog
+        hostPath:
+          path: /var/log
+      - name: varlibdockercontainers
+        hostPath:
+          path: /var/lib/docker/containers
+
+    extraVolumeMounts:
+      - name: varlog
+        mountPath: /var/log
+      - name: varlibdockercontainers
+        mountPath: /var/lib/docker/containers
+        readOnly: true
+
+    # Custom Fluentd config for separate indices
+    configMapConfigs:
+      fluent.conf: |-
+        # Container logs source
+        <source>
+          @type tail
+          path /var/log/containers/*.log
+          pos_file /var/log/fluentd-containers.log.pos
+          tag kubernetes.*
+          read_from_head true
+          <parse>
+            @type json
+            time_format %Y-%m-%dT%H:%M:%S.%NZ
+          </parse>
+        </source>
+
+        # Add Kubernetes metadata
+        <filter kubernetes.**>
+          @type kubernetes_metadata
+          kubernetes_url https://#{ENV['KUBERNETES_SERVICE_HOST']}:#{ENV['KUBERNETES_SERVICE_PORT']}
+          bearer_token_file /var/run/secrets/kubernetes.io/serviceaccount/token
+          ca_file /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+          skip_labels false
+          skip_annotations false
+        </filter>
+
+        # Route linkding namespace logs to a separate index
+        <match kubernetes.var.log.containers.**_linkding_**.log>
+          @type elasticsearch
+          host "#{ENV['FLUENT_ELASTICSEARCH_HOST']}"
+          port "#{ENV['FLUENT_ELASTICSEARCH_PORT']}"
+          scheme "#{ENV['FLUENT_ELASTICSEARCH_SCHEME']}"
+          user "#{ENV['FLUENT_ELASTICSEARCH_USER']}"
+          password "#{ENV['FLUENT_ELASTICSEARCH_PASSWORD']}"
+          index_name linkding-%{+YYYY.MM.dd}
+          include_timestamp true
+        </match>
+
+        # Route audiobookshelf namespace logs to a separate index
+        <match kubernetes.var.log.containers.**_audiobookshelf_**.log>
+          @type elasticsearch
+          host "#{ENV['FLUENT_ELASTICSEARCH_HOST']}"
+          port "#{ENV['FLUENT_ELASTICSEARCH_PORT']}"
+          scheme "#{ENV['FLUENT_ELASTICSEARCH_SCHEME']}"
+          user "#{ENV['FLUENT_ELASTICSEARCH_USER']}"
+          password "#{ENV['FLUENT_ELASTICSEARCH_PASSWORD']}"
+          index_name audiobookshelf-%{+YYYY.MM.dd}
+          include_timestamp true
+        </match>
+
+        # Route master node logs to a separate index
+        <match **>
+          @type copy
+          <store>
+            @type elasticsearch
+            host "#{ENV['FLUENT_ELASTICSEARCH_HOST']}"
+            port "#{ENV['FLUENT_ELASTICSEARCH_PORT']}"
+            scheme "#{ENV['FLUENT_ELASTICSEARCH_SCHEME']}"
+            user "#{ENV['FLUENT_ELASTICSEARCH_USER']}"
+            password "#{ENV['FLUENT_ELASTICSEARCH_PASSWORD']}"
+            index_name ${record['kubernetes.host'] == 'master' ? 'master' : 'worker'}-node-%{+YYYY.MM.dd}
+            include_timestamp true
+          </store>
+        </match>
+
     # Environment variables for Elasticsearch connection
     env:
       - name: FLUENT_ELASTICSEARCH_HOST
