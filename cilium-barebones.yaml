@@ -1,0 +1,54 @@
+# Ultra-minimal Cilium config - barebones only
+k8sServiceHost: "192.168.68.50"
+k8sServicePort: 6443
+
+# Explicitly disable everything optional
+hubble:
+  enabled: false
+  relay:
+    enabled: false
+  ui:
+    enabled: false
+kubeProxyReplacement: false
+encryption:
+  enabled: false
+bgp:
+  enabled: false
+bandwidthManager:
+  enabled: false
+hostFirewall:
+  enabled: false
+ipam:
+  mode: "kubernetes"
+
+# Basic CNI settings
+cni:
+  install: true
+  exclusive: false
+socketPath: "/run/k3s/containerd/containerd.sock"
+
+# Very minimal resources
+resources:
+  limits:
+    cpu: 100m
+    memory: 200Mi
+  requests:
+    cpu: 50m
+    memory: 100Mi
+operator:
+  replicas: 1
+  resources:
+    limits:
+      cpu: 100m
+      memory: 150Mi
+    requests:
+      cpu: 50m
+      memory: 100Mi
+
+# Allow running anywhere
+tolerations:
+- operator: Exists
+
+# Minimal tunnel configuration  
+tunnelProtocol: "vxlan"
+tunnel: "vxlan"

@@ -1,0 +1,48 @@
+# Minimal Cilium Config for Raspberry Pi
+kubeProxyReplacement: false
+k8sServiceHost: "192.168.68.50"  # Correct master node IP
+k8sServicePort: 6443
+
+# Disable hubble for simplicity & resources
+hubble:
+  enabled: false
+  relay:
+    enabled: false
+  ui:
+    enabled: false
+
+# Basic settings
+operator:
+  replicas: 1
+  resources:
+    limits:
+      cpu: 200m
+      memory: 256Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+# CNI settings for k3s
+cni:
+  install: true
+  exclusive: false
+socketPath: "/run/k3s/containerd/containerd.sock"
+
+# Network settings
+bpf:
+  masquerade: false
+routingMode: "tunnel"
+tunnelProtocol: "vxlan"
+
+# Global resource limits
+resources:
+  limits:
+    cpu: 200m
+    memory: 300Mi
+  requests:
+    cpu: 100m
+    memory: 200Mi
+
+# Make sure cilium can run on all nodes
+tolerations:
+- operator: Exists
