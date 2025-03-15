@@ -4,3 +4,6 @@ resources:
   - namespace.yaml
   - repository.yaml
   - release.yaml
+patchesStrategicMerge:
+  - grafana-service-patch.yaml
+  - ingress-patch.yaml
