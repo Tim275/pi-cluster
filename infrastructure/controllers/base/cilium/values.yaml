@@ -1,42 +1,48 @@
-# Pi optimierte Konfiguration für Cilium 1.16.x
+# Working Cilium configuration for Raspberry Pi K3s cluster
 kubeProxyReplacement: false
-k8sServiceHost: "192.168.68.55"
+k8sServiceHost: "192.168.68.50"
 k8sServicePort: 6443
 
-# NodePort aktivieren
-nodePort:
-  enabled: true
+# Resource limits for agent
+resources:
+  limits:
+    cpu: 200m
+    memory: 256Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
 
-# Ressourcenlimits für Raspberry Pi
+# Networking settings
+ipam:
+  mode: "kubernetes"
+tunnelProtocol: "vxlan"
+bpf:
+  masquerade: false
+
+# CNI settings for k3s
+cni:
+  install: true
+socketPath: "/run/k3s/containerd/containerd.sock"
+
+# Resource settings for operator
 operator:
   replicas: 1
   resources:
     limits:
-      cpu: 200m
-      memory: 256Mi
+      cpu: 100m
+      memory: 128Mi
+    requests:
+      cpu: 50m
+      memory: 64Mi
 
-# CNI-Konfiguration für k3s
-cni:
-  install: true
-
-# Container Runtime Integration - aktualisiert für v1.16
-socketPath: "/run/k3s/containerd/containerd.sock"
-
-# BPF Features - deaktiviert für bessere Stabilität auf Pi
-bpf:
-  masquerade: false
-
-# Routing-Modus für 1.16+
-routingMode: "tunnel"
-tunnelProtocol: "vxlan"
-
-# Diese Zeile hilft bei der Initialisierung
-nodeinit:
-  enabled: true
-
-# Hubble mit reduzierten Ressourcen für Pi
+# Hubble UI and metrics
 hubble:
   enabled: true
+  metrics:
+    enabled:
+      - drop
+      - flow
+      - tcp
   relay:
     enabled: true
     resources:
@@ -50,17 +56,15 @@ hubble:
     enabled: true
     resources:
       limits:
-        cpu: 100m
-        memory: 128Mi
-      requests:
         cpu: 50m
         memory: 64Mi
+      requests:
+        cpu: 20m
+        memory: 32Mi
+    service:
+      type: NodePort
+      nodePort: 30100
 
-# Globale Ressourcenlimits für Cilium-Pods
-resources:
-  limits:
-    cpu: 200m
-    memory: 300Mi
-  requests:
-    cpu: 100m
-    memory: 200Mi
+# Allow running on all nodes
+tolerations:
+  - operator: Exists
