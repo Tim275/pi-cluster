@@ -2,40 +2,43 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: audiobookshelf-config
+  namespace: audiobookshelf
   annotations:
-    kustomize.toolkit.fluxcd.io/reconcile: disabled # Verhindert Konflikte
+    kustomize.toolkit.fluxcd.io/reconcile: disabled
 spec:
   accessModes:
     - ReadWriteOnce
   resources:
     requests:
       storage: 1Gi
-  storageClassName: "" # Leerer String = Standard-StorageClass
+  storageClassName: local-path # K3s default storage class
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: audiobookshelf-metadata
+  namespace: audiobookshelf
   annotations:
-    kustomize.toolkit.fluxcd.io/reconcile: disabled # Verhindert Konflikte
+    kustomize.toolkit.fluxcd.io/reconcile: disabled
 spec:
   accessModes:
     - ReadWriteOnce
   resources:
     requests:
       storage: 1Gi
-  storageClassName: "" # Hinzufügen des leeren String
+  storageClassName: local-path # K3s default storage class
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: audiobookshelf-audiobooks
+  namespace: audiobookshelf
   annotations:
-    kustomize.toolkit.fluxcd.io/reconcile: disabled # Verhindert Konflikte
+    kustomize.toolkit.fluxcd.io/reconcile: disabled
 spec:
   accessModes:
     - ReadWriteOnce
   resources:
     requests:
-      storage: 1Gi
-  storageClassName: "" # Hinzufügen des leeren String
+      storage: 2Gi # Increased to 5Gi for audiobooks as they'll likely need more space
+  storageClassName: local-path # K3s default storage class
