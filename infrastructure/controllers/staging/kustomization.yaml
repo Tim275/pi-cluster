@@ -4,4 +4,4 @@ resources:
   - renovate
   - cloudnativepg
   - cilium
-  - efk
+  # - efk
