@@ -3,8 +3,8 @@ kind: PersistentVolumeClaim
 metadata:
   name: audiobookshelf-config
   namespace: audiobookshelf
-  annotations:
-    kustomize.toolkit.fluxcd.io/reconcile: disabled
+  # annotations:
+  #   kustomize.toolkit.fluxcd.io/reconcile: disabled
 spec:
   accessModes:
     - ReadWriteOnce
