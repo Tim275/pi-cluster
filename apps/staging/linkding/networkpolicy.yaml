@@ -8,7 +8,7 @@ spec:
   description: "Netzwerkrichtlinie für die Linkding Anwendung"
   endpointSelector:
     matchLabels:
-      app: linkding # Angepasst an das tatsächliche Label
+      app: linkding
   ingress:
     # Von allen Pods im Cluster
     - fromEndpoints:
@@ -21,6 +21,15 @@ spec:
     - fromEndpoints:
         - matchLabels:
             io.kubernetes.pod.namespace: postgresql-operator-system
+    # Explizit vom Cloudflared Pod (NEU)
+    - fromEndpoints:
+        - matchLabels:
+            app: cloudflared
+            io.kubernetes.pod.namespace: linkding
+      toPorts:
+        - ports:
+            - port: "9090"
+              protocol: TCP
   egress:
     # DNS-Abfragen erlauben
     - toEndpoints:
@@ -60,8 +69,9 @@ metadata:
 spec:
   description: "Netzwerkrichtlinie für die Linkding Datenbank"
   endpointSelector:
-    matchLabels:
-      app: linkding-database # Angepasst an das tatsächliche Label
+    matchExpressions:
+      - key: cnpg.io/cluster
+        operator: Exists
   ingress:
     # Von allen Pods im Cluster
     - fromEndpoints:
@@ -70,12 +80,24 @@ spec:
     - fromEndpoints:
         - matchLabels:
             io.kubernetes.pod.namespace: monitoring
-    # Vom PostgreSQL Operator
+    # Vom cnpg-system Namespace (GEÄNDERT - ohne Port-Einschränkung)
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: cnpg-system
+    # Vom PostgreSQL Operator (allgemein)
     - fromEndpoints:
         - matchLabels:
             io.kubernetes.pod.namespace: postgresql-operator-system
+    # Von pgAdmin in der databases Namespace (NEU)
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: databases
+      toPorts:
+        - ports:
+            - port: "5432"
+              protocol: TCP
   egress:
-    # Zu allen Pods im Cluster (wie bei Mischa)
+    # Zu allen Pods im Cluster
     - toEndpoints:
         - {}
     # DNS-Abfragen erlauben
@@ -115,9 +137,9 @@ spec:
   description: "Netzwerkrichtlinie für den Cloudflare Tunnel"
   endpointSelector:
     matchLabels:
-      app: cloudflared # Angepasst an das tatsächliche Label
+      app: cloudflared
   ingress:
-    # Von allen Pods im Cluster erlauben (wie bei Mischa)
+    # Von allen Pods im Cluster erlauben
     - fromEndpoints:
         - {}
   egress:
@@ -133,9 +155,18 @@ spec:
           rules:
             dns:
               - matchPattern: "*"
-    # Zu allen Pods im Cluster (wie bei Mischa)
+    # Zu allen Pods im Cluster
     - toEndpoints:
         - {}
+    # Explizit zu Linkding (NEU)
+    - toEndpoints:
+        - matchLabels:
+            app: linkding
+            io.kubernetes.pod.namespace: linkding
+      toPorts:
+        - ports:
+            - port: "9090"
+              protocol: TCP
     # Cloudflare-spezifische Verbindungen mit präzisen Protokollangaben
     - toEntities:
         - world
@@ -149,3 +180,45 @@ spec:
         - ports:
             - port: "7844"
               protocol: UDP
+---
+# Policy 4: CloudNative PostgreSQL Operator Zugriff (ENTFERNT - durch Policy 6 ersetzt)
+# ---
+# Policy 5: pgAdmin Zugriff
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: pgadmin-database-access
+  namespace: linkding
+spec:
+  description: "Erlaubt pgAdmin den Zugriff auf die Linkding Datenbank"
+  endpointSelector:
+    matchExpressions:
+      - key: cnpg.io/cluster
+        operator: Exists
+  ingress:
+    # Von pgAdmin Pod
+    - fromEndpoints:
+        - matchLabels:
+            app: pgadmin
+            io.kubernetes.pod.namespace: databases
+      toPorts:
+        - ports:
+            - port: "5432"
+              protocol: TCP
+---
+# Policy 6: CNPG System Access (NEU)
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-cnpg-system-access
+  namespace: linkding
+spec:
+  description: "Erlaubt uneingeschränkten Zugriff von allen CNPG-System Pods"
+  endpointSelector:
+    matchExpressions:
+      - key: cnpg.io/cluster
+        operator: Exists
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: cnpg-system
