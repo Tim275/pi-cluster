@@ -1,0 +1,151 @@
+# Policy 1: Linkding App
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: linkding-app
+  namespace: linkding
+spec:
+  description: "Netzwerkrichtlinie für die Linkding Anwendung"
+  endpointSelector:
+    matchLabels:
+      app: linkding # Angepasst an das tatsächliche Label
+  ingress:
+    # Von allen Pods im Cluster
+    - fromEndpoints:
+        - {}
+    # Von Monitoring-Namespace
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: monitoring
+    # Vom PostgreSQL Operator
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: postgresql-operator-system
+  egress:
+    # DNS-Abfragen erlauben
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: kube-system
+            k8s-app: kube-dns
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: UDP
+          rules:
+            dns:
+              - matchPattern: "*"
+    # Zu allen Pods im Cluster (wie bei Mischa)
+    - toEndpoints:
+        - {}
+    # Internet-Zugriff mit präzisen Protokollangaben
+    - toEntities:
+        - world
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP
+        - ports:
+            - port: "80"
+              protocol: TCP
+        - ports:
+            - port: "7844"
+              protocol: TCP
+---
+# Policy 2: Linkding Database
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: linkding-database
+  namespace: linkding
+spec:
+  description: "Netzwerkrichtlinie für die Linkding Datenbank"
+  endpointSelector:
+    matchLabels:
+      app: linkding-database # Angepasst an das tatsächliche Label
+  ingress:
+    # Von allen Pods im Cluster
+    - fromEndpoints:
+        - {}
+    # Von Monitoring-Namespace
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: monitoring
+    # Vom PostgreSQL Operator
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: postgresql-operator-system
+  egress:
+    # Zu allen Pods im Cluster (wie bei Mischa)
+    - toEndpoints:
+        - {}
+    # DNS-Abfragen erlauben
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: kube-system
+            k8s-app: kube-dns
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: UDP
+          rules:
+            dns:
+              - matchPattern: "*"
+    # Zugriff auf Kubernetes API
+    - toEntities:
+        - kube-apiserver
+      toPorts:
+        - ports:
+            - port: "6443"
+              protocol: TCP
+    # S3-Backups (nur HTTPS)
+    - toEntities:
+        - world
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP
+---
+# Policy 3: Cloudflared Tunnel
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: cloudflared-linkding
+  namespace: linkding
+spec:
+  description: "Netzwerkrichtlinie für den Cloudflare Tunnel"
+  endpointSelector:
+    matchLabels:
+      app: cloudflared # Angepasst an das tatsächliche Label
+  ingress:
+    # Von allen Pods im Cluster erlauben (wie bei Mischa)
+    - fromEndpoints:
+        - {}
+  egress:
+    # DNS-Abfragen erlauben
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: kube-system
+            k8s-app: kube-dns
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: UDP
+          rules:
+            dns:
+              - matchPattern: "*"
+    # Zu allen Pods im Cluster (wie bei Mischa)
+    - toEndpoints:
+        - {}
+    # Cloudflare-spezifische Verbindungen mit präzisen Protokollangaben
+    - toEntities:
+        - world
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP
+        - ports:
+            - port: "7844"
+              protocol: TCP
+        - ports:
+            - port: "7844"
+              protocol: UDP

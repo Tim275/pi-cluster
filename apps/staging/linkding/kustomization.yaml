@@ -12,3 +12,4 @@ resources:
   - database-secret.yaml
   - aws-credentials.yaml
   - scheduled-backup.yaml
+  - networkpolicy.yaml
