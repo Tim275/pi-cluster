@@ -7,5 +7,5 @@ resources:
   - ingress.yaml
   - secrets.yaml
   - networking.yaml
-  - storage.yaml
+  - pvc.yaml
   - deployment.yaml
