@@ -41,6 +41,11 @@ End User Applications
         <td><a href="https://www.audiobookshelf.org/">Audiobookshelf</a></td>
         <td>Self-hosted audiobook and podcast server</td>
     </tr>
+    <tr>
+        <td><img width="32" src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/svg/pgadmin.svg"></td>
+        <td><a href="https://www.pgadmin.org/">pgAdmin</a></td>
+        <td>Web-based PostgreSQL database management tool with credentials securely fetched from AWS Secrets Manager</td>
+    </tr>
 </table>
 
 ### Infrastructure
@@ -89,11 +94,22 @@ Everything needed to run my cluster & deploy my applications
         <td>Automated dependency updates</td>
     </tr>
     <tr>
-    <td><img width="32" src="https://cdn.prod.website-files.com/5eb586cf8a64e8125e18ebe7/62fced424b98d03e45ff79ed_AWS%20S3-sq.png"></td>
-    <td><a href="https://aws.amazon.com/s3/">AWS S3</a></td>
-    <td>Cloud object storage for database backups and disaster recovery</td>
-</tr>
+        <td><img width="32" src="https://cdn.prod.website-files.com/5eb586cf8a64e8125e18ebe7/62fced424b98d03e45ff79ed_AWS%20S3-sq.png"></td>
+        <td><a href="https://aws.amazon.com/s3/">AWS S3</a></td>
+        <td>Cloud object storage for database backups and disaster recovery</td>
+    </tr>
+    <tr>
+        <td><img width="32" src="https://cdn.jsdelivr.net/gh/external-secrets/external-secrets/docs/assets/imgs/logo-white.svg"></td>
+        <td><a href="https://external-secrets.io/">External Secrets Operator</a></td>
+        <td>Kubernetes operator that integrates external secret management systems like AWS Secrets Manager</td>
+    </tr>
+    <tr>
+        <td><img width="32" src="https://d2908q01vomqb2.cloudfront.net/22d200f8670dbdb3e253a90eee5098477c95c23d/2020/10/13/1-1.png"></td>
+        <td><a href="https://aws.amazon.com/secrets-manager/">AWS Secrets Manager</a></td>
+        <td>Centralized cloud-based secrets management service for storing and retrieving application credentials</td>
+    </tr>
 </table>
+
 ## Networking
 
 I use [K3s](https://k3s.io/) with its built-in networking capabilities, which provides a simple yet powerful solution for container networking.
@@ -104,6 +120,11 @@ My storage strategy revolves around persistent volumes managed by K3s with local
 
 ## Secret Management
 
-AWS S3 and SOPS are used to securely store my secrets. I use flux to decrypt and apply these secrets to my cluster, ensuring sensitive information remains protected.
+I use a multi-layered approach to secret management:
 
-Similar code found with 1 license type
+1. **AWS Secrets Manager** - Stores sensitive credentials like database passwords and service access keys
+2. **External Secrets Operator** - Pulls secrets from AWS Secrets Manager and creates corresponding Kubernetes secrets
+3. **SOPS** - Encrypts sensitive configuration files directly in the Git repository
+4. **Flux** - Handles decryption of SOPS-encrypted files during GitOps operations
+
+This approach allows applications like pgAdmin to fetch credentials securely at runtime without storing sensitive data in plain text within Kubernetes manifests or Git repositories.
