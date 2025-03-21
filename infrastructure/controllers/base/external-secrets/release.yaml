@@ -23,3 +23,6 @@ spec:
   values:
     webhook:
       port: 9443
+    certController:
+      enabled: true
+    installCRDs: true # Add this line to ensure CRDs are installed
