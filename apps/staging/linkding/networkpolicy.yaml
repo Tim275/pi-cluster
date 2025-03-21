@@ -1,41 +1,27 @@
-# Linkding namespace - default allow internal communication
+# Application policy
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
-  name: linkding-internal-comms
+  name: linkding-app
   namespace: linkding
 spec:
-  description: "Allow all pods within linkding namespace to communicate"
-  endpointSelector: {}
+  endpointSelector:
+    matchLabels:
+      app: linkding
   ingress:
-    # Allow all pods in the same namespace to communicate freely
     - fromEndpoints:
-        - matchLabels:
-            io.kubernetes.pod.namespace: linkding
-    # Allow traffic from monitoring namespace
+        - {}
     - fromEndpoints:
         - matchLabels:
             io.kubernetes.pod.namespace: monitoring
-    # Allow traffic from pgAdmin
-    - fromEndpoints:
-        - matchLabels:
-            app: pgadmin
-            io.kubernetes.pod.namespace: pgadmin
-    # Allow traffic from traefik ingress
-    - fromEndpoints:
-        - matchLabels:
-            io.kubernetes.pod.namespace: kube-system
-            name: traefik
-    # Allow CloudNativePG operator access to database
     - fromEndpoints:
         - matchLabels:
             io.kubernetes.pod.namespace: cnpg-system
   egress:
-    # Allow DNS access for all pods
     - toEndpoints:
         - matchLabels:
-            k8s-app: kube-dns
             io.kubernetes.pod.namespace: kube-system
+            k8s-app: kube-dns
       toPorts:
         - ports:
             - port: "53"
@@ -43,46 +29,45 @@ spec:
           rules:
             dns:
               - matchPattern: "*"
-        - ports:
-            - port: "53"
-              protocol: TCP
-    # Allow access to k8s API for CloudNativePG
-    - toEntities:
-        - kube-apiserver
-      toPorts:
-        - ports:
-            - port: "6443"
-              protocol: TCP
-    # Allow limited outbound internet access (HTTPS only)
+    - toEndpoints:
+        - {}
     - toEntities:
         - world
       toPorts:
         - ports:
             - port: "443"
-              protocol: TCP
+        - ports:
+            - port: "80"
+        - ports:
+            - port: "7844"
 ---
-# pgAdmin basic policy
+# Database policy
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
-  name: pgadmin-basic
-  namespace: pgadmin
+  name: linkding-database
+  namespace: linkding
 spec:
-  description: "Basic permissions for pgAdmin"
   endpointSelector:
-    matchLabels:
-      app: pgadmin
+    matchExpressions:
+      - key: cnpg.io/cluster
+        operator: Exists
   ingress:
-    # Allow traefik to access pgAdmin
+    - fromEndpoints:
+        - {}
     - fromEndpoints:
         - matchLabels:
-            io.kubernetes.pod.namespace: kube-system
+            io.kubernetes.pod.namespace: monitoring
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: cnpg-system
   egress:
-    # Allow DNS
+    - toEndpoints:
+        - {}
     - toEndpoints:
         - matchLabels:
-            k8s-app: kube-dns
             io.kubernetes.pod.namespace: kube-system
+            k8s-app: kube-dns
       toPorts:
         - ports:
             - port: "53"
@@ -90,10 +75,54 @@ spec:
           rules:
             dns:
               - matchPattern: "*"
+    - toEntities:
+        - kube-apiserver
+      toPorts:
         - ports:
-            - port: "53"
-              protocol: TCP
-    # Allow access to linkding namespace
+            - port: "6443"
+    - toEntities:
+        - world
+      toPorts:
+        - ports:
+            - port: "443"
+---
+# pgAdmin policy
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: pgadmin-policy
+  namespace: pgadmin
+spec:
+  endpointSelector:
+    matchLabels:
+      app: pgadmin
+  ingress:
+    - fromEndpoints:
+        - {}
+  egress:
+    - toEndpoints:
+        - {}
     - toEndpoints:
         - matchLabels:
-            io.kubernetes.pod.namespace: linkding
+            io.kubernetes.pod.namespace: kube-system
+            k8s-app: kube-dns
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: UDP
+          rules:
+            dns:
+              - matchPattern: "*"
+---
+# Default deny as a baseline
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: deny-all
+  namespace: linkding
+spec:
+  endpointSelector: {}
+  ingress:
+    - {}
+  egress:
+    - {}
