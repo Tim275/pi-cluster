@@ -99,7 +99,7 @@ Everything needed to run my cluster & deploy my applications
         <td>Cloud object storage for database backups and disaster recovery</td>
     </tr>
     <tr>
-        <td><img width="32" src="https://cdn.jsdelivr.net/gh/external-secrets/external-secrets/docs/assets/imgs/logo-white.svg"></td>
+        <td><img width="32" src="https://camo.githubusercontent.com/5926145ade5befaf2944f207cc20674864519e81d1b2c82123df6a45057fdca8/68747470733a2f2f7777772e7376677265706f2e636f6d2f646f776e6c6f61642f3437373036362f6c6f636b2e737667"></td>
         <td><a href="https://external-secrets.io/">External Secrets Operator</a></td>
         <td>Kubernetes operator that integrates external secret management systems like AWS Secrets Manager</td>
     </tr>
