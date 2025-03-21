@@ -1,27 +1,28 @@
-# Policy 1: Linkding App
+# Default deny all traffic
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: deny-all-linkding
+  namespace: linkding
+spec:
+  endpointSelector: {}
+  ingress:
+    - {}
+  egress:
+    - {}
+---
+# Linkding app policy
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
   name: linkding-app
   namespace: linkding
 spec:
-  description: "Netzwerkrichtlinie für die Linkding Anwendung"
+  description: "Network policy for Linkding application"
   endpointSelector:
     matchLabels:
       app: linkding
   ingress:
-    # Von allen Pods im Cluster
-    - fromEndpoints:
-        - {}
-    # Von Monitoring-Namespace
-    - fromEndpoints:
-        - matchLabels:
-            io.kubernetes.pod.namespace: monitoring
-    # Vom PostgreSQL Operator
-    - fromEndpoints:
-        - matchLabels:
-            io.kubernetes.pod.namespace: postgresql-operator-system
-    # Explizit vom Cloudflared Pod (NEU)
     - fromEndpoints:
         - matchLabels:
             app: cloudflared
@@ -30,8 +31,13 @@ spec:
         - ports:
             - port: "9090"
               protocol: TCP
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: monitoring
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: postgresql-operator-system
   egress:
-    # DNS-Abfragen erlauben
     - toEndpoints:
         - matchLabels:
             io.kubernetes.pod.namespace: kube-system
@@ -43,10 +49,17 @@ spec:
           rules:
             dns:
               - matchPattern: "*"
-    # Zu allen Pods im Cluster (wie bei Mischa)
+        - ports:
+            - port: "53"
+              protocol: TCP
     - toEndpoints:
-        - {}
-    # Internet-Zugriff mit präzisen Protokollangaben
+        - matchExpressions:
+            - key: cnpg.io/cluster
+              operator: Exists
+      toPorts:
+        - ports:
+            - port: "5432"
+              protocol: TCP
     - toEntities:
         - world
       toPorts:
@@ -56,169 +69,63 @@ spec:
         - ports:
             - port: "80"
               protocol: TCP
-        - ports:
-            - port: "7844"
-              protocol: TCP
 ---
-# Policy 2: Linkding Database
+# Database policy
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
-  name: linkding-database
+  name: database-access
   namespace: linkding
 spec:
-  description: "Netzwerkrichtlinie für die Linkding Datenbank"
+  description: "Allow access to Linkding databases"
   endpointSelector:
     matchExpressions:
       - key: cnpg.io/cluster
         operator: Exists
   ingress:
-    # Von allen Pods im Cluster
     - fromEndpoints:
-        - {}
-    # Von Monitoring-Namespace
-    - fromEndpoints:
-        - matchLabels:
-            io.kubernetes.pod.namespace: monitoring
-    # Vom cnpg-system Namespace (GEÄNDERT - ohne Port-Einschränkung)
-    - fromEndpoints:
-        - matchLabels:
-            io.kubernetes.pod.namespace: cnpg-system
-    # Vom PostgreSQL Operator (allgemein)
-    - fromEndpoints:
-        - matchLabels:
-            io.kubernetes.pod.namespace: postgresql-operator-system
-    # Von pgAdmin in der databases Namespace (NEU)
-    - fromEndpoints:
-        - matchLabels:
-            io.kubernetes.pod.namespace: databases
-      toPorts:
-        - ports:
-            - port: "5432"
-              protocol: TCP
-  egress:
-    # Zu allen Pods im Cluster
-    - toEndpoints:
-        - {}
-    # DNS-Abfragen erlauben
-    - toEndpoints:
-        - matchLabels:
-            io.kubernetes.pod.namespace: kube-system
-            k8s-app: kube-dns
-      toPorts:
-        - ports:
-            - port: "53"
-              protocol: UDP
-          rules:
-            dns:
-              - matchPattern: "*"
-    # Zugriff auf Kubernetes API
-    - toEntities:
-        - kube-apiserver
-      toPorts:
-        - ports:
-            - port: "6443"
-              protocol: TCP
-    # S3-Backups (nur HTTPS)
-    - toEntities:
-        - world
-      toPorts:
-        - ports:
-            - port: "443"
-              protocol: TCP
----
-# Policy 3: Cloudflared Tunnel
-apiVersion: cilium.io/v2
-kind: CiliumNetworkPolicy
-metadata:
-  name: cloudflared-linkding
-  namespace: linkding
-spec:
-  description: "Netzwerkrichtlinie für den Cloudflare Tunnel"
-  endpointSelector:
-    matchLabels:
-      app: cloudflared
-  ingress:
-    # Von allen Pods im Cluster erlauben
-    - fromEndpoints:
-        - {}
-  egress:
-    # DNS-Abfragen erlauben
-    - toEndpoints:
-        - matchLabels:
-            io.kubernetes.pod.namespace: kube-system
-            k8s-app: kube-dns
-      toPorts:
-        - ports:
-            - port: "53"
-              protocol: UDP
-          rules:
-            dns:
-              - matchPattern: "*"
-    # Zu allen Pods im Cluster
-    - toEndpoints:
-        - {}
-    # Explizit zu Linkding (NEU)
-    - toEndpoints:
         - matchLabels:
             app: linkding
-            io.kubernetes.pod.namespace: linkding
-      toPorts:
-        - ports:
-            - port: "9090"
-              protocol: TCP
-    # Cloudflare-spezifische Verbindungen mit präzisen Protokollangaben
-    - toEntities:
-        - world
-      toPorts:
-        - ports:
-            - port: "443"
-              protocol: TCP
-        - ports:
-            - port: "7844"
-              protocol: TCP
-        - ports:
-            - port: "7844"
-              protocol: UDP
----
-# Policy 4: CloudNative PostgreSQL Operator Zugriff (ENTFERNT - durch Policy 6 ersetzt)
-# ---
-# Policy 5: pgAdmin Zugriff
-apiVersion: cilium.io/v2
-kind: CiliumNetworkPolicy
-metadata:
-  name: pgadmin-database-access
-  namespace: linkding
-spec:
-  description: "Erlaubt pgAdmin den Zugriff auf die Linkding Datenbank"
-  endpointSelector:
-    matchExpressions:
-      - key: cnpg.io/cluster
-        operator: Exists
-  ingress:
-    # Von pgAdmin Pod
     - fromEndpoints:
         - matchLabels:
             app: pgadmin
-            io.kubernetes.pod.namespace: databases
-      toPorts:
-        - ports:
-            - port: "5432"
-              protocol: TCP
----
-# Policy 6: CNPG System Access (NEU)
-apiVersion: cilium.io/v2
-kind: CiliumNetworkPolicy
-metadata:
-  name: allow-cnpg-system-access
-  namespace: linkding
-spec:
-  description: "Erlaubt uneingeschränkten Zugriff von allen CNPG-System Pods"
-  endpointSelector:
-    matchExpressions:
-      - key: cnpg.io/cluster
-        operator: Exists
-  ingress:
+            io.kubernetes.pod.namespace: pgadmin
     - fromEndpoints:
         - matchLabels:
             io.kubernetes.pod.namespace: cnpg-system
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: monitoring
+---
+# pgAdmin policy
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: pgadmin-policy
+  namespace: pgadmin
+spec:
+  description: "Allow needed access for pgAdmin"
+  endpointSelector:
+    matchLabels:
+      app: pgadmin
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: kube-system
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: kube-system
+            k8s-app: kube-dns
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: UDP
+          rules:
+            dns:
+              - matchPattern: "*"
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: linkding
+        - matchLabels:
+            io.kubernetes.pod.namespace: external-secrets
