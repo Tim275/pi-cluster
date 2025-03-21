@@ -5,11 +5,16 @@ metadata:
   namespace: flux-system
 spec:
   interval: 1h
-  path: ./databases/data
-  prune: true
+  retryInterval: 1m
+  timeout: 5m
   sourceRef:
     kind: GitRepository
     name: flux-system
+  path: ./databases/data
+  prune: true
+  dependsOn:
+    - name: infrastructure-controllers
+    - name: infrastructure-configs
   decryption:
     provider: sops
     secretRef:
