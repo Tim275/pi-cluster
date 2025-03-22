@@ -1,73 +1,40 @@
-# Application policy
-apiVersion: cilium.io/v2
-kind: CiliumNetworkPolicy
-metadata:
-  name: linkding-app
-  namespace: linkding
-spec:
-  endpointSelector:
-    matchLabels:
-      app: linkding
-  ingress:
-    - fromEndpoints:
-        - {}
-    - fromEndpoints:
-        - matchLabels:
-            io.kubernetes.pod.namespace: monitoring
-    - fromEndpoints:
-        - matchLabels:
-            io.kubernetes.pod.namespace: cnpg-system
-  egress:
-    - toEndpoints:
-        - matchLabels:
-            io.kubernetes.pod.namespace: kube-system
-            k8s-app: kube-dns
-      toPorts:
-        - ports:
-            - port: "53"
-              protocol: UDP
-          rules:
-            dns:
-              - matchPattern: "*"
-    - toEndpoints:
-        - {}
-    - toEntities:
-        - world
-      toPorts:
-        - ports:
-            - port: "443"
-        - ports:
-            - port: "80"
-        - ports:
-            - port: "7844"
----
-# Database policy
+# Database policy for CloudNativePG databases
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
   name: linkding-database
   namespace: linkding
 spec:
+  # Match database pod labels exactly - critical for policy enforcement
   endpointSelector:
-    matchExpressions:
-      - key: cnpg.io/cluster
-        operator: Exists
+    matchLabels:
+      app: linkding-database
+      cnpg.io/cluster: linkding-db-staging
   ingress:
+    # Allow pgAdmin to connect
     - fromEndpoints:
-        - {}
+        - matchLabels:
+            app: pgadmin
+            io.kubernetes.pod.namespace: pgadmin
+      toPorts:
+        - ports:
+            - port: "5432"
+              protocol: TCP
+    # Allow linkding app to connect
+    - fromEndpoints:
+        - matchLabels:
+            app: linkding
+            io.kubernetes.pod.namespace: linkding
+    # Allow monitoring
     - fromEndpoints:
         - matchLabels:
             io.kubernetes.pod.namespace: monitoring
-    - fromEndpoints:
-        - matchLabels:
-            io.kubernetes.pod.namespace: cnpg-system
   egress:
-    - toEndpoints:
-        - {}
+    # DNS resolution (both TCP and UDP)
     - toEndpoints:
         - matchLabels:
-            io.kubernetes.pod.namespace: kube-system
             k8s-app: kube-dns
+            io.kubernetes.pod.namespace: kube-system
       toPorts:
         - ports:
             - port: "53"
@@ -75,16 +42,79 @@ spec:
           rules:
             dns:
               - matchPattern: "*"
+        - ports:
+            - port: "53"
+              protocol: TCP
+    # Kubernetes API access (needed for CloudNativePG)
     - toEntities:
         - kube-apiserver
-      toPorts:
-        - ports:
-            - port: "6443"
+    # AWS S3 access for backups
     - toEntities:
         - world
       toPorts:
         - ports:
             - port: "443"
+              protocol: TCP
+---
+# Application policy for linkding
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: linkding-app
+  namespace: linkding
+spec:
+  # Match application pod labels exactly
+  endpointSelector:
+    matchLabels:
+      app: linkding
+  ingress:
+    # Allow internal namespace access
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: linkding
+    # Allow monitoring
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: monitoring
+    # Allow Traefik
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: kube-system
+  egress:
+    # DNS resolution (both TCP and UDP)
+    - toEndpoints:
+        - matchLabels:
+            k8s-app: kube-dns
+            io.kubernetes.pod.namespace: kube-system
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: UDP
+          rules:
+            dns:
+              - matchPattern: "*"
+        - ports:
+            - port: "53"
+              protocol: TCP
+    # Database access
+    - toEndpoints:
+        - matchLabels:
+            app: linkding-database
+            io.kubernetes.pod.namespace: linkding
+      toPorts:
+        - ports:
+            - port: "5432"
+              protocol: TCP
+    # Internet access
+    - toEntities:
+        - world
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP
+        - ports:
+            - port: "80"
+              protocol: TCP
 ---
 # pgAdmin policy
 apiVersion: cilium.io/v2
@@ -93,19 +123,30 @@ metadata:
   name: pgadmin-policy
   namespace: pgadmin
 spec:
+  # Match pgAdmin pod labels exactly
   endpointSelector:
     matchLabels:
       app: pgadmin
   ingress:
+    # Allow Traefik access
     - fromEndpoints:
-        - {}
-  egress:
-    - toEndpoints:
-        - {}
-    - toEndpoints:
         - matchLabels:
             io.kubernetes.pod.namespace: kube-system
+  egress:
+    # Database access
+    - toEndpoints:
+        - matchLabels:
+            app: linkding-database
+            io.kubernetes.pod.namespace: linkding
+      toPorts:
+        - ports:
+            - port: "5432"
+              protocol: TCP
+    # DNS resolution (both TCP and UDP)
+    - toEndpoints:
+        - matchLabels:
             k8s-app: kube-dns
+            io.kubernetes.pod.namespace: kube-system
       toPorts:
         - ports:
             - port: "53"
@@ -113,16 +154,21 @@ spec:
           rules:
             dns:
               - matchPattern: "*"
----
-# Default deny as a baseline
-apiVersion: cilium.io/v2
-kind: CiliumNetworkPolicy
-metadata:
-  name: deny-all
-  namespace: linkding
-spec:
-  endpointSelector: {}
-  ingress:
-    - {}
-  egress:
-    - {}
+        - ports:
+            - port: "53"
+              protocol: TCP
+    # AWS Secrets Manager access
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: external-secrets
+# Delete all policies in linkding namespace
+#kubectl delete ciliumnetworkpolicies --all -n linkding
+
+# Delete all policies in pgadmin namespace
+#kubectl delete ciliumnetworkpolicies --all -n pgadmin
+
+# Delete any cluster-wide policies
+#kubectl delete ciliumclusterwidenetworkpolicies --all
+
+# Check if any policies remain
+#kubectl get cnp,ccnp -A
