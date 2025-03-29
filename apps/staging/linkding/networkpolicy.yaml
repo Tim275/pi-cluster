@@ -238,7 +238,7 @@ spec:
         - matchLabels:
             io.kubernetes.pod.namespace: external-secrets
 ---
-# NEW: Deny-all policy for linkding namespace
+# Best Practice
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:

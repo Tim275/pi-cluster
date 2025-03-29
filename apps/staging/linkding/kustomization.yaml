@@ -13,3 +13,4 @@ resources:
   - aws-credentials.yaml
   - scheduled-backup.yaml
   - networkpolicy.yaml
+  - postgres-custom-metrics.yaml

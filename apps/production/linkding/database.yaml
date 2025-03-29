@@ -1,16 +1,17 @@
 apiVersion: postgresql.cnpg.io/v1
 kind: Cluster
 metadata:
-  name: linkding-db-staging
+  name: linkding-db-production
   namespace: linkding
 spec:
-  description: Postgres database cluster for linkding
+  description: Postgres database cluster for linkding (Production)
   imageName: ghcr.io/cloudnative-pg/postgresql:16.6-30-bookworm
-  instances: 2 # + 1 replica
+  instances: 3 # mehr replicas für production
 
   inheritedMetadata:
     labels:
       app: linkding-database
+      environment: production
 
   bootstrap:
     initdb:
@@ -19,19 +20,17 @@ spec:
 
   monitoring:
     enablePodMonitor: true
-    ## zusätzliche postgresql-metriken für grafana
-    customQueriesConfigmap:
-      - name: postgres-custom-metrics
 
   storage:
-    size: 1Gi
+    size: 5Gi # Größeres Speichervolumen für Produktion
     pvcTemplate:
       accessModes:
         - ReadWriteOnce
+      storageClassName: local-path
 
   backup:
     barmanObjectStore:
-      destinationPath: "s3://piclusterhomelab/linkding/"
+      destinationPath: "s3://piclusterhomelab/linkding-production/"
       s3Credentials:
         accessKeyId:
           name: aws-creds
@@ -39,4 +38,4 @@ spec:
         secretAccessKey:
           name: aws-creds
           key: ACCESS_SECRET_KEY
-    retentionPolicy: 7d
+    retentionPolicy: 30d # Längere Aufbewahrungszeit für Backups

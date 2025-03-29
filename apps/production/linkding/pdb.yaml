@@ -1,0 +1,10 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: linkding-pdb
+  namespace: linkding
+spec:
+  minAvailable: 1 # minimum immer 1 pod
+  selector:
+    matchLabels:
+      app: linkding
