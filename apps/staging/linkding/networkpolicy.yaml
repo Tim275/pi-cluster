@@ -1,4 +1,3 @@
-# /Users/timour/Desktop/kubecraft/mealie/homelabtm/pi-cluster/apps/staging/linkding/networkpolicy.yaml
 # Database policy for CloudNativePG databases
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
@@ -155,6 +154,7 @@ spec:
     matchLabels:
       app: cloudflared
   ingress:
+    - {} # Leerer Eintrag statt null
     # Allow inbound connections (not typically needed for cloudflared)
   egress:
     # DNS resolution
@@ -238,28 +238,6 @@ spec:
     - toEndpoints:
         - matchLabels:
             io.kubernetes.pod.namespace: external-secrets
----
-# PostgreSQL Metrics Policy
-apiVersion: cilium.io/v2
-kind: CiliumNetworkPolicy
-metadata:
-  name: postgres-metrics-allow
-  namespace: linkding
-spec:
-  description: "Allow Prometheus to scrape PostgreSQL metrics"
-  endpointSelector:
-    matchLabels:
-      app: linkding-database
-      cnpg.io/cluster: linkding-db-staging
-  ingress:
-    - fromEndpoints:
-        - matchLabels:
-            app.kubernetes.io/name: prometheus
-            io.kubernetes.pod.namespace: monitoring
-      toPorts:
-        - ports:
-            - port: "9187" # PostgreSQL Exporter Port
-              protocol: TCP
 ---
 # Best Practice
 apiVersion: cilium.io/v2
