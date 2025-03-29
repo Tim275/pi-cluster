@@ -20,8 +20,9 @@ spec:
   monitoring:
     enablePodMonitor: true
     ## zusätzliche postgresql-metriken für grafana
-    customQueriesConfigmap:
+    customQueriesConfigMap:
       - name: postgres-custom-metrics
+        key: queries.yaml
 
   storage:
     size: 1Gi
