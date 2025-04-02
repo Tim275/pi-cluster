@@ -238,22 +238,23 @@ spec:
     - toEndpoints:
         - matchLabels:
             io.kubernetes.pod.namespace: external-secrets
----
-# Best Practice
-apiVersion: cilium.io/v2
-kind: CiliumNetworkPolicy
-metadata:
-  name: deny-all-linkding
-  namespace: linkding
-spec:
-  description: "Deny all traffic not explicitly allowed"
-  # This policy applies to all pods in the namespace
-  endpointSelector: {}
-  # Empty ingress and egress rules = deny all
-  ingress:
-    - {}
-  egress:
-    - {}
+# Comment out the deny-all policy section
+# ---
+# # Best Practice
+# apiVersion: cilium.io/v2
+# kind: CiliumNetworkPolicy
+# metadata:
+#   name: deny-all-linkding
+#   namespace: linkding
+# spec:
+#   description: "Deny all traffic not explicitly allowed"
+#   # This policy applies to all pods in the namespace
+#   endpointSelector: {}
+#   # Empty ingress and egress rules = deny all
+#   ingress:
+#     - {}
+#   egress:
+#     - {}
 # Delete all policies in linkding namespace
 #kubectl delete ciliumnetworkpolicies --all -n linkding
 
