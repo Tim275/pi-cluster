@@ -13,6 +13,8 @@ spec:
       labels:
         app: linkding
     spec:
+      nodeSelector:
+        kubernetes.io/hostname: p2 ##dddd
       securityContext:
         fsGroup: 33 # www-data group ID
         runAsUser: 33 # www-data user ID
