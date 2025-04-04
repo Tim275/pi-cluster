@@ -32,7 +32,7 @@ spec:
 
   backup:
     barmanObjectStore:
-      destinationPath: "s3://piclusterhomelab/linkding/"
+      destinationPath: "s3://piclusterhomelab/linkding-new/"
       s3Credentials:
         accessKeyId:
           name: aws-creds
