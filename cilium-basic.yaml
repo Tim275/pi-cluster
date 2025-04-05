@@ -1,0 +1,29 @@
+# Grundlegende Einstellungen
+kubeProxyReplacement: false
+k8sServiceHost: "192.168.68.50"
+k8sServicePort: 6443
+socketPath: "/run/k3s/containerd/containerd.sock"
+
+# Policy Enforcement deaktivieren
+policyEnforcement: "never"
+
+# IPAM-Konfiguration für K3s
+ipam:
+  mode: "kubernetes"
+
+# BPF-Konfiguration
+bpf:
+  hostRouting: true
+  masquerade: true
+
+# CNI-Konfiguration
+cni:
+  exclusive: true
+
+# Hubble deaktivieren für ersten Start
+hubble:
+  enabled: false
+
+# ClusterMesh deaktivieren für ersten Start  
+clustermesh:
+  useAPIServer: false

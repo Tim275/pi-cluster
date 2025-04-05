@@ -1,0 +1,64 @@
+# Grundlegende Einstellungen
+kubeProxyReplacement: false
+k8sServiceHost: "192.168.68.50" # Deine Master-Node IP
+k8sServicePort: 6443
+socketPath: "/run/k3s/containerd/containerd.sock"
+
+# KRITISCH: Policy Enforcement deaktivieren
+policyEnforcement: "never"
+
+# IPAM-Konfiguration für K3s
+ipam:
+  mode: "kubernetes"
+  operator:
+    clusterPoolIPv4PodCIDRList:
+      - "10.42.0.0/16"
+
+# BPF-Konfiguration - entscheidend für Performance
+bpf:
+  hostRouting: true
+  masquerade: true
+
+# CNI-Konfiguration - speziell für K3s
+cni:
+  exclusive: true
+
+# Resource-Einstellungen - optimiert für Raspberry Pi
+resources:
+  limits:
+    cpu: "300m"
+    memory: "512Mi"
+  requests:
+    cpu: "100m"
+    memory: "256Mi"
+
+# Operator-Einstellungen
+operator:
+  replicas: 1
+  resources:
+    limits:
+      cpu: "200m"
+      memory: "256Mi"
+    requests:
+      cpu: "50m"
+      memory: "128Mi"
+
+# Hubble für Monitoring
+hubble:
+  enabled: true
+  relay:
+    enabled: true
+  ui:
+    enabled: true
+  metrics:
+    enabled:
+      - "drop"
+      - "tcp"
+      - "flow"
+
+# ClusterMesh - vereinfacht
+clustermesh:
+  useAPIServer: true
+  apiserver:
+    service:
+      type: ClusterIP
