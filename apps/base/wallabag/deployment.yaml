@@ -29,11 +29,11 @@ spec:
           securityContext:
             allowPrivilegeEscalation: false
 
-          envFrom:
-            - configMapRef:
-                name: wallabag-configmap
-            - secretRef:
-                name: wallabag-container-env
+          #       envFrom:
+          #      - configMapRef:
+          #         name: wallabag-configmap
+          #     - secretRef:
+          #        name: wallabag-container-env
 
           ports:
             - containerPort: 80
