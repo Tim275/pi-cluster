@@ -48,6 +48,11 @@ End User Applications
         <td><a href="https://www.pgadmin.org/">pgAdmin</a></td>
         <td>Web-based PostgreSQL database management tool with credentials securely fetched from AWS Secrets Manager</td>
     </tr>
+    <tr>
+        <td><img width="32" src="https://raw.githubusercontent.com/gethomepage/homepage/master/logo.svg"></td>
+        <td><a href="https://github.com/gethomepage/homepage">Homepage</a></td>
+        <td>A modern dashboard for self-hosted applications</td>
+    </tr>
 </table>
 
 ### Infrastructure
@@ -137,5 +142,3 @@ I use a multi-layered approach to secret management:
 2. **External Secrets Operator** - Pulls secrets from AWS Secrets Manager and creates corresponding Kubernetes secrets
 3. **SOPS** - Encrypts sensitive configuration files directly in the Git repository
 4. **Flux** - Handles decryption of SOPS-encrypted files during GitOps operations
-
-This approach allows applications like pgAdmin to securely fetch credentials at runtime without storing sensitive data in plain text within Kubernetes manifests or Git repositories.
