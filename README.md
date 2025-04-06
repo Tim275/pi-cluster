@@ -34,10 +34,10 @@ End User Applications
         <th>Description</th>
     </tr>
     <tr>
-        <td><img width="32" src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/svg/linkding.svg"></td>
-        <td><a href="https://github.com/sissbruecker/linkding">Linkding</a></td>
-        <td>Self-hosted bookmark manager with browser extensions</td>
-    </tr>
+    <td><img width="32" src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/homepage.png"></td>
+    <td><a href="https://github.com/gethomepage/homepage">Homepage</a></td>
+    <td>A modern dashboard for self-hosted applications</td>
+</tr>
     <tr>
         <td><img width="32" src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/svg/audiobookshelf.svg"></td>
         <td><a href="https://www.audiobookshelf.org/">Audiobookshelf</a></td>
