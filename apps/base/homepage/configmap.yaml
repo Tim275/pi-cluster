@@ -1,0 +1,123 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: homepage
+  namespace: homepage
+  labels:
+    app.kubernetes.io/name: homepage
+data:
+  kubernetes.yaml: |
+    mode: cluster
+    options:
+      namespaces: []
+  settings.yaml: |
+    title: Timour's Homelab
+    theme: dark
+    language: en
+    headerStyle: clean
+    layout:
+      sidebar:
+        enabled: true
+        pinned: true
+        position: left
+  custom.css: ""
+  custom.js: ""
+  bookmarks.yaml: |
+    - Developer:
+        - Github:
+            - abbr: GH
+              href: https://github.com/Tim275
+              icon: github.png
+    - Social:
+        - LinkedIn:
+            - abbr: LI
+              href: https://www.linkedin.com/in/timourmiagol
+              icon: linkedin.png
+        - Reddit:
+            - icon: reddit.png
+              href: https://www.reddit.com/user/Tim257/
+              description: The front page of the internet
+  services.yaml: |
+    - Cluster Management:
+        - Flux CD:
+            href: "https://fluxcd.io"
+            description: "GitOps with Flux CD"
+            icon: "https://fluxcd.io/img/logos/flux-stacked-color.png"
+            statusCheck: true
+        - Renovate:
+            href: "https://www.whitesourcesoftware.com/free-developer-tools/renovate/"
+            description: "Automated dependency updates"
+            icon: "renovate.png"
+            statusCheck: true
+    - Infrastructure:
+        - Grafana:
+            href: "https://grafana.timourhomelab.org"
+            description: "Metrics & dashboards"
+            icon: "grafana.png"
+            statusCheck: true
+        - Hubble UI:
+            href: "https://hubble.timourhomelab.org"
+            description: "Cilium network visualization"
+            icon: "cilium.png"
+            statusCheck: true
+        - pgAdmin:
+            href: "https://pgadmin.timourhomelab.org"
+            description: "PostgreSQL management"
+            icon: "postgresql.png"
+            statusCheck: true
+        - Elasticsearch:
+            href: "https://elasticsearch.timourhomelab.org"
+            description: "Search engine and analytics (paused)"
+            icon: "elasticsearch.png"
+            statusCheck: true
+    - Applications:
+        - Linkding:
+            href: "https://ldpi.timourhomelab.org"
+            description: "Bookmark manager"
+            icon: "linkding.svg"
+            statusCheck: true
+        - Audiobookshelf:
+            href: "https://audiobooks.timourhomelab.org"
+            description: "Audiobook server"
+            icon: "audiobookshelf.svg"
+            statusCheck: true
+        - Wallabag:
+            href: "https://wallabag.timourhomelab.org"
+            description: "Read it later service (in the making)"
+            icon: "wallabag.png"
+            statusCheck: true
+    - External Tools:
+        - AWS Console:
+            href: "https://aws.amazon.com/console/"
+            description: "AWS management"
+            icon: "aws.png"
+        - Cloudflare:
+            href: "https://dash.cloudflare.com/"
+            description: "Tunnel management"
+            icon: "cloudflare.png"
+  widgets.yaml: |
+    - kubernetes:
+        cluster:
+          show: true
+          cpu: true
+          memory: true
+          showLabel: true
+          label: "Pi Cluster"
+        nodes:
+          show: true
+          cpu: true
+          memory: true
+          showLabel: true
+          warnings: true
+    - resources:
+        backend: resources
+        expanded: true
+        cpu: true
+        memory: true
+        disk: false
+    - search:
+        provider: duckduckgo
+        target: _blank
+        focus: true
+  docker.yaml: "{}"
+  providers.yaml: "{}"

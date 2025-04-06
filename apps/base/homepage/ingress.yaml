@@ -1,0 +1,31 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: homepage
+  namespace: homepage
+  labels:
+    app.kubernetes.io/name: homepage
+  annotations:
+    gethomepage.dev/description: "Homelab Dashboard"
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/group: "Cluster Management"
+    gethomepage.dev/icon: "homepage.png"
+    traefik.ingress.kubernetes.io/router.entrypoints: web
+    external-dns.alpha.kubernetes.io/hostname: homepage.timourhomelab.org
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: homepage.timourhomelab.org
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: homepage
+                port:
+                  number: 3000
+  # tls:
+  #   - hosts:
+  #       - homepage.mischavandenburg.net
+  #     secretName: homepage-ingress-production

@@ -58,7 +58,7 @@ Everything needed to run my cluster & deploy my applications
         <th>Name</th>
         <th>Description</th>
     </tr>
-   <tr>
+    <tr>
         <td><img width="32" src="https://cdn.jsdelivr.net/gh/cilium/cilium/Documentation/images/logo-solo.svg"></td>
         <td><a href="https://cilium.io/">Cilium</a></td>
         <td>eBPF-based networking, observability and security for Kubernetes</td>
@@ -108,7 +108,16 @@ Everything needed to run my cluster & deploy my applications
         <td><a href="https://aws.amazon.com/secrets-manager/">AWS Secrets Manager</a></td>
         <td>Centralized cloud-based secrets management service for storing and retrieving application credentials</td>
     </tr>
+    <tr>
+        <td><img width="32" src="https://via.placeholder.com/32?text=Elastic"></td>
+        <td><a href="https://www.elastic.co/">Elasticsearch</a></td>
+        <td>Search engine and analytics</td>
+    </tr>
 </table>
+
+## Cluster Management Interface
+
+My homelab is orchestrated using a combination of GitOps tools that ensure all configurations remain declarative and consistent. I use Flux CD for continuous deployment and Renovate for automated dependency updates. This central interface, accessible via [Homepage](http://homepage.timourhomelab.org), provides a complete overview of cluster health, installed apps, and infrastructure status.
 
 ## Networking
 
@@ -127,4 +136,4 @@ I use a multi-layered approach to secret management:
 3. **SOPS** - Encrypts sensitive configuration files directly in the Git repository
 4. **Flux** - Handles decryption of SOPS-encrypted files during GitOps operations
 
-This approach allows applications like pgAdmin to fetch credentials securely at runtime without storing sensitive data in plain text within Kubernetes manifests or Git repositories.
+This approach allows applications like pgAdmin to securely fetch credentials at runtime without storing sensitive data in plain text within Kubernetes manifests or Git repositories.
