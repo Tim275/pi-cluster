@@ -10,10 +10,16 @@ metadata:
     gethomepage.dev/enabled: "true"
     gethomepage.dev/group: "Cluster Management"
     gethomepage.dev/icon: "homepage.png"
-    traefik.ingress.kubernetes.io/router.entrypoints: web
+    traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
+    traefik.ingress.kubernetes.io/redirect-entrypoint: websecure
     external-dns.alpha.kubernetes.io/hostname: homepage.timourhomelab.org
+    cert-manager.io/cluster-issuer: letsencrypt-prod
 spec:
   ingressClassName: traefik
+  tls:
+    - hosts:
+        - homepage.timourhomelab.org
+      secretName: homepage-tls
   rules:
     - host: homepage.timourhomelab.org
       http:
