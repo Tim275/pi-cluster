@@ -33,6 +33,9 @@ spec:
           rules:
             dns:
               - matchPattern: "*"
+        - ports:
+            - port: "53"
+              protocol: TCP
     - toEndpoints:
         - {}
     - toEntities:
@@ -78,7 +81,6 @@ spec:
         - matchLabels:
             io.kubernetes.pod.namespace: cnpg-system
   egress:
-    # DNS-Regel
     - toEndpoints:
         - matchLabels:
             k8s-app: kube-dns
@@ -90,6 +92,9 @@ spec:
           rules:
             dns:
               - matchPattern: "*"
+        - ports:
+            - port: "53"
+              protocol: TCP
     # Erlaube Kommunikation mit anderen Database-Pods (für Replikation)
     - toEndpoints:
         - matchLabels:
@@ -135,7 +140,9 @@ spec:
           rules:
             dns:
               - matchPattern: "*"
-
+        - ports:
+            - port: "53"
+              protocol: TCP
     # Zugriff auf linkding app
     - toEndpoints:
         - matchLabels:
@@ -144,7 +151,6 @@ spec:
         - ports:
             - port: "9090"
               protocol: TCP
-
     # Internet-Zugriff
     - toEntities:
         - world
