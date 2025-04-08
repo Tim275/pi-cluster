@@ -5,5 +5,5 @@ resources:
   - ../../base/renovate/
   - ../../base/cloudnativepg/
   - ../../base/cilium/
-  #  - ../../base/efk
+  - ../../base/efk
   - ../../base/external-secrets/
