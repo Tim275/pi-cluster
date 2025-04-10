@@ -1,4 +1,3 @@
-# filepath: homelabtm/pi-cluster/infrastructure/controllers/base/cloudnativepg/release.yaml
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
@@ -18,5 +17,30 @@ spec:
   values:
     operator:
       enabled: true
+      ####//// AB hier neu ////#####
+      # Add resource limits for Pi hardware
+      resources:
+        requests:
+          cpu: 50m
+          memory: 128Mi
+        limits:
+          cpu: 200m
+          memory: 256Mi
+      # Schedule on your secondary node which likely has more available resources
+      nodeSelector:
+        kubernetes.io/hostname: p2
+      # Tolerations in case your nodes have taints
+      tolerations:
+        - key: "node-role.kubernetes.io/control-plane"
+          operator: "Exists"
+          effect: "NoSchedule"
     webhook:
       enabled: true
+      # Lighter resource limits for webhook
+      resources:
+        requests:
+          cpu: 50m
+          memory: 64Mi
+        limits:
+          cpu: 100m
+          memory: 128Mi
