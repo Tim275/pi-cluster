@@ -13,24 +13,25 @@ spec:
         kind: HelmRepository
         name: grafana
         namespace: monitoring
-      interval: 12h
   values:
+    # Wichtig: SingleBinary als deploymentMode konfigurieren
     deploymentMode: SingleBinary
-    loki:
-      auth_enabled: false
-      commonConfig:
-        replication_factor: 1
-      storage:
-        type: "filesystem"
-      schemaConfig:
-        configs:
-          - from: "2024-01-01"
-            store: tsdb
-            index:
-              prefix: loki_index_
-              period: 24h
-            object_store: filesystem
-            schema: v13
+
+    # Explizit alle anderen Komponenten deaktivieren
+    gateway:
+      enabled: false
+    chunks_cache:
+      enabled: false
+    results_cache:
+      enabled: false
+    write:
+      enabled: false
+    read:
+      enabled: false
+    backend:
+      enabled: false
+
+    # SingleBinary mit vernünftigen Ressourcenlimits
     singleBinary:
       replicas: 1
       resources:
@@ -42,14 +43,3 @@ spec:
           memory: 512Mi
       nodeSelector:
         kubernetes.io/hostname: p2
-    read:
-      replicas: 0
-    backend:
-      replicas: 0
-    write:
-      replicas: 0
-    monitoring:
-      selfMonitoring:
-        enabled: true
-        grafanaAgent:
-          installOperator: false
