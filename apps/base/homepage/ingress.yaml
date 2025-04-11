@@ -13,7 +13,7 @@ metadata:
     traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
     traefik.ingress.kubernetes.io/redirect-entrypoint: websecure
     external-dns.alpha.kubernetes.io/hostname: homepage.timourhomelab.org
-    cert-manager.io/cluster-issuer: letsencrypt-prod
+  #  cert-manager.io/cluster-issuer: letsencrypt-prod
 spec:
   ingressClassName: traefik
   # tls:
