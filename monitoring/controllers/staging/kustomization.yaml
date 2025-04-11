@@ -4,4 +4,6 @@ resources:
   - kube-prometheus-stack
   # - loki
   # - promtail
-  - grafana-agent
+  # - grafana-agent
+
+  ## grafana agent leitet logs und metrics an loki und prometheus weiter
