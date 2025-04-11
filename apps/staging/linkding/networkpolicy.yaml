@@ -176,3 +176,63 @@ spec:
     - {}
   egress:
     - {}
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-webhook
+  namespace: cnpg-system
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: cloudnative-pg
+      app.kubernetes.io/component: webhook
+  ingress:
+    # Erlaube Zugriff von allen Namespaces
+    - fromEndpoints:
+        - {}
+    # Expliziter Zugriff von Monitoring
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: monitoring
+  egress:
+    # DNS-Zugriff (UDP und TCP)
+    - toEndpoints:
+        - matchLabels:
+            k8s-app: kube-dns
+            io.kubernetes.pod.namespace: kube-system
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: UDP
+          rules:
+            dns:
+              - matchPattern: "*"
+        - ports:
+            - port: "53"
+              protocol: TCP
+    # Zugriff auf Kubernetes API Server
+    - toEntities:
+        - kube-apiserver
+      toPorts:
+        - ports:
+            - port: "6443"
+              protocol: TCP
+    # Zugriff auf andere CloudNativePG-Komponenten
+    - toEndpoints:
+        - matchLabels:
+            app.kubernetes.io/name: cloudnative-pg
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP
+    # Erlaube Zugriff auf beliebige Endpoints im Cluster
+    - toEndpoints:
+        - {}
+    # Internet-Zugriff wenn benötigt
+    - toEntities:
+        - world
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP

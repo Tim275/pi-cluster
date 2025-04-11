@@ -21,11 +21,11 @@ spec:
       # Add resource limits for Pi hardware
       resources:
         requests:
-          cpu: 50m
-          memory: 128Mi
+          cpu: 25m
+          memory: 64Mi
         limits:
-          cpu: 200m
-          memory: 256Mi
+          cpu: 100m
+          memory: 128Mi
       # Schedule on your secondary node which likely has more available resources
       nodeSelector:
         kubernetes.io/hostname: p2
