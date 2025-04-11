@@ -16,10 +16,10 @@ metadata:
     cert-manager.io/cluster-issuer: letsencrypt-prod
 spec:
   ingressClassName: traefik
-  tls:
-    - hosts:
-        - homepage.timourhomelab.org
-      secretName: homepage-tls
+  # tls:
+  #   - hosts:
+  #      - homepage.timourhomelab.org
+  #    secretName: homepage-tls
   rules:
     - host: homepage.timourhomelab.org
       http:
