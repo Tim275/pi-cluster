@@ -21,10 +21,10 @@ spec:
       # Add resource limits for Pi hardware
       resources:
         requests:
-          cpu: 25m
-          memory: 64Mi
-        limits:
           cpu: 100m
+          memory: 128Mi
+        limits:
+          cpu: 200m
           memory: 128Mi
       # Schedule on your secondary node which likely has more available resources
       nodeSelector:
@@ -35,7 +35,7 @@ spec:
           operator: "Exists"
           effect: "NoSchedule"
     webhook:
-      enabled: true
+      enabled: false
       # Lighter resource limits for webhook
       resources:
         requests:
