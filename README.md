@@ -75,6 +75,11 @@ Everything needed to run my cluster & deploy my applications
         <td><a href="https://developers.cloudflare.com/cloudflare-one/">Cloudflare Zero Trust</a></td>
         <td>Used for private tunnels to expose public services (without requiring a public IP).</td>
     </tr>
+      <tr>
+        <td><img width="32" src="https://cdn.brandfetch.io/idtKvYf7_4/w/256/h/256/theme/dark/icon.png"></td>
+        <td><a href="https://cert-manager.io/">Cert Manager</a></td>
+        <td>X.509 certificate management for Kubernetes with Let's Encrypt integration</td>
+    </tr>
     <tr>
         <td><img width="32" src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/postgresql.svg"></td>
         <td><a href="https://cloudnative-pg.io/">CloudNativePG</a></td>
