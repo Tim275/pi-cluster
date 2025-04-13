@@ -1,0 +1,39 @@
+# Minimale Komponenten
+helmController:
+  create: false
+notificationController:
+  create: false
+sourceController:
+  create: true
+  resources:
+    limits:
+      cpu: 100m
+      memory: 256Mi
+    requests:
+      cpu: 25m
+      memory: 64Mi
+  env:
+  - name: GOGC
+    value: "20"
+  - name: GOMAXPROCS 
+    value: "1"
+  - name: GOMEMLIMIT
+    value: "200MiB"
+  - name: HELM_CACHE_DISABLE
+    value: "true"
+kustomizeController:
+  create: true
+  resources:
+    limits:
+      cpu: 100m
+      memory: 256Mi
+    requests:
+      cpu: 25m
+      memory: 64Mi
+  env:
+  - name: GOGC
+    value: "20"
+  - name: GOMAXPROCS 
+    value: "1"
+  - name: GOMEMLIMIT
+    value: "200MiB"

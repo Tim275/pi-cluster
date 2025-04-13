@@ -7,3 +7,4 @@ resources:
   - ../../base/cilium/
   - ../../base/efk
   - ../../base/external-secrets/
+  - ../../base/cert-manager/

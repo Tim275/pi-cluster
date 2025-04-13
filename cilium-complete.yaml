@@ -1,0 +1,48 @@
+# K3s-spezifische Einstellungen
+k8sServiceHost: "192.168.68.50"
+k8sServicePort: 6443
+socketPath: "/run/k3s/containerd/containerd.sock"
+
+# Wichtige Pi-Parameter
+enableNodePort: true
+operator:
+  replicas: 1
+
+# Netzwerkeinstellungen
+kubeProxyReplacement: false
+policyEnforcement: "never"
+ipam:
+  mode: "kubernetes"
+bpf:
+  hostRouting: true
+  masquerade: true
+cni:
+  exclusive: true
+
+# Envoy als DaemonSet explizit aktivieren
+envoy:
+  enabled: true
+  useProxyLib: false  # Deaktiviert embedded mode
+
+# Hubble vollständig aktivieren
+hubble:
+  enabled: true
+  metrics:
+    enabled:
+      - dns:query
+      - drop
+      - tcp
+      - flow
+      - port-distribution
+  relay:
+    enabled: true
+  ui:
+    enabled: true
+
+# Ressourcenanpassungen für Raspberry Pi
+resources:
+  limits:
+    memory: 500Mi
+  requests:
+    cpu: 100m
+    memory: 200Mi
