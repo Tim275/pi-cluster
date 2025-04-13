@@ -6,3 +6,4 @@ resources:
   - cilium
   # - efk
   - external-secrets
+  - cert-manager
