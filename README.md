@@ -76,7 +76,7 @@ Everything needed to run my cluster & deploy my applications
         <td>Used for private tunnels to expose public services (without requiring a public IP).</td>
     </tr>
       <tr>
-        <td><img width="32" src="https://cdn.brandfetch.io/idtKvYf7_4/w/256/h/256/theme/dark/icon.png"></td>
+        <td><img width="32" src="https://camo.githubusercontent.com/662c24a27156a7786f976a03eb81891d7cee8c289c19eb474e8f4112624e0138/68747470733a2f2f63646e2e6a7364656c6976722e6e65742f67682f77616c6b78636f64652f64617368626f6172642d69636f6e732f7376672f636572742d6d616e616765722e737667"></td>
         <td><a href="https://cert-manager.io/">Cert Manager</a></td>
         <td>X.509 certificate management for Kubernetes with Let's Encrypt integration</td>
     </tr>
