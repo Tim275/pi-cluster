@@ -5,10 +5,12 @@ metadata:
 spec:
   acme:
     server: https://acme-staging-v02.api.letsencrypt.org/directory
-    email: timour.miagol@outlook.de # Ersetze dies mit deiner E-Mail
+    email: timour.miagol@outlook.de # Ändere dies zu deiner E-Mail-Adresse
     privateKeySecretRef:
       name: letsencrypt-staging
     solvers:
-      - http01:
-          ingress:
-            class: traefik
+      - dns01:
+          cloudflare:
+            apiTokenSecretRef:
+              name: cloudflare-api-token-secret
+              key: api-token
