@@ -147,3 +147,4 @@ I use a multi-layered approach to secret management:
 2. **External Secrets Operator** - Pulls secrets from AWS Secrets Manager and creates corresponding Kubernetes secrets
 3. **SOPS** - Encrypts sensitive configuration files directly in the Git repository
 4. **Flux** - Handles decryption of SOPS-encrypted files during GitOps operations
+#
