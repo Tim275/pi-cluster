@@ -12,14 +12,14 @@ data:
       namespaces: []
   settings.yaml: |
     title: Timour's Homelab
-    theme: dark
-    language: en
-    headerStyle: clean
-    layout:
-      sidebar:
-        enabled: true
-        pinned: true
-        position: left
+  #  theme: dark
+  #  language: en
+  #  headerStyle: clean
+  #  layout:
+  #   sidebar:
+  #     enabled: true
+  #     pinned: true
+  #     position: left
   custom.css: ""
   custom.js: ""
   bookmarks.yaml: |
@@ -49,6 +49,16 @@ data:
             description: "Automated dependency updates"
             icon: "renovate.png"
             statusCheck: true
+        - Cert Manager:
+            href: "https://cert-manager.io/"
+            description: "X.509 certificate management for Kubernetes"
+            icon: "cert-manager.svg"
+            statusCheck: true
+        - External Secrets:
+            href: "https://external-secrets.io/"
+            description: "Kubernetes secrets management"
+            icon: "https://camo.githubusercontent.com/5926145ade5befaf2944f207cc20674864519e81d1b2c82123df6a45057fdca8/68747470733a2f2f7777772e7376677265706f2e636f6d2f646f776e6c6f61642f3437373036362f6c6f636b2e737667"
+            statusCheck: true
     - Infrastructure:
         - Grafana:
             href: "https://grafana.timourhomelab.org"
@@ -60,15 +70,20 @@ data:
             description: "Cilium network visualization"
             icon: "cilium.png"
             statusCheck: true
-        - pgAdmin:
-            href: "https://pgadmin.timourhomelab.org"
-            description: "PostgreSQL management"
-            icon: "postgresql.png"
-            statusCheck: true
         - Elasticsearch:
             href: "https://elasticsearch.timourhomelab.org"
-            description: "Search engine and analytics (paused)"
+            description: "Search engine and analytics"
             icon: "elasticsearch.png"
+            statusCheck: true
+        - Prometheus:
+            href: "https://prometheus.timourhomelab.org"
+            description: "Monitoring system and time series database"
+            icon: "prometheus.svg"
+            statusCheck: true
+        - CloudNativePG:
+            href: "https://cloudnative-pg.io/"
+            description: "PostgreSQL operator with AWS S3 backups"
+            icon: "postgresql.svg"
             statusCheck: true
     - Applications:
         - Linkding:
@@ -86,6 +101,11 @@ data:
             description: "Read it later service (in the making)"
             icon: "wallabag.png"
             statusCheck: true
+        - pgAdmin:
+            href: "https://pgadmin.timourhomelab.org"
+            description: "PostgreSQL management"
+            icon: "postgresql.png"
+            statusCheck: true
     - External Tools:
         - AWS Console:
             href: "https://aws.amazon.com/console/"
@@ -93,8 +113,12 @@ data:
             icon: "aws.png"
         - Cloudflare:
             href: "https://dash.cloudflare.com/"
-            description: "Tunnel management"
+            description: "Tunnel & DNS management"
             icon: "cloudflare.png"
+        - Cloudflare Zero Trust:
+            href: "https://dash.teams.cloudflare.com/"
+            description: "Private tunnels for service exposure"
+            icon: "cloudflare-zero-trust.png"
   widgets.yaml: |
     - kubernetes:
         cluster:
