@@ -5,7 +5,7 @@ metadata:
   name: linkding-db-staging-backup
   namespace: linkding
 spec:
-  schedule: "0 8 * * *" # Jeden Tag um 8:00 Uhr Berlin Zeit
+  schedule: "0 8 1 * *" # Jeden 1. Tag des Monats um 8:00 Uhr Berlin Zeit
   backupOwnerReference: cluster
   cluster:
     name: linkding-db-staging
