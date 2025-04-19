@@ -14,7 +14,7 @@ I use [K3s](https://k3s.io/) to set up my cluster. I prefer K3s because it is li
 
 ## :computer: Hardware
 
-![alt text](assets/hardwareraspberry.png)
+<img src="assets/hardwareraspberry.png" alt="Raspberry Pi Cluster" width="50%"/>
 
 ### Nodes
 
