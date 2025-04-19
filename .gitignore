@@ -8,3 +8,4 @@ keys
 hubble-ui-ingress.yaml
 hubble-ui-values.yaml
 .github
+value-file

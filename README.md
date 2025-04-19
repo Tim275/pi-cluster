@@ -14,6 +14,8 @@ I use [K3s](https://k3s.io/) to set up my cluster. I prefer K3s because it is li
 
 ## :computer: Hardware
 
+![alt text](image.png)
+
 ### Nodes
 
 I use Raspberry Pi computers for my cluster, which offer great performance in a small form factor with minimal power consumption.
@@ -147,4 +149,5 @@ I use a multi-layered approach to secret management:
 2. **External Secrets Operator** - Pulls secrets from AWS Secrets Manager and creates corresponding Kubernetes secrets
 3. **SOPS** - Encrypts sensitive configuration files directly in the Git repository
 4. **Flux** - Handles decryption of SOPS-encrypted files during GitOps operations
+
 #
