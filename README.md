@@ -14,15 +14,15 @@ I use [K3s](https://k3s.io/) to set up my cluster. I prefer K3s because it is li
 
 ## :computer: Hardware
 
-<img src="assets/hardwareraspberry.png" alt="Raspberry Pi Cluster" width="40%" height="50%"/>
+<img src="assets/hardwareraspberry.png" alt="Raspberry Pi Cluster" width="50%"/>
 
 ### Nodes
 
 I use Raspberry Pi computers for my cluster, which offer great performance in a small form factor with minimal power consumption.
 
-Raspberry Pi 5 8GB RAM (Master Node)
-Raspberry Pi 5 8GB RAM (Worker Node)
-Raspberry Pi 5 16GB RAM (Worker Node)
+- Raspberry Pi 5 8GB RAM (Master Node)
+- Raspberry Pi 5 8GB RAM (Worker Node)
+- Raspberry Pi 5 16GB RAM (Worker Node/Data Node)
 
 ## :rocket: Installed Apps & Tools
 
