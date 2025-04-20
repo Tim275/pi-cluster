@@ -20,8 +20,9 @@ I use [K3s](https://k3s.io/) to set up my cluster. I prefer K3s because it is li
 
 I use Raspberry Pi computers for my cluster, which offer great performance in a small form factor with minimal power consumption.
 
-- Raspberry Pi 4 Model B 8GB RAM (Master Node)
-- Raspberry Pi 4 Model B 8GB RAM (Worker Node)
+Raspberry Pi 5 Model B 8GB RAM (Master Node)
+Raspberry Pi 5 Model B 8GB RAM (Worker Node)
+Raspberry Pi 5 Model B 16GB RAM (Worker Node)
 
 ## :rocket: Installed Apps & Tools
 
