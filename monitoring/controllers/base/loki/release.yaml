@@ -29,19 +29,13 @@ spec:
             index:
               prefix: loki_index_
               period: 24h
-            object_store: filesystem
+            object_store: filesystem # we're storing on filesystem so there's no real persistence here.
             schema: v13
     singleBinary:
       replicas: 1
-      resources:
-        requests:
-          cpu: 50m
-          memory: 128Mi
-        limits:
-          cpu: 200m
-          memory: 512Mi
-      nodeSelector:
-        kubernetes.io/hostname: p2
+      # New: Node selector to target p3 node
+      nodeSelector: # New: Target specific node with 16GB RAM
+        kubernetes.io/hostname: p3 # New: Select p3 node for Loki deployment
     read:
       replicas: 0
     backend:
@@ -53,3 +47,8 @@ spec:
         enabled: true
         grafanaAgent:
           installOperator: false
+      # dashboards:
+      #   enabled: false
+      # rules:
+      #   enabled: false
+      #   alerting: false
