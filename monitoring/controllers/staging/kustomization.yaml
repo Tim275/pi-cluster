@@ -3,8 +3,8 @@ kind: Kustomization
 resources:
   ### alertmanager , prometheusund grafana
   - kube-prometheus-stack
-  # - loki
-  # - promtail
-  # - grafana-agent
+  - loki
+    - promtail
+    - grafana-agent
 
   ## grafana agent leitet logs und metrics an loki und prometheus weiter
