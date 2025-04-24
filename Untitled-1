@@ -1,0 +1,25 @@
+controllers/
+  base/
+    longhorn/
+      kustomization.yaml       # Haupt-Kustomize-Datei
+      namespace.yaml           # Longhorn-Namespace
+      release.yaml             # Helm-Release für Longhorn
+      repository.yaml          # Longhorn-Helm-Repository
+      values.yaml              # Longhorn-Konfigurationswerte
+    backup-system/
+      kustomization.yaml
+      namespace.yaml
+      csi-snapshotter/
+        kustomization.yaml
+        snapshotter.yaml       # Externe Snapshotter-Komponenten
+      velero/
+        release.yaml           # Velero-Helm-Release
+        repository.yaml        # Velero-Helm-Repository
+        values.yaml            # Konfiguration mit AWS S3 statt MinIO
+        volume-snapshot-class.yaml
+        schedule.yaml          # Backup-Zeitplan
+  staging/
+    longhorn/
+      kustomization.yaml       # Verweist auf Base
+    backup-system/
+      kustomization.yaml       # Verweist auf Base

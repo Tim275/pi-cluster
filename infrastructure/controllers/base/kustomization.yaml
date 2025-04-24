@@ -8,3 +8,4 @@ resources:
   - ../../base/efk
   - ../../base/external-secrets/
   - ../../base/cert-manager/
+  - ../../base/longhorn/

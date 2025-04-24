@@ -1,0 +1,23 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: longhorn
+  namespace: longhorn-system
+spec:
+  interval: 15m
+  chart:
+    spec:
+      chart: longhorn
+      version: "1.5.1"
+      sourceRef:
+        kind: HelmRepository
+        name: longhorn
+        namespace: longhorn-system
+  values:
+    persistence:
+      defaultClass: true
+      defaultClassReplicaCount: 2
+    defaultSettings:
+      # Optimiert für Raspberry Pi
+      guaranteedEngineManagerCPU: 0.1
+      guaranteedReplicaManagerCPU: 0.1

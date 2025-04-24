@@ -7,3 +7,4 @@ resources:
   # - efk
   - external-secrets
   - cert-manager
+  - longhorn
