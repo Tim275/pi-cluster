@@ -4,6 +4,6 @@ resources:
   - renovate
   - cloudnativepg
   - cilium
-  - efk
+  # - efk
   - external-secrets
   - cert-manager
