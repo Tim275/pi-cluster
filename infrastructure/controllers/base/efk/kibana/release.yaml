@@ -14,7 +14,10 @@ spec:
         name: elastic
         namespace: logging
   values:
-    # Enhanced resources for P3
+    # Place on same node as Elasticsearch
+    nodeSelector:
+      kubernetes.io/hostname: p3 # Replace with your actual node name
+
     resources:
       requests:
         cpu: "500m"
@@ -23,10 +26,9 @@ spec:
         cpu: "1000m"
         memory: "2Gi"
 
-    # Connect to Elasticsearch
     elasticsearchHosts: "http://elasticsearch-master:9200"
 
-    # Add ingress
+    # Configure ingress
     ingress:
       enabled: true
       ingressClassName: traefik

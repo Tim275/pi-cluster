@@ -16,7 +16,7 @@ spec:
   values:
     kind: DaemonSet
 
-    # Run on all nodes
+    # Run on ALL nodes to collect logs
     tolerations:
       - key: node-role.kubernetes.io/control-plane
         operator: Exists
@@ -56,16 +56,15 @@ spec:
     plugins:
       - fluent-plugin-kubernetes_metadata_filter
 
-    # Increased resources for P3 system
+    # Resource requests appropriate for collector nodes
     resources:
       requests:
-        cpu: 200m
-        memory: 300Mi
+        cpu: 50m
+        memory: 100Mi
       limits:
-        cpu: 500m
-        memory: 500Mi
+        cpu: 100m
+        memory: 200Mi
 
-    # Configuration for Elasticsearch with larger buffer
     env:
       - name: FLUENT_ELASTICSEARCH_HOST
         value: "elasticsearch-master"
@@ -76,7 +75,7 @@ spec:
       - name: FLUENT_LOG_LEVEL
         value: "info"
 
-    # Custom configuration with larger buffers
+    # Configuration to forward logs to Elasticsearch
     configMapConfigs:
       fluent.conf: |-
         <source>

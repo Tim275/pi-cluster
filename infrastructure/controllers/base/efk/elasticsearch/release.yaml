@@ -14,14 +14,18 @@ spec:
         name: elastic
         namespace: logging
   values:
-    # Three-node cluster for redundancy
+    # Node affinity to run on your powerful node
+    nodeSelector:
+      kubernetes.io/hostname: p3 # Replace with your actual node name
+
+    # Run a 3-node cluster all on the same powerful node
     replicas: 3
     minimumMasterNodes: 2
 
-    # Increased memory settings for 16GB system
-    esJavaOpts: "-Xmx4g -Xms4g"
+    # Higher memory settings for 16GB RAM system
+    esJavaOpts: "-Xms4g -Xmx4g"
 
-    # Resource limits for P3 hardware
+    # Resources appropriate for 16GB system
     resources:
       requests:
         cpu: "1000m"
@@ -30,19 +34,20 @@ spec:
         cpu: "2000m"
         memory: "6Gi"
 
-    # Use local-path storage with larger allocation
+    # Local storage on SSD
     volumeClaimTemplate:
       accessModes: ["ReadWriteOnce"]
       storageClassName: "local-path"
       resources:
         requests:
-          storage: 40Gi
+          storage: 25Gi
 
-    # Add init container to set vm.max_map_count
-    extraInitContainers:
-      - name: sysctl
-        image: busybox
-        imagePullPolicy: IfNotPresent
-        command: ["sysctl", "-w", "vm.max_map_count=262144"]
-        securityContext:
-          privileged: true
+    # Performance optimizations
+    esConfig:
+      elasticsearch.yml: |
+        indices.memory.index_buffer_size: 30%
+        indices.queries.cache.size: 15%
+        bootstrap.memory_lock: true
+
+    sysctlInitContainer:
+      enabled: true
