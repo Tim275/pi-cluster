@@ -14,40 +14,34 @@ spec:
         name: elastic
         namespace: logging
   values:
-    # Node affinity to run on your powerful node
-    nodeSelector:
-      kubernetes.io/hostname: p3 # Replace with your actual node name
+    # Single node for Pi cluster - much lighter footprint
+    replicas: 1
+    minimumMasterNodes: 1
 
-    # Run a 3-node cluster all on the same powerful node
-    replicas: 3
-    minimumMasterNodes: 2
+    # Remove node selector to allow scheduling anywhere
+    # nodeSelector:
+    #   kubernetes.io/hostname: p3
 
-    # Higher memory settings for 16GB RAM system
-    esJavaOpts: "-Xms4g -Xmx4g"
+    # Very conservative memory settings for Pi
+    esJavaOpts: "-Xms256m -Xmx256m"
 
-    # Resources appropriate for 16GB system
+    # Drastically reduced resource requirements
     resources:
       requests:
-        cpu: "1000m"
-        memory: "5Gi"
+        cpu: "100m"
+        memory: "512Mi"
       limits:
-        cpu: "2000m"
-        memory: "6Gi"
+        cpu: "500m"
+        memory: "1Gi"
 
-    # Local storage on SSD
+    # Local storage configuration - smaller size
     volumeClaimTemplate:
       accessModes: ["ReadWriteOnce"]
       storageClassName: "local-path"
       resources:
         requests:
-          storage: 25Gi
+          storage: 10Gi
 
-    # Performance optimizations
-    esConfig:
-      elasticsearch.yml: |
-        indices.memory.index_buffer_size: 30%
-        indices.queries.cache.size: 15%
-        bootstrap.memory_lock: true
-
+    # Add init container for system settings
     sysctlInitContainer:
       enabled: true
