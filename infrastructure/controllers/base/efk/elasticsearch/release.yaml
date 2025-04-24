@@ -15,63 +15,39 @@ spec:
         namespace: logging
   values:
     # Single node for Pi
-    replicas: 2
-    minimumMasterNodes: 1
-
-apiVersion: helm.toolkit.fluxcd.io/v2
-kind: HelmRelease
-metadata:
-  name: elasticsearch
-  namespace: logging
-spec:
-  interval: 15m
-  chart:
-    spec:
-      chart: elasticsearch
-      version: "7.17.3"
-      sourceRef:
-        kind: HelmRepository
-        name: elastic
-        namespace: logging
-  values:
-    # Single node for Pi
     replicas: 1
     minimumMasterNodes: 1
-    
-    # Critical: Fix JVM settings for ARM/Pi
-    esJavaOpts: "-Xms512m -Xmx512m -Djna.nosys=true -Djava.security.egd=file:/dev/./urandom -Des.enforce.bootstrap.checks=false"
-    
-    # Additional environment variables
-    extraEnvs:
-      - name: discovery.type
-        value: single-node
-      - name: cluster.initial_master_nodes
-        value: ""
-    
-    # Lower resource requirements
+
+    # Critical: Fix memory settings
+    esJavaOpts: "-Xms256m -Xmx256m"
+
+    # Remove node selector to let it schedule anywhere
+    nodeSelector: {}
+
+    # Low resource settings for Pi hardware
     resources:
       requests:
         cpu: "100m"
-        memory: "768Mi"
+        memory: "512Mi"
       limits:
         cpu: "500m"
         memory: "1Gi"
-    
-    # Local storage
+
+    # Storage needs
     volumeClaimTemplate:
       accessModes: ["ReadWriteOnce"]
       storageClassName: "local-path"
       resources:
         requests:
           storage: 5Gi
-    
+
+    # Configuration for single node
+    extraEnvs:
+      - name: discovery.type
+        value: single-node
+      - name: cluster.initial_master_nodes
+        value: ""
+
+    # VM settings
     sysctlInitContainer:
       enabled: true
-    
-    # Configuration overrides for Pi
-    esConfig:
-      elasticsearch.yml: |
-        cluster.name: elasticsearch
-        discovery.type: single-node
-        network.host: 0.0.0.0
-        bootstrap.memory_lock: false
