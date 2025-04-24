@@ -14,53 +14,64 @@ spec:
         name: elastic
         namespace: logging
   values:
-    # Two nodes for redundancy
+    # Single node for Pi
     replicas: 2
     minimumMasterNodes: 1
 
-    # Cluster name
-    clusterName: "elasticsearch"
-
-    # Resource allocation - use less memory for Pi
-    esJavaOpts: "-Xms512m -Xmx512m"
-
-    # Resource limits suitable for Pi
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: elasticsearch
+  namespace: logging
+spec:
+  interval: 15m
+  chart:
+    spec:
+      chart: elasticsearch
+      version: "7.17.3"
+      sourceRef:
+        kind: HelmRepository
+        name: elastic
+        namespace: logging
+  values:
+    # Single node for Pi
+    replicas: 1
+    minimumMasterNodes: 1
+    
+    # Critical: Fix JVM settings for ARM/Pi
+    esJavaOpts: "-Xms512m -Xmx512m -Djna.nosys=true -Djava.security.egd=file:/dev/./urandom -Des.enforce.bootstrap.checks=false"
+    
+    # Additional environment variables
+    extraEnvs:
+      - name: discovery.type
+        value: single-node
+      - name: cluster.initial_master_nodes
+        value: ""
+    
+    # Lower resource requirements
     resources:
       requests:
-        cpu: "200m"
+        cpu: "100m"
         memory: "768Mi"
       limits:
         cpu: "500m"
         memory: "1Gi"
-
-    # Storage configuration
+    
+    # Local storage
     volumeClaimTemplate:
       accessModes: ["ReadWriteOnce"]
       storageClassName: "local-path"
       resources:
         requests:
           storage: 5Gi
-
-    # Required for Elasticsearch
+    
     sysctlInitContainer:
       enabled: true
-
-    # Use soft anti-affinity to allow nodes to run on same hardware if needed
-    antiAffinity: "soft"
-
-    # Important settings for a small cluster
+    
+    # Configuration overrides for Pi
     esConfig:
       elasticsearch.yml: |
-        # Default shard allocation to ensure replica creation
-        index.number_of_shards: 1
-        index.number_of_replicas: 1
-
-        # Performance optimizations for small clusters
-        indices.memory.index_buffer_size: 10%
-        indices.queries.cache.size: 5%
-
-        # Disable monitoring to save resources
-        xpack.monitoring.enabled: false
-
-        # Lower circuit breaker to prevent OOM
-        indices.breaker.total.limit: 70%
+        cluster.name: elasticsearch
+        discovery.type: single-node
+        network.host: 0.0.0.0
+        bootstrap.memory_lock: false

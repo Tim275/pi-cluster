@@ -16,7 +16,11 @@ spec:
   values:
     kind: DaemonSet
 
-    # Run on all nodes
+    # Critical: Disable PodSecurityPolicy - it's removed in newer Kubernetes
+    podSecurityPolicy:
+      enabled: false
+
+    # Run on all nodes including control-plane
     tolerations:
       - key: node-role.kubernetes.io/control-plane
         operator: Exists
@@ -25,7 +29,28 @@ spec:
         operator: Exists
         effect: NoSchedule
 
-    # Efficient resources
+    # Mount paths for logs
+    extraVolumeMounts:
+      - name: varlog
+        mountPath: /var/log
+      - name: containerd-log
+        mountPath: /var/lib/containerd/io.containerd.grpc.v1.cri/containers
+        readOnly: true
+
+    extraVolumes:
+      - name: varlog
+        hostPath:
+          path: /var/log
+      - name: containerd-log
+        hostPath:
+          path: /var/lib/containerd/io.containerd.grpc.v1.cri/containers
+
+    # Required permissions
+    securityContext:
+      privileged: true
+      runAsUser: 0
+
+    # Minimal resource usage
     resources:
       requests:
         cpu: 50m
@@ -34,37 +59,7 @@ spec:
         cpu: 100m
         memory: 200Mi
 
-    # Mount paths for logs
-    extraVolumeMounts:
-      - name: varlog
-        mountPath: /var/log
-      - name: varlibcontainerd
-        mountPath: /var/lib/containerd/io.containerd.grpc.v1.cri/containers
-        readOnly: true
-
-    extraVolumes:
-      - name: varlog
-        hostPath:
-          path: /var/log
-      - name: varlibcontainerd
-        hostPath:
-          path: /var/lib/containerd/io.containerd.grpc.v1.cri/containers
-
-    # Security context for access permissions
-    securityContext:
-      privileged: true
-      runAsUser: 0
-
-    # Elasticsearch configuration
-    env:
-      - name: FLUENT_ELASTICSEARCH_HOST
-        value: "elasticsearch-master"
-      - name: FLUENT_ELASTICSEARCH_PORT
-        value: "9200"
-      - name: FLUENT_ELASTICSEARCH_SCHEME
-        value: "http"
-
-    # Custom Fluentd configuration
+    # Basic configuration
     configMapConfigs:
       fluent.conf: |-
         <source>
@@ -76,12 +71,14 @@ spec:
           <parse>
             @type json
             time_format %Y-%m-%dT%H:%M:%S.%NZ
-            keep_time_key true
           </parse>
         </source>
 
         <filter kubernetes.**>
           @type kubernetes_metadata
+          skip_labels false
+          skip_container_metadata false
+          skip_namespace_metadata false
         </filter>
 
         <match kubernetes.**>
@@ -90,14 +87,4 @@ spec:
           port 9200
           logstash_format true
           logstash_prefix fluentd
-          
-          <buffer>
-            @type file
-            path /var/log/fluentd-buffer
-            flush_mode interval
-            flush_interval 5s
-            chunk_limit_size 2M
-            total_limit_size 512M
-            flush_thread_count 2
-          </buffer>
         </match>
