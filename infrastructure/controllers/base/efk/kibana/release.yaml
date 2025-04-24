@@ -14,7 +14,11 @@ spec:
         name: elastic
         namespace: logging
   values:
-    # Resource requirements
+    # Keep Kibana near Elasticsearch
+    nodeSelector:
+      kubernetes.io/hostname: p3
+
+    # Lightweight resources
     resources:
       requests:
         cpu: "100m"
@@ -23,10 +27,19 @@ spec:
         cpu: "300m"
         memory: "512Mi"
 
-    # Connect to Elasticsearch
+    # Connect to single-node ES
     elasticsearchHosts: "http://elasticsearch-master:9200"
 
-    # Ingress configuration
+    # Add some security settings
+    extraEnvs:
+      - name: XPACK_SECURITY_ENABLED
+        value: "false"
+      - name: ELASTICSEARCH_USERNAME
+        value: ""
+      - name: ELASTICSEARCH_PASSWORD
+        value: ""
+
+    # Your ingress configuration
     ingress:
       enabled: true
       ingressClassName: traefik
