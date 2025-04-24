@@ -14,34 +14,53 @@ spec:
         name: elastic
         namespace: logging
   values:
-    # Single node for Pi cluster - much lighter footprint
-    replicas: 1
+    # Two nodes for redundancy
+    replicas: 2
     minimumMasterNodes: 1
 
-    # Remove node selector to allow scheduling anywhere
-    # nodeSelector:
-    #   kubernetes.io/hostname: p3
+    # Cluster name
+    clusterName: "elasticsearch"
 
-    # Very conservative memory settings for Pi
-    esJavaOpts: "-Xms256m -Xmx256m"
+    # Resource allocation - use less memory for Pi
+    esJavaOpts: "-Xms512m -Xmx512m"
 
-    # Drastically reduced resource requirements
+    # Resource limits suitable for Pi
     resources:
       requests:
-        cpu: "100m"
-        memory: "512Mi"
+        cpu: "200m"
+        memory: "768Mi"
       limits:
         cpu: "500m"
         memory: "1Gi"
 
-    # Local storage configuration - smaller size
+    # Storage configuration
     volumeClaimTemplate:
       accessModes: ["ReadWriteOnce"]
       storageClassName: "local-path"
       resources:
         requests:
-          storage: 10Gi
+          storage: 5Gi
 
-    # Add init container for system settings
+    # Required for Elasticsearch
     sysctlInitContainer:
       enabled: true
+
+    # Use soft anti-affinity to allow nodes to run on same hardware if needed
+    antiAffinity: "soft"
+
+    # Important settings for a small cluster
+    esConfig:
+      elasticsearch.yml: |
+        # Default shard allocation to ensure replica creation
+        index.number_of_shards: 1
+        index.number_of_replicas: 1
+
+        # Performance optimizations for small clusters
+        indices.memory.index_buffer_size: 10%
+        indices.queries.cache.size: 5%
+
+        # Disable monitoring to save resources
+        xpack.monitoring.enabled: false
+
+        # Lower circuit breaker to prevent OOM
+        indices.breaker.total.limit: 70%

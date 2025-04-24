@@ -14,22 +14,18 @@ spec:
         name: elastic
         namespace: logging
   values:
-    # Remove node selector
-    # nodeSelector:
-    #   kubernetes.io/hostname: p3
-
-    # Pi-optimized resources
+    # Resource requirements
     resources:
       requests:
         cpu: "100m"
-        memory: "300Mi"
+        memory: "256Mi"
       limits:
-        cpu: "400m"
+        cpu: "300m"
         memory: "512Mi"
 
     elasticsearchHosts: "http://elasticsearch-master:9200"
 
-    # Keep your existing ingress configuration
+    # Ingress configuration
     ingress:
       enabled: true
       ingressClassName: traefik
@@ -38,3 +34,7 @@ spec:
           paths:
             - path: /
               pathType: Prefix
+      tls:
+        - secretName: kibana-tls
+          hosts:
+            - kibana.timourhomelab.org
