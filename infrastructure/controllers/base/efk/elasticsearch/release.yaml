@@ -14,38 +14,35 @@ spec:
         name: elastic
         namespace: logging
   values:
-    # Resources optimized for Raspberry Pi
+    # Three-node cluster for redundancy
+    replicas: 3
+    minimumMasterNodes: 2
+
+    # Increased memory settings for 16GB system
+    esJavaOpts: "-Xmx4g -Xms4g"
+
+    # Resource limits for P3 hardware
     resources:
       requests:
-        cpu: "200m"
-        memory: "512Mi"
+        cpu: "1000m"
+        memory: "5Gi"
       limits:
-        cpu: "500m"
-        memory: "1Gi"
+        cpu: "2000m"
+        memory: "6Gi"
 
-    # Reduce JVM heap size for Raspberry Pi
-    esJavaOpts: "-Xmx256m -Xms256m"
-
-    # Storage configuration using local-path storage class
+    # Use local-path storage with larger allocation
     volumeClaimTemplate:
       accessModes: ["ReadWriteOnce"]
       storageClassName: "local-path"
       resources:
         requests:
-          storage: 5Gi
+          storage: 40Gi
 
-    # Security settings
-    esConfig:
-      elasticsearch.yml: |
-        xpack.security.enabled: true
-        xpack.security.transport.ssl.enabled: false
-        xpack.security.http.ssl.enabled: false
-        xpack.monitoring.collection.enabled: true
-
-    # Add credentials from Secret
-    extraEnvs:
-      - name: ELASTIC_PASSWORD
-        valueFrom:
-          secretKeyRef:
-            name: elasticsearch-credentials
-            key: ELASTIC_PASSWORD
+    # Add init container to set vm.max_map_count
+    extraInitContainers:
+      - name: sysctl
+        image: busybox
+        imagePullPolicy: IfNotPresent
+        command: ["sysctl", "-w", "vm.max_map_count=262144"]
+        securityContext:
+          privileged: true
