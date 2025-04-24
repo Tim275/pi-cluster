@@ -16,7 +16,7 @@ spec:
   values:
     kind: DaemonSet
 
-    # Critical: Disable PodSecurityPolicy - it's removed in newer Kubernetes
+    # Disable PodSecurityPolicy for newer K8s
     podSecurityPolicy:
       enabled: false
 
@@ -50,7 +50,7 @@ spec:
       privileged: true
       runAsUser: 0
 
-    # Minimal resource usage
+    # Conservative resource settings for Pi
     resources:
       requests:
         cpu: 50m
@@ -59,7 +59,7 @@ spec:
         cpu: 100m
         memory: 200Mi
 
-    # Basic configuration
+    # Fluentd configuration to collect and forward logs
     configMapConfigs:
       fluent.conf: |-
         <source>
@@ -87,4 +87,13 @@ spec:
           port 9200
           logstash_format true
           logstash_prefix fluentd
+          <buffer>
+            @type file
+            path /var/log/fluentd-buffers
+            flush_mode interval
+            flush_interval 5s
+            retry_max_interval 30
+            chunk_limit_size 2M
+            queue_limit_length 8
+          </buffer>
         </match>
