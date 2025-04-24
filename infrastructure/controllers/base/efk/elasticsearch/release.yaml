@@ -1,4 +1,3 @@
-# File: infrastructure/controllers/base/efk/elasticsearch/release.yaml
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
@@ -15,16 +14,6 @@ spec:
         name: elastic
         namespace: logging
   values:
-    clusterName: "elasticsearch"
-    nodeGroup: "master"
-
-    # 2-node cluster configuration
-    replicas: 2
-    minimumMasterNodes: 1
-
-    # Ensure pods are distributed across your nodes
-    antiAffinity: "soft"
-
     # Resources optimized for Raspberry Pi
     resources:
       requests:
