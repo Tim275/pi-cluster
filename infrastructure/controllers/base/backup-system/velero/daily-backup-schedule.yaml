@@ -1,0 +1,15 @@
+# /infrastructure/controllers/base/velero/daily-backup-schedule.yaml
+apiVersion: velero.io/v1
+kind: Schedule
+metadata:
+  name: daily-backup
+  namespace: velero
+spec:
+  schedule: "0 3 * * *"
+  template:
+    includedNamespaces:
+      - "*"
+    includedResources:
+      - "*"
+    includeClusterResources: true
+    ttl: 720h

@@ -8,3 +8,5 @@ resources:
   - external-secrets
   - cert-manager
   - longhorn
+  - csi-snapshotter
+  - valero

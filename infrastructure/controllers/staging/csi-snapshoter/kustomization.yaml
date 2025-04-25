@@ -1,0 +1,5 @@
+# /infrastructure/controllers/staging/csi-snapshotter/kustomization.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../../base/csi-snapshotter

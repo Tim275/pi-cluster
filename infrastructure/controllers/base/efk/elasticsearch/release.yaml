@@ -14,52 +14,24 @@ spec:
         name: elastic
         namespace: logging
   values:
-    # Target 16GB RAM node
-    nodeSelector:
-      kubernetes.io/hostname: p3
-
-    # Single node for Pi cluster
+    # Single node configuration optimized for Pi
     replicas: 1
     minimumMasterNodes: 1
 
-    # Critical ARM-specific JVM options
-    esJavaOpts: "-Des.cgroups.hierarchy.override=/ -Xms512m -Xmx512m"
+    # Force placement on the 16GB node
+    nodeSelector:
+      kubernetes.io/hostname: p3 # Replace with your 16GB node name
 
-    # Additional environment variables for ARM compatibility
-    extraEnvs:
-      - name: node.store.allow_mmap
-        value: "false"
-      - name: bootstrap.memory_lock
-        value: "false"
-      - name: ES_JAVA_HOME
-        value: /usr/share/elasticsearch/jdk
-      - name: JAVA_HOME
-        value: /usr/share/elasticsearch/jdk
-      - name: DISABLE_JVM_HEAP_DUMP_ON_OOM
-        value: "true"
-      - name: READINESS_PROBE_TIMEOUT
-        value: "10"
+    # Critical: Set small Java heap for Pi
+    esJavaOpts: "-Xms512m -Xmx512m"
 
-    # Optimized configuration for ARM
-    esConfig:
-      elasticsearch.yml: |
-        discovery.type: single-node
-        bootstrap.memory_lock: false
-        xpack.security.enabled: false
-        xpack.monitoring.enabled: false
-        indices.fielddata.cache.size: 10%
-        indices.queries.cache.size: 5%
-        indices.memory.index_buffer_size: 10%
-        thread_pool.search.size: 5
-        thread_pool.write.size: 4
-
-    # Reasonable resource requests for Pi
+    # Optimized resource limits
     resources:
       requests:
-        cpu: "200m"
+        cpu: "100m"
         memory: "768Mi"
       limits:
-        cpu: "1"
+        cpu: "500m"
         memory: "1Gi"
 
     # Storage configuration
@@ -68,25 +40,15 @@ spec:
       storageClassName: "local-path"
       resources:
         requests:
-          storage: 10Gi
+          storage: 20Gi
 
-    # Init container for sysctls
+    # Essential settings for single-node mode
+    extraEnvs:
+      - name: discovery.type
+        value: single-node
+      - name: cluster.initial_master_nodes
+        value: ""
+
+    # Required for Elasticsearch
     sysctlInitContainer:
       enabled: true
-
-    # Security context
-    securityContext:
-      runAsUser: 1000
-      fsGroup: 1000
-      runAsNonRoot: true
-
-    # Probe settings
-    readinessProbe:
-      initialDelaySeconds: 90
-      periodSeconds: 10
-      timeoutSeconds: 5
-      successThreshold: 3
-      failureThreshold: 10
-
-    # Required for ARM systems
-    antiAffinity: "soft"
