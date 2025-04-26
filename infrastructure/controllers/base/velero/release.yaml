@@ -10,7 +10,7 @@ spec:
   chart:
     spec:
       chart: velero
-      version: "7.1.1" # Bitnami Chart Version
+      version: "12.13.3" # Aktuelle Version des Bitnami-Charts
       sourceRef:
         kind: HelmRepository
         name: bitnami
@@ -20,11 +20,15 @@ spec:
     remediation:
       retries: 3
   values:
+    # Bitnami Chart Struktur (unterschiedlich zu VMware Tanzu Chart)
     image:
       repository: bitnami/velero
-      tag: 1.13.0-debian-11-r10 # ARM-kompatible Version
+      tag: 1.14.0 # Aktuelle Velero Version
 
-    # AWS Konfiguration
+    credentials:
+      existingSecret: velero-aws-credentials
+      useSecret: true
+
     configuration:
       provider: aws
       backupStorageLocation:
@@ -34,15 +38,7 @@ spec:
         config:
           region: eu-central-1
 
-    # Credentials
-    credentials:
-      secretContents:
-        cloud: |
-          [default]
-          aws_access_key_id=timour
-          aws_secret_access_key=2206
-
-    # AWS Plugin
+    # AWS Plugin (Bitnami-Format)
     plugins:
       aws:
         enabled: true
@@ -55,3 +51,6 @@ spec:
       requests:
         cpu: 100m
         memory: 128Mi
+
+    # CSI Unterstützung später einschalten
+    snapshotsEnabled: false
