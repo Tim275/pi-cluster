@@ -19,15 +19,15 @@ spec:
     remediation:
       retries: 3
   values:
-    # Use ARM64-compatible image with Alpine base
+    # Use standard image - the alpine variant doesn't exist
     image:
       repository: velero/velero
-      tag: v1.10.2-alpine
+      tag: v1.10.2
 
-    # Use ARM64-compatible plugin
+    # Use standard plugin image - ARM64 is supported in standard image
     initContainers:
       - name: velero-plugin-for-aws
-        image: velero/velero-plugin-for-aws:v1.6.0-arm64
+        image: velero/velero-plugin-for-aws:v1.6.0
         imagePullPolicy: IfNotPresent
         volumeMounts:
           - mountPath: /target
