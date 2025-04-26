@@ -10,7 +10,7 @@ spec:
   chart:
     spec:
       chart: velero
-      version: "4.0.3" # Downgrade to a known stable version
+      version: "4.0.3" # Keep the downgraded version for now
       sourceRef:
         kind: HelmRepository
         name: vmware-tanzu
@@ -19,14 +19,20 @@ spec:
     createNamespace: false # namespace already exists
     remediation:
       retries: 3
+    # Add this line to skip rendering NOTES.txt
+    helmArgs:
+      - "--no-notes"
   upgrade:
     remediation:
       retries: 3
+    # Add this line for upgrades too
+    helmArgs:
+      - "--no-notes"
   values:
     # Plugin for AWS
     initContainers:
       - name: velero-plugin-for-aws
-        image: velero/velero-plugin-for-aws:v1.6.0
+        image: velero/velero-plugin-for-aws:v1.6.0 # Match plugin version with chart/Velero version if needed
         volumeMounts:
           - mountPath: /target
             name: plugins
@@ -41,11 +47,15 @@ spec:
         bucket: piclusterhomelab
         config:
           region: eu-central-1
+          # If using MinIO/non-AWS S3, uncomment and set these:
+          # s3ForcePathStyle: "true"
+          # s3Url: "https://your-s3-url" # e.g., https://minio.timourhomelab.org
+          # insecureSkipTLSVerify: "true" # If using self-signed certs
 
     # Credentials from secret
     credentials:
       existingSecret: velero-aws-credentials
-      useSecret: true
+      useSecret: true # Ensure this is true if using existingSecret
 
     # Disable volume snapshots initially
     snapshotsEnabled: false
