@@ -1,0 +1,24 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: velero-ui
+  namespace: velero
+  annotations:
+    # cert-manager.io/cluster-issuer: letsencrypt-production
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - velero.timourhomelab.com
+      secretName: velero-tls
+  rules:
+    - host: velero.timourhomelab.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: velero-ui
+                port:
+                  number: 80
