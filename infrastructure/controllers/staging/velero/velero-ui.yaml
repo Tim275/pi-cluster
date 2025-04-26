@@ -13,7 +13,7 @@ spec:
       labels:
         app: velero-ui
     spec:
-      serviceAccountName: velero-ui # Add this line to use the ServiceAccount
+      serviceAccountName: velero-ui
       containers:
         - name: velero-ui
           image: otwld/velero-ui:0.5.2
@@ -22,6 +22,17 @@ spec:
           env:
             - name: VELERO_API_URL
               value: "http://velero.velero.svc:8085"
+            # Add environment variables from the secret
+            - name: ADMIN_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: velero-ui-credentials
+                  key: ADMIN_USERNAME
+            - name: ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: velero-ui-credentials
+                  key: ADMIN_PASSWORD
           resources:
             limits:
               cpu: 200m
@@ -31,6 +42,7 @@ spec:
               memory: 128Mi
       nodeSelector:
         kubernetes.io/hostname: p3
+        ## standart pw : admin user:admin
 ---
 apiVersion: v1
 kind: Service
