@@ -10,7 +10,9 @@ spec:
   chart:
     spec:
       chart: velero
-      version: "4.0.3" # Keep this version
+      # --- Change chart version ---
+      version: "5.0.0"
+      # --- End change ---
       sourceRef:
         kind: HelmRepository
         name: vmware-tanzu
@@ -29,14 +31,11 @@ spec:
         bucket: piclusterhomelab
         config:
           region: eu-central-1
-      # --- Add this section ---
-      # Provide a minimal VolumeSnapshotLocation even if snapshotsEnabled is false
-      # This might satisfy the template logic causing the NOTES.txt error.
+      # Keep the dummy VSL for now
       volumeSnapshotLocation:
-        - name: aws-dummy-vsl # Give it a name
-          provider: aws # Use the same provider as BSL or a non-CSI one
-          config: {} # Empty config might be enough
-      # --- End of added section ---
+        - name: aws-dummy-vsl
+          provider: aws
+          config: {}
 
     credentials:
       useSecret: true
@@ -44,12 +43,13 @@ spec:
 
     initContainers:
       - name: velero-plugin-for-aws
-        image: velero/velero-plugin-for-aws:v1.6.0
+        # --- Update plugin version for Velero v1.12.x ---
+        image: velero/velero-plugin-for-aws:v1.8.0
+        # --- End change ---
         volumeMounts:
           - mountPath: /target
             name: plugins
 
-    # Snapshots remain disabled globally
     snapshotsEnabled: false
     deployRestic: false
 
@@ -63,7 +63,9 @@ spec:
 
     image:
       repository: velero/velero
-      tag: v1.11.1
+      # --- Update Velero image tag for chart 5.0.0 ---
+      tag: v1.12.0
+      # --- End change ---
 
     serviceAccount:
       server:
