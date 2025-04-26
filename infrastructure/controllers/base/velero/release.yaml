@@ -21,11 +21,11 @@ spec:
           - mountPath: /target
             name: plugins
 
-    # Optional: Run on specific node
+    # Run on specific node
     nodeSelector:
       kubernetes.io/hostname: p3
 
-    # Native AWS S3 configuration
+    # AWS S3 configuration
     configuration:
       provider: aws
       backupStorageLocation:
@@ -35,17 +35,15 @@ spec:
         bucket: piclusterhomelab
         config:
           region: eu-central-1
-          # Remove s3ForcePathStyle for native AWS S3
-          # Remove s3Url - not needed for native AWS
+          s3ForcePathStyle: true
+          s3Url: "https://minio.timourhomelab.org"
+          insecureSkipTLSVerify: true
 
-    # Use credentials from AWS Secret Manager
     credentials:
       existingSecret: velero-aws-credentials
 
-    # Disable snapshots for now
     snapshotsEnabled: false
 
-    # Resource limits for Raspberry Pi
     resources:
       requests:
         cpu: "100m"
