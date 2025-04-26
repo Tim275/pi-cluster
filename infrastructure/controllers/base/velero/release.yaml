@@ -5,59 +5,74 @@ metadata:
   namespace: velero
 spec:
   interval: 15m
-  timeout: 15m
-  releaseName: velero
+  timeout: 10m
   chart:
     spec:
       chart: velero
-      version: "3.1.0"
+      version: "3.1.0" # This version works better on ARM
       sourceRef:
         kind: HelmRepository
         name: vmware-tanzu
         namespace: velero
   install:
-    createNamespace: true
+    createNamespace: false
     remediation:
       retries: 3
-    skipCRDs: true # Um den problematischen Job zu umgehen
-  upgrade:
-    skipCRDs: true
   values:
-    # ARM-kompatibles Image verwenden
+    # Resource limits for ARM
+    resources:
+      requests:
+        cpu: "100m"
+        memory: "128Mi"
+      limits:
+        cpu: "200m"
+        memory: "256Mi"
+
+    # Ensure ARM compatibility
     image:
       repository: velero/velero
-      # Standard-Image sollte multi-arch sein und ARM unterstützen
-      tag: v1.12.0
+      tag: v1.10.2
 
-    # AWS-Konfiguration
+    # Use AWS plugin that works on ARM
+    initContainers:
+      - name: velero-plugin-for-aws
+        image: velero/velero-plugin-for-aws:v1.6.0
+        imagePullPolicy: IfNotPresent
+        volumeMounts:
+          - mountPath: /target
+            name: plugins
+
+    # More compatible AWS config format
     configuration:
+      # Avoid array-related errors
       provider: aws
+      # Format as a simple object to avoid array-related errors
       backupStorageLocation:
+        name: default
         provider: aws
         bucket: piclusterhomelab
         config:
           region: eu-central-1
 
-    # Secret aus External Secret
+    # Credentials from your external secret
     credentials:
-      existingSecret: velero-aws-credentials
       useSecret: true
+      existingSecret: velero-aws-credentials
 
-    # AWS-Plugin (multi-arch)
-    initContainers:
-      - name: velero-plugin-for-aws
-        image: velero/velero-plugin-for-aws:v1.8.0
-        volumeMounts:
-          - mountPath: /target
-            name: plugins
-
-    resources:
-      limits:
-        cpu: 200m
-        memory: 256Mi
-      requests:
-        cpu: 100m
-        memory: 128Mi
-
-    # CSI zunächst deaktiviert
+    # Disable features that might cause issues initially
+    deployNodeAgent: false
     snapshotsEnabled: false
+
+    # Target worker node with 16GB RAM
+    nodeSelector:
+      kubernetes.io/hostname: p3
+
+    # Set low resource requests for restic if enabled later
+    nodeAgent:
+      resources:
+        requests:
+          cpu: "100m"
+          memory: "128Mi"
+        limits:
+          cpu: "200m"
+          memory: "256Mi"
