@@ -19,14 +19,14 @@ spec:
     createNamespace: false # namespace already exists
     remediation:
       retries: 3
-    # Add this line to skip rendering NOTES.txt
-    helmArgs:
+    # Correct field name: args
+    args:
       - "--no-notes"
   upgrade:
     remediation:
       retries: 3
-    # Add this line for upgrades too
-    helmArgs:
+    # Correct field name: args
+    args:
       - "--no-notes"
   values:
     # Plugin for AWS
