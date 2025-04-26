@@ -5,50 +5,59 @@ metadata:
   namespace: velero
 spec:
   interval: 15m
+  timeout: 10m
+  releaseName: velero
   chart:
     spec:
       chart: velero
-      version: "5.0.2"
+      version: "4.0.3" # Downgrade to a known stable version
       sourceRef:
         kind: HelmRepository
         name: vmware-tanzu
         namespace: velero
   install:
-    skipCRDs: false
+    createNamespace: false # namespace already exists
+    remediation:
+      retries: 3
+  upgrade:
     remediation:
       retries: 3
   values:
-    # Required AWS plugin
+    # Plugin for AWS
     initContainers:
       - name: velero-plugin-for-aws
-        image: velero/velero-plugin-for-aws:v1.10.0
+        image: velero/velero-plugin-for-aws:v1.6.0
         volumeMounts:
           - mountPath: /target
             name: plugins
 
-    # Minimal configuration
+    # AWS S3 configuration - simplified
     configuration:
       provider: aws
       backupStorageLocation:
         name: default
+        default: true
+        provider: aws
         bucket: piclusterhomelab
         config:
           region: eu-central-1
-          s3Url: "https://s3.eu-central-1.amazonaws.com"
 
-    # Use credentials secret
+    # Credentials from secret
     credentials:
       existingSecret: velero-aws-credentials
+      useSecret: true
 
-    # Disable snapshots initially
+    # Disable volume snapshots initially
     snapshotsEnabled: false
 
-    # Fix for ARM architecture
-    nodeAgent:
-      resources:
-        requests:
-          cpu: "100m"
-          memory: "128Mi"
-        limits:
-          cpu: "200m"
-          memory: "256Mi"
+    # Explicitly disable problematic features
+    deployRestic: false
+
+    # Resources for ARM architecture
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 200m
+        memory: 256Mi
