@@ -3,14 +3,12 @@ kind: Ingress
 metadata:
   name: velero-ui
   namespace: velero
-  annotations:
-    # cert-manager.io/cluster-issuer: letsencrypt-production
 spec:
-  ingressClassName: nginx
-  tls:
-    - hosts:
-        - velero.timourhomelab.com
-      secretName: velero-tls
+  ingressClassName: traefik # Changed to traefik
+  #  tls:
+  #   - hosts:
+  #      - velero.timourhomelab.com
+  #    secretName: velero-tls
   rules:
     - host: velero.timourhomelab.com
       http:

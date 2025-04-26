@@ -3,3 +3,4 @@ kind: Kustomization
 resources:
   - ../../base/velero
   - ingress.yaml
+  - velero-ui.yaml
