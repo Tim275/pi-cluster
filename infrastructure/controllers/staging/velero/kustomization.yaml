@@ -4,3 +4,4 @@ resources:
   - ../../base/velero
   - ingress.yaml
   - velero-ui.yaml
+  - serviceaccount.yaml # Add this line
