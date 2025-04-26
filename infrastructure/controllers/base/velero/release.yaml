@@ -9,7 +9,7 @@ spec:
   chart:
     spec:
       chart: velero
-      version: "3.1.0" # This version works better on ARM
+      version: "3.1.0"
       sourceRef:
         kind: HelmRepository
         name: vmware-tanzu
@@ -19,34 +19,23 @@ spec:
     remediation:
       retries: 3
   values:
-    # Resource limits for ARM
-    resources:
-      requests:
-        cpu: "100m"
-        memory: "128Mi"
-      limits:
-        cpu: "200m"
-        memory: "256Mi"
-
-    # Ensure ARM compatibility
+    # Use ARM64-compatible image with Alpine base
     image:
       repository: velero/velero
-      tag: v1.10.2
+      tag: v1.10.2-alpine
 
-    # Use AWS plugin that works on ARM
+    # Use ARM64-compatible plugin
     initContainers:
       - name: velero-plugin-for-aws
-        image: velero/velero-plugin-for-aws:v1.6.0
+        image: velero/velero-plugin-for-aws:v1.6.0-arm64
         imagePullPolicy: IfNotPresent
         volumeMounts:
           - mountPath: /target
             name: plugins
 
-    # More compatible AWS config format
+    # AWS config
     configuration:
-      # Avoid array-related errors
       provider: aws
-      # Format as a simple object to avoid array-related errors
       backupStorageLocation:
         name: default
         provider: aws
@@ -54,7 +43,6 @@ spec:
         config:
           region: eu-central-1
 
-    # Credentials from your external secret
     credentials:
       useSecret: true
       existingSecret: velero-aws-credentials
@@ -67,12 +55,11 @@ spec:
     nodeSelector:
       kubernetes.io/hostname: p3
 
-    # Set low resource requests for restic if enabled later
-    nodeAgent:
-      resources:
-        requests:
-          cpu: "100m"
-          memory: "128Mi"
-        limits:
-          cpu: "200m"
-          memory: "256Mi"
+    # Resource limits for ARM
+    resources:
+      requests:
+        cpu: "100m"
+        memory: "128Mi"
+      limits:
+        cpu: "200m"
+        memory: "256Mi"
