@@ -15,7 +15,6 @@ spec:
         kind: HelmRepository
         name: vmware-tanzu
         namespace: velero
-  # Remove the install.args and upgrade.args sections
   install:
     createNamespace: false
     remediation:
@@ -24,33 +23,36 @@ spec:
     remediation:
       retries: 3
   values:
-    # Minimal required values
     configuration:
       provider: aws
       backupStorageLocation:
         bucket: piclusterhomelab
         config:
           region: eu-central-1
-          # s3Url: "https://s3.eu-central-1.amazonaws.com" # Often not needed for AWS provider
+      # --- Add this section ---
+      # Provide a minimal VolumeSnapshotLocation even if snapshotsEnabled is false
+      # This might satisfy the template logic causing the NOTES.txt error.
+      volumeSnapshotLocation:
+        - name: aws-dummy-vsl # Give it a name
+          provider: aws # Use the same provider as BSL or a non-CSI one
+          config: {} # Empty config might be enough
+      # --- End of added section ---
 
-    # Credentials from secret
     credentials:
-      useSecret: true # Keep this
-      existingSecret: velero-aws-credentials # Ensure this secret exists and is correct
+      useSecret: true
+      existingSecret: velero-aws-credentials
 
-    # AWS Plugin Init Container (Essential)
     initContainers:
       - name: velero-plugin-for-aws
-        image: velero/velero-plugin-for-aws:v1.6.0 # Match plugin version
+        image: velero/velero-plugin-for-aws:v1.6.0
         volumeMounts:
           - mountPath: /target
             name: plugins
 
-    # Disable features that might complicate templating
+    # Snapshots remain disabled globally
     snapshotsEnabled: false
     deployRestic: false
 
-    # Keep resource settings for ARM
     resources:
       requests:
         cpu: 100m
@@ -59,13 +61,11 @@ spec:
         cpu: 200m
         memory: 256Mi
 
-    # Explicitly set image tag to match chart version expectation if needed
     image:
       repository: velero/velero
-      tag: v1.11.1 # v1.11.1 corresponds to chart 4.0.3
+      tag: v1.11.1
 
-    # Ensure service account exists or is created by the chart
     serviceAccount:
       server:
-        create: true # Let the chart create it if it doesn't exist
-        name: velero # Default name
+        create: true
+        name: velero
