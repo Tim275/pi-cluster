@@ -5,4 +5,5 @@ resources:
   - repository.yaml
   - release.yaml
   - aws-credentials.yaml
-  - backup-schedule.yaml
+  # Comment out the schedule for now - add it after Velero is running
+  # - backup-schedule.yaml
