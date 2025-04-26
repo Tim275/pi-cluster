@@ -5,12 +5,10 @@ metadata:
   namespace: velero
 spec:
   interval: 15m
-  timeout: 10m
   chart:
     spec:
-      # Use latest chart version that supports Velero 1.16.0
       chart: velero
-      version: "5.1.6" # Updated chart version
+      version: "2.7.0" # Older chart with better ARM compatibility
       sourceRef:
         kind: HelmRepository
         name: vmware-tanzu
@@ -19,30 +17,25 @@ spec:
     createNamespace: false
     remediation:
       retries: 3
-    # Skip CRDs to avoid upgrade issues
-    skipCRDs: true
-  upgrade:
-    skipCRDs: true
   values:
-    # Use latest Velero image
+    # Use v1.6.3 which has better ARM support
     image:
       repository: velero/velero
-      tag: v1.16.0 # Latest version
+      tag: v1.6.3
 
-    # Updated plugin version compatible with 1.16.0
+    # Use matching plugin version
     initContainers:
       - name: velero-plugin-for-aws
-        image: velero/velero-plugin-for-aws:v1.8.0
+        image: velero/velero-plugin-for-aws:v1.2.0
         volumeMounts:
           - mountPath: /target
             name: plugins
 
-    # AWS configuration remains the same
+    # Basic configuration
     configuration:
       provider: aws
       backupStorageLocation:
         name: default
-        provider: aws
         bucket: piclusterhomelab
         config:
           region: eu-central-1
@@ -51,11 +44,11 @@ spec:
       useSecret: true
       existingSecret: velero-aws-credentials
 
-    # Start with minimal features
-    deployNodeAgent: false
-    snapshotsEnabled: false
+    # Target your 16GB RAM node
+    nodeSelector:
+      kubernetes.io/hostname: p3
 
-    # Keep resource limits appropriate for Pi
+    # Conservative resource settings
     resources:
       requests:
         cpu: "100m"
