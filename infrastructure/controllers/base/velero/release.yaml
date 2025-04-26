@@ -2,7 +2,7 @@ apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
   name: velero
-  namespace: velero
+  namespace: velero # Wie in der Doku empfohlen
 spec:
   interval: 15m
   timeout: 10m
@@ -10,95 +10,104 @@ spec:
   chart:
     spec:
       chart: velero
-      version: "7.2.23" # Bitnami Chart Version (Beispiel)
+      # --- Neuere Chart-Version passend zur Doku/Plugins ---
+      version: "6.1.0"
       sourceRef:
         kind: HelmRepository
-        name: bitnami # Name des Bitnami Repos
+        # --- Stelle sicher, dass dieses Repo existiert ---
+        name: vmware-tanzu
         namespace: velero # Oder flux-system
+      # --- End changes ---
   install:
-    createNamespace: false
+    createNamespace: true # Sicherstellen, dass Namespace existiert
     remediation:
       retries: 3
   upgrade:
     remediation:
       retries: 3
-  # --- Update Values für Bitnami Chart & AWS S3 ---
+  # --- Values angepasst an Doku & deine Anforderungen ---
   values:
-    # --- Credentials ---
+    # --- Credentials via Secret (GitOps-freundlich) ---
     credentials:
       useSecret: true
-      # --- Point to AWS credentials secret ---
-      existingSecret: velero-aws-credentials # Dein AWS Secret Name
-      # --- End change ---
+      # --- Name deines MinIO Secrets ---
+      existingSecret: velero-minio-credentials
 
-    # --- Backup Storage Location (AWS S3) ---
+    # --- Konfiguration ---
     configuration:
-      provider: aws
+      provider: aws # Bleibt 'aws' für S3-kompatibel
+      # --- Backup Storage Location (MinIO im Container) ---
+      # Neuere Charts erwarten eine Liste
       backupStorageLocation:
-        name: default
-        # --- Dein AWS S3 Bucket Name ---
-        bucket: piclusterhomelab # <--- EINGEFÜGT
-        provider: aws
-        config:
-          # --- Deine AWS Region ---
-          region: eu-central-1 # <--- EINGEFÜGT
-          # --- s3ForcePathStyle und s3Url werden für AWS S3 nicht benötigt ---
-          # s3ForcePathStyle: "true" # Entfernt
-          # s3Url: <your-minio-s3-url> # Entfernt
-          # insecureSkipTLSVerify: "true" # Entfernt (normalerweise nicht für AWS S3 benötigt)
-          # --- End changes ---
+        - name: default # Name der Location
+          provider: aws # Provider innerhalb der Location
+          # --- Dein MinIO Bucket ---
+          bucket: <dein-minio-bucket-name> # z.B. k3s-velero
+          config:
+            region: minio # Platzhalter-Region für MinIO
+            s3ForcePathStyle: "true"
+            # --- URL zu deinem lokalen MinIO Container ---
+            # z.B. http://192.168.1.100:9000 (IP deines Hosts)
+            # oder http://minio-service.minio-ns:9000 (falls als K8s Service)
+            s3Url: http://<minio-ip-oder-service-name>:<minio-port>
+            # --- Wichtig für lokalen MinIO (HTTP/Self-Signed) ---
+            insecureSkipTLSVerify: "true"
+            # caCert: <base64-ca-cert> # Nur nötig bei Custom CA
 
-      # --- Volume Snapshot Location (für CSI) ---
-      # Bleibt gleich, da es sich auf Longhorn bezieht
+      # --- Volume Snapshot Location (CSI für Longhorn) ---
+      # Neuere Charts erwarten eine Liste
       volumeSnapshotLocation:
-        name: default-longhorn-backup
-        provider: velero.io/csi
-        config:
-          volumeSnapshotClassName: velero-longhorn-backup-vsc # Dein VSC Name
+        - name: default-longhorn-backup # Name der Location
+          provider: velero.io/csi # Korrekter Provider für CSI
+          config:
+            # --- Muss mit deiner VSC übereinstimmen ---
+            volumeSnapshotClassName: velero-longhorn-backup-vsc
 
-    # --- Plugins ---
-    # AWS Plugin wird weiterhin benötigt
-    plugins:
-      aws:
-        enabled: true
-        image:
-          repository: velero/velero-plugin-for-aws
-          tag: v1.8.2 # Passend zu Velero v1.12.x
-          pullPolicy: IfNotPresent
+    # --- Features: CSI aktivieren ---
+    features: EnableCSI
 
-    # --- CSI Integration ---
-    # Bleibt gleich
-    extraEnvVars:
-      - name: VELERO_SCRATCH_DIR
-        value: /tmp/velero
-      - name: VELERO_FEATURES
-        value: EnableCSI
+    # --- Plugins: AWS (für MinIO) UND CSI ---
+    initContainers:
+      - name: velero-plugin-for-aws
+        # --- Version aus Doku ---
+        image: velero/velero-plugin-for-aws:v1.10.0
+        imagePullPolicy: IfNotPresent
+        volumeMounts:
+          - mountPath: /target
+            name: plugins
+      # --- CSI Plugin HINZUGEFÜGT ---
+      - name: velero-plugin-for-csi
+        # --- Kompatible Version zu Velero v1.14.0 ---
+        image: velero/velero-plugin-for-csi:v0.7.1
+        imagePullPolicy: IfNotPresent
+        volumeMounts:
+          - mountPath: /target
+            name: plugins
 
-    snapshotsEnabled: true # Snapshots aktivieren
+    # --- Snapshots aktivieren (WICHTIG für CSI) ---
+    # Entgegen der Doku MUSS dies true sein für CSI Snapshots
+    snapshotsEnabled: true
 
-    # --- Velero Image (Bitnami) ---
-    # Bleibt gleich
+    # --- Velero Image passend zum Chart 6.1.0 ---
     image:
-      repository: bitnami/velero
-      tag: 1.12.2 # Passend zur Chart Version 7.2.23
+      repository: velero/velero
+      tag: v1.14.0
+
+    # --- Restic/Node Agent deaktivieren (wie in Doku bevorzugt) ---
+    # Name kann je nach Chart-Version variieren (deployRestic/deployNodeAgent)
+    deployNodeAgent: false
 
     # --- Service Account ---
-    # Bleibt gleich
     serviceAccount:
       server:
         create: true
 
-    # --- Restic ---
-    # Bleibt gleich
-    deployNodeAgent: false
-
-    # --- Resource Limits ---
-    # Bleibt gleich
+    # --- Ressourcen (Anpassen nach Bedarf) ---
     resources:
       requests:
-        memory: 128Mi
         cpu: 100m
+        memory: 128Mi
       limits:
-        memory: 256Mi
-        cpu: 200m
-  # --- End Values Update ---
+        cpu: 500m
+        memory: 512Mi
+  # --- End Values ---
