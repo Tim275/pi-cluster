@@ -10,13 +10,11 @@ spec:
   chart:
     spec:
       chart: velero
-      # --- Change chart version ---
-      version: "5.0.0"
-      # --- End change ---
+      version: "7.2.23" # Bitnami Chart Version (Beispiel)
       sourceRef:
         kind: HelmRepository
-        name: vmware-tanzu
-        namespace: velero
+        name: bitnami # Name des Bitnami Repos
+        namespace: velero # Oder flux-system
   install:
     createNamespace: false
     remediation:
@@ -24,50 +22,83 @@ spec:
   upgrade:
     remediation:
       retries: 3
+  # --- Update Values für Bitnami Chart & AWS S3 ---
   values:
+    # --- Credentials ---
+    credentials:
+      useSecret: true
+      # --- Point to AWS credentials secret ---
+      existingSecret: velero-aws-credentials # Dein AWS Secret Name
+      # --- End change ---
+
+    # --- Backup Storage Location (AWS S3) ---
     configuration:
       provider: aws
       backupStorageLocation:
-        bucket: piclusterhomelab
+        name: default
+        # --- Dein AWS S3 Bucket Name ---
+        bucket: piclusterhomelab # <--- EINGEFÜGT
+        provider: aws
         config:
-          region: eu-central-1
-      # Keep the dummy VSL for now
+          # --- Deine AWS Region ---
+          region: eu-central-1 # <--- EINGEFÜGT
+          # --- s3ForcePathStyle und s3Url werden für AWS S3 nicht benötigt ---
+          # s3ForcePathStyle: "true" # Entfernt
+          # s3Url: <your-minio-s3-url> # Entfernt
+          # insecureSkipTLSVerify: "true" # Entfernt (normalerweise nicht für AWS S3 benötigt)
+          # --- End changes ---
+
+      # --- Volume Snapshot Location (für CSI) ---
+      # Bleibt gleich, da es sich auf Longhorn bezieht
       volumeSnapshotLocation:
-        - name: aws-dummy-vsl
-          provider: aws
-          config: {}
+        name: default-longhorn-backup
+        provider: velero.io/csi
+        config:
+          volumeSnapshotClassName: velero-longhorn-backup-vsc # Dein VSC Name
 
-    credentials:
-      useSecret: true
-      existingSecret: velero-aws-credentials
+    # --- Plugins ---
+    # AWS Plugin wird weiterhin benötigt
+    plugins:
+      aws:
+        enabled: true
+        image:
+          repository: velero/velero-plugin-for-aws
+          tag: v1.8.2 # Passend zu Velero v1.12.x
+          pullPolicy: IfNotPresent
 
-    initContainers:
-      - name: velero-plugin-for-aws
-        # --- Update plugin version for Velero v1.12.x ---
-        image: velero/velero-plugin-for-aws:v1.8.0
-        # --- End change ---
-        volumeMounts:
-          - mountPath: /target
-            name: plugins
+    # --- CSI Integration ---
+    # Bleibt gleich
+    extraEnvVars:
+      - name: VELERO_SCRATCH_DIR
+        value: /tmp/velero
+      - name: VELERO_FEATURES
+        value: EnableCSI
 
-    snapshotsEnabled: false
-    deployRestic: false
+    snapshotsEnabled: true # Snapshots aktivieren
 
-    resources:
-      requests:
-        cpu: 100m
-        memory: 128Mi
-      limits:
-        cpu: 200m
-        memory: 256Mi
-
+    # --- Velero Image (Bitnami) ---
+    # Bleibt gleich
     image:
-      repository: velero/velero
-      # --- Update Velero image tag for chart 5.0.0 ---
-      tag: v1.12.0
-      # --- End change ---
+      repository: bitnami/velero
+      tag: 1.12.2 # Passend zur Chart Version 7.2.23
 
+    # --- Service Account ---
+    # Bleibt gleich
     serviceAccount:
       server:
         create: true
-        name: velero
+
+    # --- Restic ---
+    # Bleibt gleich
+    deployNodeAgent: false
+
+    # --- Resource Limits ---
+    # Bleibt gleich
+    resources:
+      requests:
+        memory: 128Mi
+        cpu: 100m
+      limits:
+        memory: 256Mi
+        cpu: 200m
+  # --- End Values Update ---

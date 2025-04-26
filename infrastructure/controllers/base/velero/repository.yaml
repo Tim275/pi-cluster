@@ -1,8 +1,9 @@
 apiVersion: source.toolkit.fluxcd.io/v1
 kind: HelmRepository
 metadata:
-  name: vmware-tanzu
-  namespace: velero
+  # Neuer Name, um Konflikte zu vermeiden
+  name: bitnami
+  namespace: velero # Oder flux-system, je nachdem wo du Repos verwaltest
 spec:
   interval: 1h
-  url: https://vmware-tanzu.github.io/helm-charts
+  url: https://charts.bitnami.com/bitnami
