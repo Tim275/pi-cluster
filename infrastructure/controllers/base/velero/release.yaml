@@ -8,7 +8,7 @@ spec:
   chart:
     spec:
       chart: velero
-      version: "2.32.6" # Older but more ARM-compatible version
+      version: "2.32.6"
       sourceRef:
         kind: HelmRepository
         name: vmware-tanzu
@@ -18,12 +18,14 @@ spec:
     remediation:
       retries: 3
   values:
-    # Use an older Velero version known to work on ARM64
+    # Main Velero configuration (keep this part)
     image:
       repository: velero/velero
-      tag: v1.6.3 # Better ARM64 compatibility
+      tag: v1.6.3
 
-    # Use matching AWS plugin
+    # Disable the CRD upgrade job
+    upgradeCRDs: false
+
     initContainers:
       - name: velero-plugin-for-aws
         image: velero/velero-plugin-for-aws:v1.2.0
@@ -31,7 +33,7 @@ spec:
           - mountPath: /target
             name: plugins
 
-    # Simplify storage location config
+    # Keep the rest of your configuration...
     configuration:
       provider: aws
       backupStorageLocation:
@@ -40,20 +42,16 @@ spec:
         config:
           region: eu-central-1
 
-    # Use existing secret
     credentials:
       useSecret: true
       existingSecret: velero-aws-credentials
 
-    # Target p3 node with 16GB RAM
     nodeSelector:
-      kubernetes.io/hostname: p3 # Your high-RAM node based on README
+      kubernetes.io/hostname: p3
 
-    # Disable features not needed initially
-    deployRestic: false # Avoid additional components
-    snapshotsEnabled: false # Enable later once basic backup is working
+    deployRestic: false
+    snapshotsEnabled: false
 
-    # Resource limits for Raspberry Pi
     resources:
       requests:
         cpu: "50m"
