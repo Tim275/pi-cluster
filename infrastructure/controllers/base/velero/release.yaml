@@ -13,50 +13,42 @@ spec:
         kind: HelmRepository
         name: vmware-tanzu
         namespace: velero
+  install:
+    skipCRDs: false
+    remediation:
+      retries: 3
   values:
-    # AWS backend plugin configuration
+    # Required AWS plugin
     initContainers:
       - name: velero-plugin-for-aws
         image: velero/velero-plugin-for-aws:v1.10.0
-        imagePullPolicy: IfNotPresent
         volumeMounts:
           - mountPath: /target
             name: plugins
 
-    # Storage configuration - for native AWS S3
+    # Minimal configuration
     configuration:
       provider: aws
-      features: EnableCSI
       backupStorageLocation:
         name: default
-        provider: aws
-        default: true
         bucket: piclusterhomelab
         config:
           region: eu-central-1
-          # Remove MinIO specific settings:
-          # s3ForcePathStyle: true
-          # s3Url: https://minio.timourhomelab.org
-          # insecureSkipTLSVerify: true
+          s3Url: "https://s3.eu-central-1.amazonaws.com"
 
-    # Use existing secret
+    # Use credentials secret
     credentials:
       existingSecret: velero-aws-credentials
 
-    # Disable VolumeSnapshotLocation CRD - not needed for CSI
+    # Disable snapshots initially
     snapshotsEnabled: false
 
-    # Reasonable resources for Pi cluster
-    resources:
-      requests:
-        cpu: "100m"
-        memory: "200Mi"
-      limits:
-        cpu: "500m"
-        memory: "512Mi"
-
-    # Disable metrics collection until needed
-    metrics:
-      enabled: false
-      serviceMonitor:
-        enabled: false
+    # Fix for ARM architecture
+    nodeAgent:
+      resources:
+        requests:
+          cpu: "100m"
+          memory: "128Mi"
+        limits:
+          cpu: "200m"
+          memory: "256Mi"
