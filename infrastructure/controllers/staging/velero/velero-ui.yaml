@@ -15,12 +15,12 @@ spec:
     spec:
       containers:
         - name: velero-ui
-          # Use komodorio/velero-ui image
-          image: komodorio/velero-ui:latest # Changed image
+          # Use weaviate/velero-ui with the specific tag v0.2.4
+          image: weaviate/velero-ui:0.2.4
           ports:
-            - containerPort: 8080 # This UI listens on port 8080 by default
+            - containerPort: 8080 # Default port for this UI
           env:
-            # Point the UI to the Velero service
+            # Point the UI to the Velero service API
             - name: VELERO_API_URL
               value: "http://velero.velero.svc:8085"
           resources:
@@ -31,8 +31,9 @@ spec:
               cpu: 100m
               memory: 128Mi
       nodeSelector:
-        kubernetes.io/hostname: p3 # Keep targeting your p3 node
+        kubernetes.io/hostname: p3 # Target your specific node
 ---
+# --- (if putting in the same file as the Deployment)
 apiVersion: v1
 kind: Service
 metadata:
@@ -41,7 +42,7 @@ metadata:
 spec:
   ports:
     - name: http
-      port: 80
-      targetPort: 8080 # Match the containerPort (8080 for komodorio/velero-ui)
+      port: 80 # Port the service will listen on
+      targetPort: 8080 # Port the container listens on (8080 for this UI)
   selector:
-    app: velero-ui
+    app: velero-ui # Selects the pods created by the Deployment
