@@ -5,48 +5,48 @@ metadata:
   namespace: velero
 spec:
   interval: 15m
+  timeout: 15m # Timeout erhöht
   releaseName: velero
   chart:
     spec:
       chart: velero
-      version: "3.1.0" # Ältere, stabilere Version
+      version: "3.1.0"
       sourceRef:
         kind: HelmRepository
         name: vmware-tanzu
         namespace: velero
   install:
     createNamespace: true
+    skipCRDs: true # CRD-Installation überspringen
+    remediation:
+      retries: 3
+  upgrade:
+    skipCRDs: true # Auch bei Upgrades überspringen
     remediation:
       retries: 3
   values:
-    # AWS S3 Konfiguration
-    credentials:
-      useSecret: true
-      existingSecret: velero-aws-credentials # Von ExternalSecret erstellt
-
+    # Bestehende Values beibehalten
     configuration:
       provider: aws
       backupStorageLocation:
         provider: aws
-        bucket: piclusterhomelab # Dein S3-Bucket
+        bucket: piclusterhomelab
         config:
-          region: eu-central-1 # Deine AWS-Region
-          # KEINE Konfiguration für MinIO nötig (s3ForcePathStyle, s3Url)
-
+          region: eu-central-1
+    credentials:
+      existingSecret: velero-aws-credentials
+      useSecret: true
     initContainers:
-      - name: velero-plugin-for-aws
-        image: velero/velero-plugin-for-aws:v1.6.0
+      - image: velero/velero-plugin-for-aws:v1.6.0
+        name: velero-plugin-for-aws
         volumeMounts:
           - mountPath: /target
             name: plugins
-
-    # Verzichte zunächst auf CSI-Integration (füge später hinzu)
-    snapshotsEnabled: false
-
     resources:
-      requests:
-        cpu: 100m
-        memory: 128Mi
       limits:
         cpu: 200m
         memory: 256Mi
+      requests:
+        cpu: 100m
+        memory: 128Mi
+    snapshotsEnabled: false
