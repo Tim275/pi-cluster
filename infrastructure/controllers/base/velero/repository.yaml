@@ -1,9 +1,8 @@
-# filepath: ./kubernetes/repositories/vmware-tanzu.yaml # Beispielpfad
 apiVersion: source.toolkit.fluxcd.io/v1
 kind: HelmRepository
 metadata:
-  name: vmware-tanzu
-  namespace: velero # Oder flux-system
+  name: bitnami
+  namespace: velero
 spec:
   interval: 1h
-  url: https://vmware-tanzu.github.io/helm-charts
+  url: https://charts.bitnami.com/bitnami

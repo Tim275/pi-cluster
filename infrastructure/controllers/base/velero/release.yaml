@@ -5,43 +5,49 @@ metadata:
   namespace: velero
 spec:
   interval: 15m
-  timeout: 15m # Timeout erhöht
+  timeout: 15m
   releaseName: velero
   chart:
     spec:
       chart: velero
-      version: "3.1.0"
+      version: "7.1.1" # Bitnami Chart Version
       sourceRef:
         kind: HelmRepository
-        name: vmware-tanzu
+        name: bitnami
         namespace: velero
   install:
     createNamespace: true
-    skipCRDs: true # CRD-Installation überspringen
-    remediation:
-      retries: 3
-  upgrade:
-    skipCRDs: true # Auch bei Upgrades überspringen
     remediation:
       retries: 3
   values:
-    # Bestehende Values beibehalten
+    image:
+      repository: bitnami/velero
+      tag: 1.13.0-debian-11-r10 # ARM-kompatible Version
+
+    # AWS Konfiguration
     configuration:
       provider: aws
       backupStorageLocation:
+        name: default
         provider: aws
         bucket: piclusterhomelab
         config:
           region: eu-central-1
+
+    # Credentials
     credentials:
-      existingSecret: velero-aws-credentials
-      useSecret: true
-    initContainers:
-      - image: velero/velero-plugin-for-aws:v1.6.0
-        name: velero-plugin-for-aws
-        volumeMounts:
-          - mountPath: /target
-            name: plugins
+      secretContents:
+        cloud: |
+          [default]
+          aws_access_key_id=timour
+          aws_secret_access_key=2206
+
+    # AWS Plugin
+    plugins:
+      aws:
+        enabled: true
+
+    # Ressourcen
     resources:
       limits:
         cpu: 200m
@@ -49,4 +55,3 @@ spec:
       requests:
         cpu: 100m
         memory: 128Mi
-    snapshotsEnabled: false
