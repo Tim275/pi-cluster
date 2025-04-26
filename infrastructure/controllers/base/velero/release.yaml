@@ -10,60 +10,47 @@ spec:
   chart:
     spec:
       chart: velero
-      version: "4.0.3" # Keep the downgraded version for now
+      version: "4.0.3" # Keep this version
       sourceRef:
         kind: HelmRepository
         name: vmware-tanzu
         namespace: velero
+  # Remove the install.args and upgrade.args sections
   install:
-    createNamespace: false # namespace already exists
+    createNamespace: false
     remediation:
       retries: 3
-    # Correct field name: args
-    args:
-      - "--no-notes"
   upgrade:
     remediation:
       retries: 3
-    # Correct field name: args
-    args:
-      - "--no-notes"
   values:
-    # Plugin for AWS
+    # Minimal required values
+    configuration:
+      provider: aws
+      backupStorageLocation:
+        bucket: piclusterhomelab
+        config:
+          region: eu-central-1
+          # s3Url: "https://s3.eu-central-1.amazonaws.com" # Often not needed for AWS provider
+
+    # Credentials from secret
+    credentials:
+      useSecret: true # Keep this
+      existingSecret: velero-aws-credentials # Ensure this secret exists and is correct
+
+    # AWS Plugin Init Container (Essential)
     initContainers:
       - name: velero-plugin-for-aws
-        image: velero/velero-plugin-for-aws:v1.6.0 # Match plugin version with chart/Velero version if needed
+        image: velero/velero-plugin-for-aws:v1.6.0 # Match plugin version
         volumeMounts:
           - mountPath: /target
             name: plugins
 
-    # AWS S3 configuration - simplified
-    configuration:
-      provider: aws
-      backupStorageLocation:
-        name: default
-        default: true
-        provider: aws
-        bucket: piclusterhomelab
-        config:
-          region: eu-central-1
-          # If using MinIO/non-AWS S3, uncomment and set these:
-          # s3ForcePathStyle: "true"
-          # s3Url: "https://your-s3-url" # e.g., https://minio.timourhomelab.org
-          # insecureSkipTLSVerify: "true" # If using self-signed certs
-
-    # Credentials from secret
-    credentials:
-      existingSecret: velero-aws-credentials
-      useSecret: true # Ensure this is true if using existingSecret
-
-    # Disable volume snapshots initially
+    # Disable features that might complicate templating
     snapshotsEnabled: false
-
-    # Explicitly disable problematic features
     deployRestic: false
 
-    # Resources for ARM architecture
+    # Keep resource settings for ARM
     resources:
       requests:
         cpu: 100m
@@ -71,3 +58,14 @@ spec:
       limits:
         cpu: 200m
         memory: 256Mi
+
+    # Explicitly set image tag to match chart version expectation if needed
+    image:
+      repository: velero/velero
+      tag: v1.11.1 # v1.11.1 corresponds to chart 4.0.3
+
+    # Ensure service account exists or is created by the chart
+    serviceAccount:
+      server:
+        create: true # Let the chart create it if it doesn't exist
+        name: velero # Default name
