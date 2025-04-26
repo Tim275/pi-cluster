@@ -5,54 +5,58 @@ metadata:
   namespace: velero
 spec:
   interval: 15m
+  timeout: 10m
   chart:
     spec:
       chart: velero
-      version: "2.7.0" # Older chart with better ARM compatibility
+      version: "5.1.0" # Aktuelle Helm-Chart-Version
       sourceRef:
         kind: HelmRepository
         name: vmware-tanzu
         namespace: velero
   install:
-    createNamespace: false
+    createNamespace: true # Namespace sollte existieren/erstellt werden
     remediation:
       retries: 3
   values:
-    # Use v1.6.3 which has better ARM support
     image:
       repository: velero/velero
-      tag: v1.6.3
+      tag: v1.11.1 # Aktuelles Image mit Multi-Arch-Unterstützung (ARM/x86)
+      pullPolicy: IfNotPresent
 
-    # Use matching plugin version
-    initContainers:
+    # Plugin-Konfiguration (aktuelles AWS-Plugin)
+    plugins:
       - name: velero-plugin-for-aws
-        image: velero/velero-plugin-for-aws:v1.2.0
-        volumeMounts:
-          - mountPath: /target
-            name: plugins
+        image: velero/velero-plugin-for-aws:v1.7.0 # Kompatibel mit Velero 1.11
 
-    # Basic configuration
     configuration:
       provider: aws
       backupStorageLocation:
         name: default
+        provider: aws
         bucket: piclusterhomelab
         config:
           region: eu-central-1
+          s3Url: https://s3.eu-central-1.amazonaws.com # Explizite URL für AWS
 
     credentials:
       useSecret: true
       existingSecret: velero-aws-credentials
 
-    # Target your 16GB RAM node
-    nodeSelector:
-      kubernetes.io/hostname: p3
+    # Für ARM-Architektur wichtige Einstellungen
+    tolerations:
+      - key: "node-role.kubernetes.io/master"
+        operator: "Exists"
+        effect: "NoSchedule"
 
-    # Conservative resource settings
+    nodeSelector:
+      kubernetes.io/arch: "arm64" # Für ARM-Cluster (z.B. Raspberry Pi)
+
+    # Resource Limits für ARM (angepasst)
     resources:
       requests:
-        cpu: "100m"
-        memory: "128Mi"
-      limits:
         cpu: "200m"
-        memory: "256Mi"
+        memory: "512Mi" # Velero benötigt mind. 512MB RAM
+      limits:
+        cpu: "500m"
+        memory: "1024Mi"
