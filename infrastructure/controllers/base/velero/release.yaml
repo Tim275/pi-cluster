@@ -5,58 +5,59 @@ metadata:
   namespace: velero
 spec:
   interval: 15m
-  timeout: 10m
   chart:
     spec:
       chart: velero
-      version: "5.1.0" # Aktuelle Helm-Chart-Version
+      version: "2.32.6" # Older but more ARM-compatible version
       sourceRef:
         kind: HelmRepository
         name: vmware-tanzu
         namespace: velero
   install:
-    createNamespace: true # Namespace sollte existieren/erstellt werden
+    createNamespace: false
     remediation:
       retries: 3
   values:
+    # Use an older Velero version known to work on ARM64
     image:
       repository: velero/velero
-      tag: v1.11.1 # Aktuelles Image mit Multi-Arch-Unterstützung (ARM/x86)
-      pullPolicy: IfNotPresent
+      tag: v1.6.3 # Better ARM64 compatibility
 
-    # Plugin-Konfiguration (aktuelles AWS-Plugin)
-    plugins:
+    # Use matching AWS plugin
+    initContainers:
       - name: velero-plugin-for-aws
-        image: velero/velero-plugin-for-aws:v1.7.0 # Kompatibel mit Velero 1.11
+        image: velero/velero-plugin-for-aws:v1.2.0
+        volumeMounts:
+          - mountPath: /target
+            name: plugins
 
+    # Simplify storage location config
     configuration:
       provider: aws
       backupStorageLocation:
         name: default
-        provider: aws
         bucket: piclusterhomelab
         config:
           region: eu-central-1
-          s3Url: https://s3.eu-central-1.amazonaws.com # Explizite URL für AWS
 
+    # Use existing secret
     credentials:
       useSecret: true
       existingSecret: velero-aws-credentials
 
-    # Für ARM-Architektur wichtige Einstellungen
-    tolerations:
-      - key: "node-role.kubernetes.io/master"
-        operator: "Exists"
-        effect: "NoSchedule"
-
+    # Target p3 node with 16GB RAM
     nodeSelector:
-      kubernetes.io/arch: "arm64" # Für ARM-Cluster (z.B. Raspberry Pi)
+      kubernetes.io/hostname: p3 # Your high-RAM node based on README
 
-    # Resource Limits für ARM (angepasst)
+    # Disable features not needed initially
+    deployRestic: false # Avoid additional components
+    snapshotsEnabled: false # Enable later once basic backup is working
+
+    # Resource limits for Raspberry Pi
     resources:
       requests:
-        cpu: "200m"
-        memory: "512Mi" # Velero benötigt mind. 512MB RAM
+        cpu: "50m"
+        memory: "128Mi"
       limits:
-        cpu: "500m"
-        memory: "1024Mi"
+        cpu: "200m"
+        memory: "256Mi"
