@@ -15,15 +15,14 @@ spec:
     spec:
       containers:
         - name: velero-ui
-          # Use dragondrop-cloud/velero-ui image
-          image: dragondropcloud/velero-ui:latest
+          # Use komodorio/velero-ui image
+          image: komodorio/velero-ui:latest # Changed image
           ports:
-            - containerPort: 80 # This UI listens on port 80
+            - containerPort: 8080 # This UI listens on port 8080 by default
           env:
-            # This UI might use different env vars, check its documentation if needed
-            # For now, let's assume it auto-discovers or doesn't need explicit API URL
-            # - name: API_URL
-            #   value: "http://velero.velero.svc:8085"
+            # Point the UI to the Velero service
+            - name: VELERO_API_URL
+              value: "http://velero.velero.svc:8085"
           resources:
             limits:
               cpu: 200m
@@ -41,8 +40,8 @@ metadata:
   namespace: velero
 spec:
   ports:
-    - name: http # Add a name for clarity
+    - name: http
       port: 80
-      targetPort: 80 # Match the containerPort
+      targetPort: 8080 # Match the containerPort (8080 for komodorio/velero-ui)
   selector:
     app: velero-ui
