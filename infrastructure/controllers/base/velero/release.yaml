@@ -2,112 +2,51 @@ apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
   name: velero
-  namespace: velero # Wie in der Doku empfohlen
+  namespace: velero
 spec:
   interval: 15m
-  timeout: 10m
   releaseName: velero
   chart:
     spec:
       chart: velero
-      # --- Neuere Chart-Version passend zur Doku/Plugins ---
-      version: "6.1.0"
+      version: "3.1.0" # Ältere, stabilere Version
       sourceRef:
         kind: HelmRepository
-        # --- Stelle sicher, dass dieses Repo existiert ---
         name: vmware-tanzu
-        namespace: velero # Oder flux-system
-      # --- End changes ---
+        namespace: velero
   install:
-    createNamespace: true # Sicherstellen, dass Namespace existiert
+    createNamespace: true
     remediation:
       retries: 3
-  upgrade:
-    remediation:
-      retries: 3
-  # --- Values angepasst an Doku & deine Anforderungen ---
   values:
-    # --- Credentials via Secret (GitOps-freundlich) ---
+    # AWS S3 Konfiguration
     credentials:
       useSecret: true
-      # --- Name deines MinIO Secrets ---
-      existingSecret: velero-minio-credentials
+      existingSecret: velero-aws-credentials # Von ExternalSecret erstellt
 
-    # --- Konfiguration ---
     configuration:
-      provider: aws # Bleibt 'aws' für S3-kompatibel
-      # --- Backup Storage Location (MinIO im Container) ---
-      # Neuere Charts erwarten eine Liste
+      provider: aws
       backupStorageLocation:
-        - name: default # Name der Location
-          provider: aws # Provider innerhalb der Location
-          # --- Dein MinIO Bucket ---
-          bucket: <dein-minio-bucket-name> # z.B. k3s-velero
-          config:
-            region: minio # Platzhalter-Region für MinIO
-            s3ForcePathStyle: "true"
-            # --- URL zu deinem lokalen MinIO Container ---
-            # z.B. http://192.168.1.100:9000 (IP deines Hosts)
-            # oder http://minio-service.minio-ns:9000 (falls als K8s Service)
-            s3Url: http://<minio-ip-oder-service-name>:<minio-port>
-            # --- Wichtig für lokalen MinIO (HTTP/Self-Signed) ---
-            insecureSkipTLSVerify: "true"
-            # caCert: <base64-ca-cert> # Nur nötig bei Custom CA
+        provider: aws
+        bucket: piclusterhomelab # Dein S3-Bucket
+        config:
+          region: eu-central-1 # Deine AWS-Region
+          # KEINE Konfiguration für MinIO nötig (s3ForcePathStyle, s3Url)
 
-      # --- Volume Snapshot Location (CSI für Longhorn) ---
-      # Neuere Charts erwarten eine Liste
-      volumeSnapshotLocation:
-        - name: default-longhorn-backup # Name der Location
-          provider: velero.io/csi # Korrekter Provider für CSI
-          config:
-            # --- Muss mit deiner VSC übereinstimmen ---
-            volumeSnapshotClassName: velero-longhorn-backup-vsc
-
-    # --- Features: CSI aktivieren ---
-    features: EnableCSI
-
-    # --- Plugins: AWS (für MinIO) UND CSI ---
     initContainers:
       - name: velero-plugin-for-aws
-        # --- Version aus Doku ---
-        image: velero/velero-plugin-for-aws:v1.10.0
-        imagePullPolicy: IfNotPresent
-        volumeMounts:
-          - mountPath: /target
-            name: plugins
-      # --- CSI Plugin HINZUGEFÜGT ---
-      - name: velero-plugin-for-csi
-        # --- Kompatible Version zu Velero v1.14.0 ---
-        image: velero/velero-plugin-for-csi:v0.7.1
-        imagePullPolicy: IfNotPresent
+        image: velero/velero-plugin-for-aws:v1.6.0
         volumeMounts:
           - mountPath: /target
             name: plugins
 
-    # --- Snapshots aktivieren (WICHTIG für CSI) ---
-    # Entgegen der Doku MUSS dies true sein für CSI Snapshots
-    snapshotsEnabled: true
+    # Verzichte zunächst auf CSI-Integration (füge später hinzu)
+    snapshotsEnabled: false
 
-    # --- Velero Image passend zum Chart 6.1.0 ---
-    image:
-      repository: velero/velero
-      tag: v1.14.0
-
-    # --- Restic/Node Agent deaktivieren (wie in Doku bevorzugt) ---
-    # Name kann je nach Chart-Version variieren (deployRestic/deployNodeAgent)
-    deployNodeAgent: false
-
-    # --- Service Account ---
-    serviceAccount:
-      server:
-        create: true
-
-    # --- Ressourcen (Anpassen nach Bedarf) ---
     resources:
       requests:
         cpu: 100m
         memory: 128Mi
       limits:
-        cpu: 500m
-        memory: 512Mi
-  # --- End Values ---
+        cpu: 200m
+        memory: 256Mi
