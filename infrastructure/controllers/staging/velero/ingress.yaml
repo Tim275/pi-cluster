@@ -10,7 +10,7 @@ spec:
   #      - velero.timourhomelab.com
   #    secretName: velero-tls
   rules:
-    - host: velero.timourhomelab.com
+    - host: velero.timourhomelab.org
       http:
         paths:
           - path: /
