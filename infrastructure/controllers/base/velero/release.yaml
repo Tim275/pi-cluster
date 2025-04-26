@@ -14,6 +14,7 @@ spec:
         name: vmware-tanzu
         namespace: velero
   values:
+    # Plugin for AWS
     initContainers:
       - name: velero-plugin-for-aws
         image: velero/velero-plugin-for-aws:v1.8.0
@@ -21,33 +22,34 @@ spec:
           - mountPath: /target
             name: plugins
 
-    # Run on specific node
-    nodeSelector:
-      kubernetes.io/hostname: p3
-
-    # AWS S3 configuration
+    # Essential configuration
     configuration:
       provider: aws
       backupStorageLocation:
         name: default
         provider: aws
-        default: true
         bucket: piclusterhomelab
         config:
           region: eu-central-1
-          s3ForcePathStyle: true
-          s3Url: "https://minio.timourhomelab.org"
-          insecureSkipTLSVerify: true
 
+    # Use existing secret
     credentials:
       existingSecret: velero-aws-credentials
 
+    # These seem to be required for template rendering
+    deployRestic: false
+    metrics:
+      serviceMonitor:
+        enabled: false
+
+    # Disable snapshots
     snapshotsEnabled: false
 
+    # Basic resources
     resources:
       requests:
         cpu: "100m"
-        memory: "200Mi"
+        memory: "128Mi"
       limits:
-        cpu: "500m"
-        memory: "512Mi"
+        cpu: "200m"
+        memory: "256Mi"
