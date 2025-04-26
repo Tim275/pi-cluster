@@ -14,42 +14,49 @@ spec:
         name: vmware-tanzu
         namespace: velero
   values:
-    # Plugin for AWS
+    # AWS backend plugin configuration
     initContainers:
       - name: velero-plugin-for-aws
-        image: velero/velero-plugin-for-aws:v1.8.0
+        image: velero/velero-plugin-for-aws:v1.10.0
+        imagePullPolicy: IfNotPresent
         volumeMounts:
           - mountPath: /target
             name: plugins
 
-    # Essential configuration
+    # Storage configuration - for native AWS S3
     configuration:
       provider: aws
+      features: EnableCSI
       backupStorageLocation:
         name: default
         provider: aws
+        default: true
         bucket: piclusterhomelab
         config:
           region: eu-central-1
+          # Remove MinIO specific settings:
+          # s3ForcePathStyle: true
+          # s3Url: https://minio.timourhomelab.org
+          # insecureSkipTLSVerify: true
 
     # Use existing secret
     credentials:
       existingSecret: velero-aws-credentials
 
-    # These seem to be required for template rendering
-    deployRestic: false
-    metrics:
-      serviceMonitor:
-        enabled: false
-
-    # Disable snapshots
+    # Disable VolumeSnapshotLocation CRD - not needed for CSI
     snapshotsEnabled: false
 
-    # Basic resources
+    # Reasonable resources for Pi cluster
     resources:
       requests:
         cpu: "100m"
-        memory: "128Mi"
+        memory: "200Mi"
       limits:
-        cpu: "200m"
-        memory: "256Mi"
+        cpu: "500m"
+        memory: "512Mi"
+
+    # Disable metrics collection until needed
+    metrics:
+      enabled: false
+      serviceMonitor:
+        enabled: false

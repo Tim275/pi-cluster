@@ -3,7 +3,8 @@ kind: Kustomization
 resources:
   - namespace.yaml
   - repository.yaml
-  - release.yaml
   - aws-credentials.yaml
-  # Comment out the schedule for now - add it after Velero is running
-  # - backup-schedule.yaml
+  - release.yaml
+  # Add this later once Velero is running:
+  # - volumesnapshotclass.yaml
+  # - schedule.yaml
