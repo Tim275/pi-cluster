@@ -15,9 +15,14 @@ spec:
     spec:
       containers:
         - name: velero-ui
-          image: lianmakesthings/velero-ui:v0.2.0
+          image: vfarcic/velero-dashboard:latest # More reliable image
           ports:
             - containerPort: 8080
+          env:
+            - name: API_URL
+              value: "http://velero.velero.svc:8085"
+      nodeSelector:
+        kubernetes.io/hostname: p3
 ---
 apiVersion: v1
 kind: Service
