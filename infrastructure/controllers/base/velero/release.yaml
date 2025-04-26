@@ -19,12 +19,12 @@ spec:
     remediation:
       retries: 3
   values:
-    # Use standard image - the alpine variant doesn't exist
+    # Use standard image without -alpine suffix (this image doesn't exist)
     image:
       repository: velero/velero
-      tag: v1.10.2
+      tag: v1.10.2 # Remove the -alpine suffix
 
-    # Use standard plugin image - ARM64 is supported in standard image
+    # Use standard plugin image
     initContainers:
       - name: velero-plugin-for-aws
         image: velero/velero-plugin-for-aws:v1.6.0
@@ -33,7 +33,7 @@ spec:
           - mountPath: /target
             name: plugins
 
-    # AWS config
+    # AWS config (keep the same)
     configuration:
       provider: aws
       backupStorageLocation:
