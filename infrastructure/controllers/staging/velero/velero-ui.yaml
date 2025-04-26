@@ -15,14 +15,24 @@ spec:
     spec:
       containers:
         - name: velero-ui
-          image: vfarcic/velero-dashboard:latest # More reliable image
+          # Use dragondrop-cloud/velero-ui image
+          image: dragondropcloud/velero-ui:latest
           ports:
-            - containerPort: 8080
+            - containerPort: 80 # This UI listens on port 80
           env:
-            - name: API_URL
-              value: "http://velero.velero.svc:8085"
+            # This UI might use different env vars, check its documentation if needed
+            # For now, let's assume it auto-discovers or doesn't need explicit API URL
+            # - name: API_URL
+            #   value: "http://velero.velero.svc:8085"
+          resources:
+            limits:
+              cpu: 200m
+              memory: 256Mi
+            requests:
+              cpu: 100m
+              memory: 128Mi
       nodeSelector:
-        kubernetes.io/hostname: p3
+        kubernetes.io/hostname: p3 # Keep targeting your p3 node
 ---
 apiVersion: v1
 kind: Service
@@ -31,7 +41,8 @@ metadata:
   namespace: velero
 spec:
   ports:
-    - port: 80
-      targetPort: 8080
+    - name: http # Add a name for clarity
+      port: 80
+      targetPort: 80 # Match the containerPort
   selector:
     app: velero-ui
