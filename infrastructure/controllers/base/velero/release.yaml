@@ -8,8 +8,9 @@ spec:
   timeout: 10m
   chart:
     spec:
+      # Use latest chart version that supports Velero 1.16.0
       chart: velero
-      version: "3.1.0"
+      version: "5.1.6" # Updated chart version
       sourceRef:
         kind: HelmRepository
         name: vmware-tanzu
@@ -18,22 +19,25 @@ spec:
     createNamespace: false
     remediation:
       retries: 3
+    # Skip CRDs to avoid upgrade issues
+    skipCRDs: true
+  upgrade:
+    skipCRDs: true
   values:
-    # Use standard image without -alpine suffix (this image doesn't exist)
+    # Use latest Velero image
     image:
       repository: velero/velero
-      tag: v1.10.2 # Remove the -alpine suffix
+      tag: v1.16.0 # Latest version
 
-    # Use standard plugin image
+    # Updated plugin version compatible with 1.16.0
     initContainers:
       - name: velero-plugin-for-aws
-        image: velero/velero-plugin-for-aws:v1.6.0
-        imagePullPolicy: IfNotPresent
+        image: velero/velero-plugin-for-aws:v1.8.0
         volumeMounts:
           - mountPath: /target
             name: plugins
 
-    # AWS config (keep the same)
+    # AWS configuration remains the same
     configuration:
       provider: aws
       backupStorageLocation:
@@ -47,15 +51,11 @@ spec:
       useSecret: true
       existingSecret: velero-aws-credentials
 
-    # Disable features that might cause issues initially
+    # Start with minimal features
     deployNodeAgent: false
     snapshotsEnabled: false
 
-    # Target worker node with 16GB RAM
-    nodeSelector:
-      kubernetes.io/hostname: p3
-
-    # Resource limits for ARM
+    # Keep resource limits appropriate for Pi
     resources:
       requests:
         cpu: "100m"
