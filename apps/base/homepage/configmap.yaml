@@ -93,7 +93,7 @@ data:
         - Velero:
             href: "https://velero.io"
             description: "Backup and disaster recovery"
-            icon: "velero.png" 
+            icon: "https://landscape.cncf.io/logos/9190c1dbdd1f79f2ea3d961d23e322515c9b8122b6ae23ba75ab4e848fff7ffa.svg"
             statusCheck: true
     - Applications:
         - Linkding:
