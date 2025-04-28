@@ -85,6 +85,16 @@ data:
             description: "PostgreSQL operator with AWS S3 backups"
             icon: "postgresql.svg"
             statusCheck: true
+        - Longhorn:
+            href: "https://longhorn.timourhomelab.org"
+            description: "Cloud native distributed block storage"
+            icon: "longhorn.svg"
+            statusCheck: true
+        - Velero:
+            href: "https://velero.io"
+            description: "Backup and disaster recovery"
+            icon: "velero.png" 
+            statusCheck: true
     - Applications:
         - Linkding:
             href: "https://ldpi.timourhomelab.org"

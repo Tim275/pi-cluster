@@ -34,7 +34,11 @@ spec:
                 secretKeyRef:
                   name: velero-ui-credentials
                   key: ADMIN_PASSWORD
-            # Basic auth fallback
+            # das ist das richtige !The Correct Variables
+            #The actual variables the application uses for authentication are:
+
+            ##BASIC_AUTH_USERNAME
+            #BASIC_AUTH_PASSWORD
             - name: BASIC_AUTH_USERNAME
               valueFrom:
                 secretKeyRef:
