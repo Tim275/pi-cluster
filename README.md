@@ -128,6 +128,17 @@ Everything needed to run my cluster & deploy my applications
         <td><a href="https://www.elastic.co/">Elasticsearch</a></td>
         <td>Search engine and analytics</td>
     </tr>
+   <tr>
+    <td><img width="32" src="https://longhorn.io/img/logos/longhorn-icon-color.svg"></td>
+    <td><a href="https://longhorn.io/">Longhorn</a></td>
+    <td>Verteiltes Blockspeicher-System für Kubernetes mit einfacher Verwaltung von persistenten Volumes und automatischer Replikation über mehrere Raspberry Pis</td>
+</tr>
+<tr>
+    <td><img width="32" src="https://velero.io/img/Velero.svg"></td>
+    <td><a href="https://velero.io/">Velero</a></td>
+    <td>Backup und Disaster Recovery für Kubernetes-Ressourcen und persistente Volumes mit AWS S3-Integration zur Datensicherung</td>
+</tr>
+
 </table>
 
 ## Cluster Management Interface
