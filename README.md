@@ -119,27 +119,68 @@ Everything needed to run my cluster & deploy my applications
         <td>Kubernetes operator that integrates external secret management systems like AWS Secrets Manager</td>
     </tr>
     <tr>
-        <td><img width="32" src="https://d2908q01vomqb2.cloudfront.net/22d200f8670dbdb3e253a90eee5098477c95c23d/2020/10/13/1-1.png"></td>
+        <td><img width="32" src="https://camo.githubusercontent.com/5926145ade5befaf2944f207cc20674864519e81d1b2c82123df6a45057fdca8/68747470733a2f2f7777772e7376677265706f2e636f6d2f646f776e6c6f61642f3437373036362f6c6f636b2e737667"></td>
         <td><a href="https://aws.amazon.com/secrets-manager/">AWS Secrets Manager</a></td>
         <td>Centralized cloud-based secrets management service for storing and retrieving application credentials</td>
     </tr>
     <tr>
-        <td><img width="32" src="https://via.placeholder.com/32?text=Elastic"></td>
+        <td><img width="32" src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/elasticsearch/elasticsearch-original.svg"></td>
         <td><a href="https://www.elastic.co/">Elasticsearch</a></td>
         <td>Search engine and analytics</td>
     </tr>
    <tr>
-    <td><img width="32" src="https://longhorn.io/img/logos/longhorn-icon-color.svg"></td>
+    <td><img width="32" src="https://raw.githubusercontent.com/cncf/artwork/master/projects/longhorn/icon/color/longhorn-icon-color.svg"></td>
     <td><a href="https://longhorn.io/">Longhorn</a></td>
     <td>Verteiltes Blockspeicher-System für Kubernetes mit einfacher Verwaltung von persistenten Volumes und automatischer Replikation über mehrere Raspberry Pis</td>
 </tr>
 <tr>
-    <td><img width="32" src="https://velero.io/img/Velero.svg"></td>
+    <td><img width="32" src="https://landscape.cncf.io/logos/9190c1dbdd1f79f2ea3d961d23e322515c9b8122b6ae23ba75ab4e848fff7ffa.svg"></td>
     <td><a href="https://velero.io/">Velero</a></td>
     <td>Backup und Disaster Recovery für Kubernetes-Ressourcen und persistente Volumes mit AWS S3-Integration zur Datensicherung</td>
 </tr>
-
 </table>
+
+### Event Streaming Platform
+
+My homelab also includes a robust event streaming platform based on Apache Kafka, allowing me to experiment with event-driven architectures and microservice communication patterns.
+
+<table>
+    <tr>
+        <th>Logo</th>
+        <th>Name</th>
+        <th>Description</th>
+    </tr>
+    <tr>
+        <td><img width="32" src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/svg/kafka.svg"></td>
+        <td><a href="https://kafka.apache.org/">Apache Kafka</a></td>
+        <td>Distributed event streaming platform deployed using Strimzi Kafka Operator</td>
+    </tr>
+    <tr>
+        <td><img width="32" src="https://strimzi.io/images/strimzi_logo.png"></td>
+        <td><a href="https://strimzi.io/">Strimzi Operator</a></td>
+        <td>Kubernetes operator for deploying and managing Apache Kafka clusters</td>
+    </tr>
+    <tr>
+        <td><img width="32" src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/svg/kafdrop.svg"></td>
+        <td><a href="https://github.com/obsidiandynamics/kafdrop">Kafdrop</a></td>
+        <td>Web UI for browsing Kafka topics and monitoring consumer groups</td>
+    </tr>
+    <tr>
+        <td><img width="32" src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/svg/confluent.svg"></td>
+        <td><a href="https://docs.confluent.io/platform/current/schema-registry/index.html">Schema Registry</a></td>
+        <td>Schema management service for structured data formats (Avro, JSON Schema, etc.)</td>
+    </tr>
+</table>
+
+### Microservices Architecture
+
+I'm experimenting with building lightweight microservices that communicate through Kafka topics, using Go and TypeScript:
+
+- **Event producers** feed data into the platform from various sources
+- **Stream processors** transform and enrich events in real-time
+- **Event consumers** execute actions based on processed events
+
+This setup provides practical experience with modern event-driven architecture patterns and complements my Kubernetes expertise with real-world messaging scenarios.
 
 ## Cluster Management Interface
 
@@ -162,4 +203,11 @@ I use a multi-layered approach to secret management:
 3. **SOPS** - Encrypts sensitive configuration files directly in the Git repository
 4. **Flux** - Handles decryption of SOPS-encrypted files during GitOps operations
 
-#
+## Future Plans
+
+As my homelab evolves, I'm planning to expand in these areas:
+
+1. **GitOps Expansion** - Further automation of cluster management with Flux
+2. **Observability Enhancements** - Adding distributed tracing with OpenTelemetry
+3. **AI/ML Experimentation** - Deploying small-scale ML models and pipelines
+4. **Multi-cluster Architecture** - Building a secondary cluster for HA testing
