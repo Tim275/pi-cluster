@@ -140,38 +140,6 @@ Everything needed to run my cluster & deploy my applications
 </tr>
 </table>
 
-### Event Streaming Platform
-
-My homelab also includes a robust event streaming platform based on Apache Kafka, allowing me to experiment with event-driven architectures and microservice communication patterns.
-
-<table>
-    <tr>
-        <th>Logo</th>
-        <th>Name</th>
-        <th>Description</th>
-    </tr>
-    <tr>
-        <td><img width="32" src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/svg/kafka.svg"></td>
-        <td><a href="https://kafka.apache.org/">Apache Kafka</a></td>
-        <td>Distributed event streaming platform deployed using Strimzi Kafka Operator</td>
-    </tr>
-    <tr>
-        <td><img width="32" src="https://strimzi.io/images/strimzi_logo.png"></td>
-        <td><a href="https://strimzi.io/">Strimzi Operator</a></td>
-        <td>Kubernetes operator for deploying and managing Apache Kafka clusters</td>
-    </tr>
-    <tr>
-        <td><img width="32" src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/svg/kafdrop.svg"></td>
-        <td><a href="https://github.com/obsidiandynamics/kafdrop">Kafdrop</a></td>
-        <td>Web UI for browsing Kafka topics and monitoring consumer groups</td>
-    </tr>
-    <tr>
-        <td><img width="32" src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/svg/confluent.svg"></td>
-        <td><a href="https://docs.confluent.io/platform/current/schema-registry/index.html">Schema Registry</a></td>
-        <td>Schema management service for structured data formats (Avro, JSON Schema, etc.)</td>
-    </tr>
-</table>
-
 ## Cluster Management Interface
 
 My homelab is orchestrated using a combination of GitOps tools that ensure all configurations remain declarative and consistent. I use Flux CD for continuous deployment and Renovate for automated dependency updates. This central interface, accessible via [Homepage](http://homepage.timourhomelab.org), provides a complete overview of cluster health, installed apps, and infrastructure status.
