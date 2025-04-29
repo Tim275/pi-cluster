@@ -172,16 +172,6 @@ My homelab also includes a robust event streaming platform based on Apache Kafka
     </tr>
 </table>
 
-### Microservices Architecture
-
-I'm experimenting with building lightweight microservices that communicate through Kafka topics, using Go and TypeScript:
-
-- **Event producers** feed data into the platform from various sources
-- **Stream processors** transform and enrich events in real-time
-- **Event consumers** execute actions based on processed events
-
-This setup provides practical experience with modern event-driven architecture patterns and complements my Kubernetes expertise with real-world messaging scenarios.
-
 ## Cluster Management Interface
 
 My homelab is orchestrated using a combination of GitOps tools that ensure all configurations remain declarative and consistent. I use Flux CD for continuous deployment and Renovate for automated dependency updates. This central interface, accessible via [Homepage](http://homepage.timourhomelab.org), provides a complete overview of cluster health, installed apps, and infrastructure status.
