@@ -1,8 +1,13 @@
+# apps/base/immich/kustomization.yaml
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
-namespace: wallabag
+namespace: immich
 resources:
   - namespace.yaml
-  #  - secrets.yaml
-  # - service.yaml
-  # - deployment.yaml
+  - configmap.yaml
+  - secrets.yaml
+  - deployment-server.yaml
+  - deployment-microservices.yaml
+  - deployment-ml.yaml
+  - services.yaml
+  - storage.yaml
