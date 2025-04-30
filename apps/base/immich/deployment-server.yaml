@@ -43,6 +43,8 @@ spec:
       containers:
         - name: immich-server
           image: "ghcr.io/immich-app/immich-server:v1.93.1"
+          # Added explicit command to start server
+          command: ["node", "dist/main.js", "immich"]
           imagePullPolicy: IfNotPresent
           securityContext:
             runAsUser: 0
