@@ -5,30 +5,25 @@ metadata:
   name: immich-config
   namespace: immich
 data:
-  # Database Configuration
-  DB_HOSTNAME: "immich-db-rw.immich.svc.cluster.local"  # Updated to match CloudNativePG service name
-  DB_PORT: "5432"  # Added
+  # Database settings
+  DB_HOSTNAME: "immich-db-rw.immich"
   DB_DATABASE_NAME: "immich"
-  DB_USERNAME: "postgres"
-
-  # Redis Configuration
+  DB_USERNAME: "immich"
+  DB_PORT: "5432"
+  
+  # Redis settings
   REDIS_HOSTNAME: "immich-redis-master.immich.svc.cluster.local"
   REDIS_PORT: "6379"
   REDIS_DBINDEX: "0"
   
-  # Application Configuration
+  # Immich settings
   NODE_ENV: "production"
-  LOG_LEVEL: "warn"
-  
-  # Service URLs
+  LOG_LEVEL: "info"
   IMMICH_MACHINE_LEARNING_URL: "http://immich-ml:3003"
-  IMMICH_MICROSERVICES_URL: "http://immich-microservices:3002"
-  
-  # Storage Configuration
   IMMICH_MEDIA_LOCATION: "/usr/src/app/upload"
-  UPLOAD_LOCATION: "/usr/src/app/upload"  # Added - required by newer Immich versions
+  IMMICH_MICROSERVICES_URL: "http://immich-microservices:3002"
+  UPLOAD_LOCATION: "/usr/src/app/upload"
   
-  # Machine Learning Configuration
-  MACHINE_LEARNING_CACHE_FOLDER: "/cache"  # Added
-  MACHINE_LEARNING_WORKER_COUNT: "1"  # Added
-  MACHINE_LEARNING_TENSORFLOW_NUM_THREADS: "2"  # Added
+  # ML settings
+  MACHINE_LEARNING_CACHE_FOLDER: "/cache"
+  MACHINE_LEARNING_WORKER_COUNT: "1"
