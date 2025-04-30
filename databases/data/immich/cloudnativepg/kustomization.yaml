@@ -1,6 +1,8 @@
-# infrastructure/databases/immich/cloudnativepg/kustomization.yaml
-#apiVersion: kustomize.config.k8s.io/v1beta1
-#kind: Kustomization
-#resources:
-# - cluster.yaml
-#  - secrets.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: wallabag
+resources:
+  - database.yaml
+  #  - secrets.yaml
+  # - service.yaml
+  # - deployment.yaml
