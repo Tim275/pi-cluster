@@ -4,8 +4,11 @@ kind: Deployment
 metadata:
   name: immich-server
   namespace: immich
+  labels:
+    app: immich-server
 spec:
-  replicas: 1
+  strategy:
+    type: Recreate  # Important: ensures clean deployment
   selector:
     matchLabels:
       app: immich-server
@@ -14,42 +17,71 @@ spec:
       labels:
         app: immich-server
     spec:
+      securityContext:
+        fsGroup: 0  # Ensures proper file permissions
+      serviceAccountName: default
+      dnsPolicy: ClusterFirst
+      initContainers:
+        - name: postgresql-isready
+          image: "postgres:14-alpine"  # Using standard postgres image
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: POSTGRES_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: immich-config  # Your configmap name
+                  key: DB_USERNAME
+            - name: POSTGRES_DB
+              valueFrom:
+                configMapKeyRef:
+                  name: immich-config
+                  key: DB_DATABASE_NAME
+          command:
+            - /bin/sh
+            - -c
+            - until pg_isready -U "${POSTGRES_USER}" -d "dbname=${POSTGRES_DB}" -h immich-db-rw.immich -p 5432; do echo "waiting for database"; sleep 2; done
       containers:
-      - name: immich-server
-        image: ghcr.io/immich-app/immich-server:v1.93.1
-        ports:
-        - containerPort: 3001
-        env:
-        - name: DB_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: immich-db-secret
-              key: password
-        - name: REDIS_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: immich-redis-secret
-              key: password
-        envFrom:
-        - configMapRef:
-            name: immich-config
-        volumeMounts:
-        - name: uploads
-          mountPath: /usr/src/app/upload
-        resources:
-          limits:
-            cpu: 1000m
-            memory: 1Gi
-          requests:
-            cpu: 200m
-            memory: 500Mi
-        startupProbe:
-          httpGet:
-            path: /server-info
-            port: 3001
-          failureThreshold: 30
-          periodSeconds: 10
+        - name: immich-server
+          image: "ghcr.io/immich-app/immich-server:v1.93.1"  # Your specific version
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            runAsUser: 0  # Run as root
+          ports:
+            - containerPort: 3001
+          env:
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:  # Changed from configMapKeyRef to secretKeyRef
+                  name: immich-db-secret
+                  key: password
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: immich-redis-secret
+                  key: password
+          envFrom:
+            - configMapRef:
+                name: immich-config
+          livenessProbe:
+            failureThreshold: 120
+            httpGet:
+              path: /server/ping
+              port: 3001  # Changed from 2283 to match your setup
+            initialDelaySeconds: 60  # Increased from 10 to 60
+            periodSeconds: 120
+            timeoutSeconds: 5  # Increased from 1 to 5
+          readinessProbe:
+            failureThreshold: 120
+            httpGet:
+              path: /server/ping
+              port: 3001  # Changed from 2283 to match your setup
+            initialDelaySeconds: 60  # Increased from 10 to 60
+            periodSeconds: 120
+            timeoutSeconds: 5  # Increased from 1 to 5
+          volumeMounts:
+            - name: uploads
+              mountPath: /usr/src/app/upload
       volumes:
-      - name: uploads
-        persistentVolumeClaim:
-          claimName: immich-uploads-pvc
+        - name: uploads
+          persistentVolumeClaim:
+            claimName: immich-uploads-pvc
