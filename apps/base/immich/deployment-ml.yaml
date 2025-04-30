@@ -19,6 +19,11 @@ spec:
         image: ghcr.io/immich-app/immich-machine-learning:v1.93.1
         ports:
         - containerPort: 3003
+        env:
+        - name: MACHINE_LEARNING_CACHE_FOLDER
+          value: "/cache"
+        - name: MACHINE_LEARNING_WORKER_COUNT
+          value: "1"
         volumeMounts:
         - name: model-cache
           mountPath: /cache

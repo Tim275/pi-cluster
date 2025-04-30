@@ -45,7 +45,7 @@ spec:
             memory: 500Mi
         startupProbe:
           httpGet:
-            path: /
+            path: /server-info
             port: 3001
           failureThreshold: 30
           periodSeconds: 10
