@@ -1,5 +1,0 @@
-# databases/data/immich/redis/namespace.yaml
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: immich-redis

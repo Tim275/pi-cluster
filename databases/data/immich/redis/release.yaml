@@ -3,7 +3,7 @@ apiVersion: helm.toolkit.fluxcd.io/v2beta1
 kind: HelmRelease
 metadata:
   name: immich-redis
-  namespace: immich-redis
+  namespace: immich
 spec:
   interval: 5m
   chart:
@@ -12,15 +12,14 @@ spec:
       version: "17.x"
       sourceRef:
         kind: HelmRepository
-        name: redis-labs
+        name: bitnami
         namespace: flux-system
-  # Values adapted to Redis Labs chart
   values:
     image:
       registry: docker.io
       repository: redis
-      tag: 7.0-alpine # Using official Alpine-based Redis image
-    architecture: replication
+      tag: "7.0" # Standard Redis image (not Alpine)
+    architecture: replication # Changed from standalone to replication
     auth:
       enabled: true
       existingSecret: immich-redis-secret
@@ -37,10 +36,11 @@ spec:
           cpu: 100m
           memory: 256Mi
     replica:
-      replicaCount: 1
+      enabled: true # Enable replicas
+      replicaCount: 1 # Start with 1 replica
       persistence:
         enabled: true
-        size: 1Gi
+        size: 1Gi # Smaller size for replica
       resources:
         limits:
           cpu: 250m

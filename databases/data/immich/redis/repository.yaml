@@ -1,9 +1,9 @@
-# databases/data/immich/redis/repository.yaml
-apiVersion: source.toolkit.fluxcd.io/v1beta2
+# infrastructure/controllers/base/redis-operator/repository.yaml
+apiVersion: source.toolkit.fluxcd.io/v1
 kind: HelmRepository
 metadata:
-  name: redis-labs
+  name: spotahome
   namespace: flux-system
 spec:
   interval: 30m
-  url: https://charts.redis.io/
+  url: https://spotahome.github.io/redis-operator

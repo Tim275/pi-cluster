@@ -1,0 +1,32 @@
+# databases/data/immich/cloudnativepg/cluster.yaml
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: immich-db
+  namespace: immich
+spec:
+  description: Postgres database cluster for Immich photo management
+  imageName: ghcr.io/cloudnative-pg/postgresql:16.6-30-bookworm
+  instances: 1 # 1 primary + 1 replica
+
+  inheritedMetadata:
+    labels:
+      app: immich-database
+
+  bootstrap:
+    initdb:
+      database: immich
+      owner: immich
+
+  monitoring:
+    enablePodMonitor: true
+    ## Additional postgresql metrics for grafana
+    customQueriesConfigMap:
+      - name: postgres-custom-metrics
+        key: queries.yaml
+
+  storage:
+    size: 5Gi # Increased size for photo metadata storage
+    pvcTemplate:
+      accessModes:
+        - ReadWriteOnce
