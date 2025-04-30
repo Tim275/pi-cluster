@@ -1,4 +1,4 @@
-# infrastructure/databases/immich/redis/release.yaml
+# databases/data/immich/redis/release.yaml
 apiVersion: helm.toolkit.fluxcd.io/v2beta1
 kind: HelmRelease
 metadata:
@@ -12,14 +12,19 @@ spec:
       version: "17.x"
       sourceRef:
         kind: HelmRepository
-        name: bitnami
+        name: redis-labs
         namespace: flux-system
+  # Values adapted to Redis Labs chart
   values:
+    image:
+      registry: docker.io
+      repository: redis
+      tag: 7.0-alpine # Using official Alpine-based Redis image
     architecture: replication
     auth:
       enabled: true
-      existingSecret: immich-redis-credentials  # Reference the secret
-      existingSecretPasswordKey: password       # Key in the secret
+      existingSecret: immich-redis-secret
+      existingSecretPasswordKey: password
     master:
       persistence:
         enabled: true

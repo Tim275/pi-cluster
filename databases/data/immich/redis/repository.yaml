@@ -1,9 +1,9 @@
-# infrastructure/databases/immich/redis/repository.yaml
+# databases/data/immich/redis/repository.yaml
 apiVersion: source.toolkit.fluxcd.io/v1beta2
 kind: HelmRepository
 metadata:
-  name: bitnami
+  name: redis-labs
   namespace: flux-system
 spec:
   interval: 30m
-  url: https://charts.bitnami.com/bitnami
+  url: https://charts.redis.io/

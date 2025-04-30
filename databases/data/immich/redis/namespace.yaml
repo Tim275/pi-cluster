@@ -1,4 +1,4 @@
-# infrastructure/databases/immich/redis/namespace.yaml
+# databases/data/immich/redis/namespace.yaml
 apiVersion: v1
 kind: Namespace
 metadata:
