@@ -1,0 +1,18 @@
+# apps/base/immich/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: immich-config
+  namespace: immich
+data:
+  DB_HOSTNAME: "immich-pg.immich.svc.cluster.local"
+  DB_DATABASE: "immich"
+  DB_USERNAME: "postgres"
+  REDIS_HOSTNAME: "immich-redis-master.immich-redis.svc.cluster.local"
+  REDIS_PORT: "6379"
+  REDIS_DBINDEX: "0"
+  NODE_ENV: "production"
+  LOG_LEVEL: "info"
+  IMMICH_MACHINE_LEARNING_URL: "http://immich-ml:3003"
+  IMMICH_MEDIA_LOCATION: "/usr/src/app/upload"
+  IMMICH_MICROSERVICES_URL: "http://immich-microservices:3002"

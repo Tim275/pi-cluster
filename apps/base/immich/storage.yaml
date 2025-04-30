@@ -1,0 +1,26 @@
+# apps/base/immich/storage.yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: immich-uploads-pvc
+  namespace: immich
+spec:
+  storageClassName: longhorn
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: immich-ml-cache-pvc
+  namespace: immich
+spec:
+  storageClassName: longhorn
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi

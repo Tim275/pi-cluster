@@ -1,0 +1,25 @@
+# apps/base/immich/ingress.yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: immich
+  namespace: immich
+ # annotations:
+  #  cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: immich.yourdomain.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: immich-server
+            port:
+              number: 80
+ # tls:
+ # - hosts:
+ #   - immich.yourdomain.com
+  #  secretName: immich-tls

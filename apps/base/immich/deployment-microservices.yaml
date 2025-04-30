@@ -1,0 +1,50 @@
+# apps/base/immich/deployment-microservices.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: immich-microservices
+  namespace: immich
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: immich-microservices
+  template:
+    metadata:
+      labels:
+        app: immich-microservices
+    spec:
+      containers:
+      - name: immich-microservices
+        image: ghcr.io/immich-app/immich-server:v1.93.1
+        command: ["node", "dist/microservices/main"]
+        ports:
+        - containerPort: 3002
+        env:
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: immich-db-secret
+              key: password
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: immich-redis-secret
+              key: password
+        envFrom:
+        - configMapRef:
+            name: immich-config
+        volumeMounts:
+        - name: uploads
+          mountPath: /usr/src/app/upload
+        resources:
+          limits:
+            cpu: 1000m
+            memory: 1Gi
+          requests:
+            cpu: 200m
+            memory: 500Mi
+      volumes:
+      - name: uploads
+        persistentVolumeClaim:
+          claimName: immich-uploads-pvc
