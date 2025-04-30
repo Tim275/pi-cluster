@@ -8,7 +8,7 @@ metadata:
     app: immich-server
 spec:
   strategy:
-    type: Recreate  # Important: ensures clean deployment
+    type: Recreate
   selector:
     matchLabels:
       app: immich-server
@@ -18,18 +18,18 @@ spec:
         app: immich-server
     spec:
       securityContext:
-        fsGroup: 0  # Ensures proper file permissions
+        fsGroup: 0
       serviceAccountName: default
       dnsPolicy: ClusterFirst
       initContainers:
         - name: postgresql-isready
-          image: "postgres:14-alpine"  # Using standard postgres image
+          image: "postgres:14-alpine"
           imagePullPolicy: IfNotPresent
           env:
             - name: POSTGRES_USER
               valueFrom:
                 configMapKeyRef:
-                  name: immich-config  # Your configmap name
+                  name: immich-config
                   key: DB_USERNAME
             - name: POSTGRES_DB
               valueFrom:
@@ -42,23 +42,19 @@ spec:
             - until pg_isready -U "${POSTGRES_USER}" -d "dbname=${POSTGRES_DB}" -h immich-db-rw.immich -p 5432; do echo "waiting for database"; sleep 2; done
       containers:
         - name: immich-server
-          image: "ghcr.io/immich-app/immich-server:v1.93.1"  # Your specific version
+          image: "ghcr.io/immich-app/immich-server:v1.93.1"
           imagePullPolicy: IfNotPresent
           securityContext:
-            runAsUser: 0  # Run as root
+            runAsUser: 0
           ports:
             - containerPort: 3001
           env:
             - name: DB_PASSWORD
-              valueFrom:
-                secretKeyRef:  # Changed from configMapKeyRef to secretKeyRef
-                  name: immich-db-secret
-                  key: password
+              value: "Zpu18ctdeOXzmttsByhPVN7IuiknLTw4r8uQdYVpJThewXv82TV6drcRP7M2jpZz"
             - name: REDIS_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: immich-redis-secret
-                  key: password
+              value: "password"
+            - name: JWT_SECRET
+              value: "change-me-to-a-secure-random-string-123456"
           envFrom:
             - configMapRef:
                 name: immich-config
@@ -66,18 +62,18 @@ spec:
             failureThreshold: 120
             httpGet:
               path: /server/ping
-              port: 3001  # Changed from 2283 to match your setup
-            initialDelaySeconds: 60  # Increased from 10 to 60
+              port: 3001
+            initialDelaySeconds: 60
             periodSeconds: 120
-            timeoutSeconds: 5  # Increased from 1 to 5
+            timeoutSeconds: 5
           readinessProbe:
             failureThreshold: 120
             httpGet:
               path: /server/ping
-              port: 3001  # Changed from 2283 to match your setup
-            initialDelaySeconds: 60  # Increased from 10 to 60
+              port: 3001
+            initialDelaySeconds: 60
             periodSeconds: 120
-            timeoutSeconds: 5  # Increased from 1 to 5
+            timeoutSeconds: 5
           volumeMounts:
             - name: uploads
               mountPath: /usr/src/app/upload

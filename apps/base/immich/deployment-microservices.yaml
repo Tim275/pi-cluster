@@ -49,15 +49,11 @@ spec:
             runAsUser: 0
           env:
             - name: DB_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: immich-db-secret
-                  key: password
+              value: "Zpu18ctdeOXzmttsByhPVN7IuiknLTw4r8uQdYVpJThewXv82TV6drcRP7M2jpZz"
             - name: REDIS_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: immich-redis-secret
-                  key: password
+              value: "password"
+            - name: JWT_SECRET
+              value: "change-me-to-a-secure-random-string-123456"
           envFrom:
             - configMapRef:
                 name: immich-config

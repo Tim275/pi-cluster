@@ -18,7 +18,7 @@ data:
   
   # Immich settings
   NODE_ENV: "production"
-  LOG_LEVEL: "log"  # Must be one of: verbose, debug, log
+  LOG_LEVEL: "log"
   IMMICH_MACHINE_LEARNING_URL: "http://immich-ml:3003"
   IMMICH_MEDIA_LOCATION: "/usr/src/app/upload"
   IMMICH_MICROSERVICES_URL: "http://immich-microservices:3002"
@@ -26,7 +26,9 @@ data:
   SERVER_PORT: "3001"
   
   # Required settings
-  JWT_SECRET: "your-random-jwt-secret-string-change-me"
+  JWT_SECRET: "generate-a-random-secure-string-here"
+  ADMIN_EMAIL: "admin@example.com"
   MACHINE_LEARNING_ENABLED: "true"
   MACHINE_LEARNING_CACHE_FOLDER: "/cache"
   MACHINE_LEARNING_WORKER_COUNT: "1"
+  DISABLE_REVERSE_GEOCODING: "true"
