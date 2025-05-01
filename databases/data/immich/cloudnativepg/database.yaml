@@ -6,8 +6,9 @@ metadata:
   namespace: immich
 spec:
   description: Postgres database cluster for Immich photo management
-  imageName: ghcr.io/cloudnative-pg/postgresql:16.6-30-bookworm
-  instances: 1 # 1 primary + 1 replica
+  # Use a valid image that includes pgvector
+  imageName: ghcr.io/cloudnative-pg/postgresql:16.6-30-bookworm  # Use your original image
+  instances: 1
 
   inheritedMetadata:
     labels:
@@ -17,16 +18,19 @@ spec:
     initdb:
       database: immich
       owner: immich
+      postInitSQL:
+        - CREATE EXTENSION IF NOT EXISTS vector;
+        - CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
+  # Rest of your configuration remains the same
   monitoring:
     enablePodMonitor: true
-    ## Additional postgresql metrics for grafana
     customQueriesConfigMap:
       - name: postgres-custom-metrics
         key: queries.yaml
 
   storage:
-    size: 5Gi # Increased size for photo metadata storage
+    size: 5Gi
     pvcTemplate:
       accessModes:
         - ReadWriteOnce

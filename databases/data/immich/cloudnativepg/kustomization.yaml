@@ -2,7 +2,8 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 namespace: immich
 resources:
-  - database.yaml
+#  - database.yaml
   #  - secrets.yaml
   # - service.yaml
-  # - deployment.yaml
+  - spamnamespace.yaml
+  - database.yaml

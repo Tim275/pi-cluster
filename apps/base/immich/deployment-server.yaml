@@ -43,7 +43,6 @@ spec:
       containers:
         - name: immich-server
           image: "ghcr.io/immich-app/immich-server:v1.93.1"
-          # Added explicit command to start server
           command: ["node", "dist/main.js", "immich"]
           imagePullPolicy: IfNotPresent
           securityContext:
@@ -57,6 +56,8 @@ spec:
               value: "password"
             - name: JWT_SECRET
               value: "change-me-to-a-secure-random-string-123456"
+            - name: IMMICH_DISABLE_EXTENSIONS_CHECK
+              value: "true"
           envFrom:
             - configMapRef:
                 name: immich-config

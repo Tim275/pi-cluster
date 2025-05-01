@@ -43,7 +43,6 @@ spec:
       containers:
         - name: immich-microservices
           image: "ghcr.io/immich-app/immich-server:v1.93.1"
-          # Fixed command - should be "microservices" not "immich"
           command: ["node", "dist/main.js", "microservices"]
           imagePullPolicy: IfNotPresent
           securityContext:
@@ -55,6 +54,8 @@ spec:
               value: "password"
             - name: JWT_SECRET
               value: "change-me-to-a-secure-random-string-123456"
+            - name: IMMICH_DISABLE_EXTENSIONS_CHECK
+              value: "true"
           envFrom:
             - configMapRef:
                 name: immich-config
