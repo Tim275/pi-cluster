@@ -28,7 +28,7 @@ spec:
     
     initContainers:
       - name: velero-plugin-for-aws
-        image: velero/velero-plugin-for-aws:v1.6.0  # Compatible with Velero v1.9.5
+        image: velero/velero-plugin-for-aws:v1.12.0  # Compatible with Velero v1.9.5
         volumeMounts:
           - mountPath: /target
             name: plugins
