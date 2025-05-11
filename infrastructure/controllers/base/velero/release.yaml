@@ -8,7 +8,7 @@ spec:
   chart:
     spec:
       chart: velero
-      version: "2.32.6"
+      version: "5.0.2"  # Updated chart version for Velero 1.9.x
       sourceRef:
         kind: HelmRepository
         name: vmware-tanzu
@@ -18,22 +18,21 @@ spec:
     remediation:
       retries: 3
   values:
-    # Main Velero configuration (keep this part)
+    # Main Velero configuration
     image:
       repository: velero/velero
-      tag: v1.6.3
-
+      tag: v1.9.5  # Updated Velero version
+    
     # Disable the CRD upgrade job
     upgradeCRDs: false
-
+    
     initContainers:
       - name: velero-plugin-for-aws
-        image: velero/velero-plugin-for-aws:v1.2.0
+        image: velero/velero-plugin-for-aws:v1.6.0  # Compatible with Velero v1.9.5
         volumeMounts:
           - mountPath: /target
             name: plugins
-
-    # Keep the rest of your configuration...
+    
     configuration:
       provider: aws
       backupStorageLocation:
@@ -41,17 +40,17 @@ spec:
         bucket: piclusterhomelab
         config:
           region: eu-central-1
-
+    
     credentials:
       useSecret: true
       existingSecret: velero-aws-credentials
-
+    
     nodeSelector:
       kubernetes.io/hostname: p3
-
+    
     deployRestic: false
     snapshotsEnabled: false
-
+    
     resources:
       requests:
         cpu: "50m"
