@@ -1,0 +1,17 @@
+Warum ist der CSI Snapshot Controller notwendig?
+Der CSI Snapshot Controller ist aus folgenden Gründen für Velero-Backups mit persistenten Volumes (insbesondere Longhorn) unerlässlich:
+
+Volume Snapshots in Kubernetes: Kubernetes selbst bietet nur die API für Volume Snapshots (VolumeSnapshot, VolumeSnapshotContent und VolumeSnapshotClass), aber keinen Controller, der diese tatsächlich verarbeitet.
+
+Persistente Daten sichern: Ohne den CSI Snapshot Controller kann Velero nur Kubernetes-Manifeste (Deployments, Services usw.) sichern, aber keine Daten in den Volumes.
+
+Funktionsweise: Der Controller überwacht:
+
+Wenn ein VolumeSnapshot erstellt wird, erstellt er ein entsprechendes VolumeSnapshotContent
+Er kommuniziert mit dem Storage-Provider (Longhorn) über die CSI-Schnittstelle
+Er wandelt abstrakte Kubernetes-Anfragen in konkrete Storage-Operationen um
+Konsistente Datensicherung: Der Controller sorgt dafür, dass Snapshots in einem konsistenten Zustand erstellt werden, was bei Datenbanken und anderen zustandsbehafteten Anwendungen kritisch ist.
+
+Velero CSI Integration: Velero nutzt den CSI Snapshot Controller, um die eigentliche Snapshot-Erstellung und -Verwaltung zu delegieren, anstatt dies selbst zu implementieren.
+
+Ohne den CSI Snapshot Controller würden Velero-Backups nur die Konfiguration sichern, aber alle persistenten Daten würden verloren gehen. Das ist besonders wichtig für dein Linkding-Backup, da dort alle Lesezeichen und Benutzerdaten in einem Longhorn-Volume gespeichert sind.

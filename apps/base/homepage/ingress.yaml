@@ -11,7 +11,11 @@ metadata:
     gethomepage.dev/group: "Cluster Management"
     gethomepage.dev/icon: "homepage.png"
     traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
+    # Die folgenden Annotations verbessern die HTTP zu HTTPS Umleitung
     traefik.ingress.kubernetes.io/redirect-entrypoint: websecure
+    traefik.ingress.kubernetes.io/redirect-regex: "^http://(.*)$"
+    traefik.ingress.kubernetes.io/redirect-replacement: "https://${1}"
+    traefik.ingress.kubernetes.io/redirect-permanent: "true"
     external-dns.alpha.kubernetes.io/hostname: homepage.timourhomelab.org
     cert-manager.io/cluster-issuer: letsencrypt-prod
 spec:
@@ -31,7 +35,3 @@ spec:
                 name: homepage
                 port:
                   number: 3000
-  # tls:
-  #   - hosts:
-  #       - homepage.mischavandenburg.net
-  #     secretName: homepage-ingress-production

@@ -5,4 +5,5 @@ resources:
   - ingress.yaml
   - velero-ui.yaml
   - serviceaccount.yaml
-  - velero-ui-credentials.yaml # Add this line
+  - velero-ui-credentials.yaml 
+  - csi-snapshot-controller.yaml 

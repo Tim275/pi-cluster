@@ -13,27 +13,18 @@ spec:
         kind: HelmRepository
         name: vmware-tanzu
         namespace: velero
-  install:
-    createNamespace: false
-    remediation:
-      retries: 3
   values:
-    # Main Velero configuration (keep this part)
     image:
       repository: velero/velero
-      tag: v1.6.3
-
-    # Disable the CRD upgrade job
-    upgradeCRDs: false
-
+      tag: v1.10.0  # Ältere, stabile Version für ARM64
+    
     initContainers:
       - name: velero-plugin-for-aws
-        image: velero/velero-plugin-for-aws:v1.2.0
+        image: velero/velero-plugin-for-aws:v1.5.0
         volumeMounts:
           - mountPath: /target
             name: plugins
-
-    # Keep the rest of your configuration...
+    
     configuration:
       provider: aws
       backupStorageLocation:
@@ -41,21 +32,19 @@ spec:
         bucket: piclusterhomelab
         config:
           region: eu-central-1
-
+          s3ForcePathStyle: "true"
+    
     credentials:
       useSecret: true
-      existingSecret: velero-aws-credentials
-
+      existingSecret: aws-credentials
+    
+    # Deaktiviere problematische Features
+    snapshotsEnabled: false
+    
+    # Füge wichtige Umgebungsvariablen hinzu
+    extraEnvVars:
+      - name: VELERO_DISABLE_API_GROUP_VERSIONS_CHECK
+        value: "true"
+    
     nodeSelector:
       kubernetes.io/hostname: p3
-
-    deployRestic: false
-    snapshotsEnabled: false
-
-    resources:
-      requests:
-        cpu: "50m"
-        memory: "128Mi"
-      limits:
-        cpu: "200m"
-        memory: "256Mi"

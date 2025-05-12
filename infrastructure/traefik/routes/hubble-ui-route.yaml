@@ -1,14 +1,17 @@
-apiVersion: traefik.containo.us/v1alpha1
-kind: IngressRoute
+apiVersion: networking.k8s.io/v1
+kind: Ingress
 metadata:
   name: hubble-ui
   namespace: kube-system
 spec:
-  entryPoints:
-    - web
-  routes:
-    - match: Host(`hubble.cluster.local`) || Path(`/hubble`)
-      kind: Rule
-      services:
-        - name: hubble-ui
-          port: 80
+  rules:
+  - host: hubble.timourhomelab.org
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: hubble-ui
+            port:
+              number: 80
