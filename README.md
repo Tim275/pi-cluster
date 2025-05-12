@@ -1,6 +1,6 @@
 # 🏠 Homelab
 
-[Homepage](http://homepage.timourhomelab.org)
+[Homepage](https://homepage.timourhomelab.org)
 
 ## Introduction
 
