@@ -1,0 +1,25 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: velero
+  namespace: velero
+spec:
+  values:
+    image:
+      repository: velero/velero
+      tag: v1.11.1  # ARM64-compatible version
+    
+    # Enable CSI features 
+    extraEnvVars:
+      - name: VELERO_FEATURES
+        value: "EnableCSI"
+      - name: VELERO_DISABLE_API_GROUP_VERSIONS_CHECK
+        value: "true"
+      - name: VELERO_DISABLE_BACKUPVOLUMESNAPSHOTLOCATION_CREATE_ITEMS
+        value: "true"
+      - name: AWS_SHARED_CREDENTIALS_FILE
+        value: /credentials/cloud
+      
+    credentials:
+      useSecret: true
+      existingSecret: aws-credentials
