@@ -16,7 +16,7 @@ spec:
       serviceAccountName: velero-ui
       containers:
         - name: velero-ui
-          image: otwld/velero-ui:0.5.2
+          image: otwld/velero-ui:0.7.0
           ports:
             - containerPort: 3000
               name: http
