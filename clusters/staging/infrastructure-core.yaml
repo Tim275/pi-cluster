@@ -5,7 +5,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 30m
-  path: "./infrastructure/controllers/core"
+  path: "./infrastructure/controllers/core"  #
   prune: true
   sourceRef:
     kind: GitRepository
@@ -13,4 +13,4 @@ spec:
   wait: true
   timeout: 5m
   dependsOn:
-    - name: infrastructure-configs
+    - name: infrastructure-controllers

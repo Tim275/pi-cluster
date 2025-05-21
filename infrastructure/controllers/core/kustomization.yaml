@@ -1,4 +1,6 @@
+# File path: /Users/timour/Desktop/kubecraft/mealie/homelabtm/pi-cluster/infrastructure/controllers/core/kustomization.yaml
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
 - csi-snapshot-controller
+- longhorn-snapshots
