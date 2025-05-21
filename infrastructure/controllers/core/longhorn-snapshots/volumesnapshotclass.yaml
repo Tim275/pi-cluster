@@ -5,6 +5,5 @@ metadata:
   annotations:
     snapshot.storage.kubernetes.io/is-default-class: "true"
     velero.io/csi-volumesnapshot-class: "true"
-spec:
-  driver: driver.longhorn.io
-  deletionPolicy: Delete
+driver: driver.longhorn.io
+deletionPolicy: Delete
