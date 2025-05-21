@@ -13,62 +13,40 @@ spec:
       labels:
         app: velero-ui
     spec:
-      serviceAccountName: velero-ui
       containers:
-        - name: velero-ui
-          image: otwld/velero-ui:0.5.2
-          ports:
-            - containerPort: 3000
-              name: http
-          env:
-            - name: VELERO_API_URL
-              value: "http://velero.velero.svc:8085"
-            # Primary authentication variables
-            - name: ADMIN_USERNAME
-              valueFrom:
-                secretKeyRef:
-                  name: velero-ui-credentials
-                  key: ADMIN_USERNAME
-            - name: ADMIN_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: velero-ui-credentials
-                  key: ADMIN_PASSWORD
-            # das ist das richtige !The Correct Variables
-            #The actual variables the application uses for authentication are:
-
-            ##BASIC_AUTH_USERNAME
-            #BASIC_AUTH_PASSWORD
-            - name: BASIC_AUTH_USERNAME
-              valueFrom:
-                secretKeyRef:
-                  name: velero-ui-credentials
-                  key: ADMIN_USERNAME
-            - name: BASIC_AUTH_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: velero-ui-credentials
-                  key: ADMIN_PASSWORD
-          resources:
-            limits:
-              cpu: 200m
-              memory: 256Mi
-            requests:
-              cpu: 100m
-              memory: 128Mi
-      nodeSelector:
-        kubernetes.io/hostname: p3
-        #standart user:admin pw:admin
+      - name: velero-ui
+        image: lirazsiri/velero-ui:latest
+        ports:
+        - containerPort: 8080
+        env:
+        - name: VELERO_NAMESPACE
+          value: velero
+        - name: ADMIN_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: velero-ui-credentials
+              key: ADMIN_USERNAME
+        - name: ADMIN_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: velero-ui-credentials
+              key: ADMIN_PASSWORD
+        resources:
+          limits:
+            cpu: 200m
+            memory: 256Mi
+          requests:
+            cpu: 100m
+            memory: 128Mi
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: velero-ui
-  namespace: velero  
+  namespace: velero
 spec:
-  ports:
-    - name: http
-      port: 80
-      targetPort: 3000
   selector:
     app: velero-ui
+  ports:
+  - port: 80
+    targetPort: 8080

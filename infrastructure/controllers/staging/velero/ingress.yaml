@@ -1,22 +1,24 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: velero-ui
+  name: velero-ui-ingress
   namespace: velero
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-staging
+    kubernetes.io/ingress.class: traefik
 spec:
-  ingressClassName: traefik # Changed to traefik
-  #  tls:
-  #   - hosts:
-  #      - velero.timourhomelab.com
-  #    secretName: velero-tls
+  tls:
+  - hosts:
+    - velero.timourhomelab.org
+    secretName: velero-tls
   rules:
-    - host: velero.timourhomelab.org
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: velero-ui
-                port:
-                  number: 80
+  - host: velero.timourhomelab.org
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: velero-ui
+            port:
+              number: 80

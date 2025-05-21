@@ -5,14 +5,10 @@ metadata:
   namespace: velero
 spec:
   values:
-    image:
-      repository: velero/velero
-      tag: v1.12.0  # ARM64-kompatible Version
-    
-    # Konfiguration für file-basierte Backups ohne CSI
     credentials:
       useSecret: true
-      existingSecret: velero-aws-credentials  # GEÄNDERT von "aws-credentials" zu "velero-aws-credentials"
+      name: cloud-credentials  # Name des Volumes innerhalb des Pods
+      secretName: velero-aws-credentials  # Name des Kubernetes Secrets
     
     configuration:
       provider: aws
@@ -22,9 +18,8 @@ spec:
         prefix: backups
         config:
           region: eu-central-1
-      defaultVolumesToFsBackup: true  # Aktiviert file-basierte Backups
+      defaultVolumesToFsBackup: true  # File-basierte Backups
     
-    # Nur AWS-Plugin für S3-Integration
     initContainers:
       - name: velero-plugin-for-aws
         image: velero/velero-plugin-for-aws:v1.8.0
