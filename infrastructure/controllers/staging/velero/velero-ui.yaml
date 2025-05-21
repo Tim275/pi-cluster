@@ -15,7 +15,8 @@ spec:
     spec:
       containers:
       - name: velero-ui
-        image: ghcr.io/durandsinclair/velero-ui:latest
+        # Wechsel zu einem öffentlich verfügbaren Image
+        image: reg.minirocks.io/velero/velero-ui:latest
         ports:
         - containerPort: 8080
         env:

@@ -1,0 +1,11 @@
+apiVersion: velero.io/v1
+kind: Backup
+metadata:
+  name: linkding-backup
+  namespace: velero
+spec:
+  includedNamespaces:
+    - linkding
+  defaultVolumesToFsBackup: true
+  storageLocation: default
+  ttl: 720h  # 30 Tage Aufbewahrungszeit
