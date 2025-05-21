@@ -13,9 +13,9 @@ spec:
       labels:
         app: velero-ui
     spec:
+      serviceAccountName: velero-ui  # ServiceAccount hinzufügen
       containers:
       - name: velero-ui
-        # Verwende die neueste verfügbare Version mit spezifischem Tag
         image: otwld/velero-ui:0.7.0
         ports:
         - containerPort: 8080
