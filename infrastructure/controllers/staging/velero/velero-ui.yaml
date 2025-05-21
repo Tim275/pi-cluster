@@ -18,7 +18,7 @@ spec:
       - name: velero-ui
         image: otwld/velero-ui:0.7.0
         ports:
-        - containerPort: 8080  # Auf 8080 ändern - das ist der tatsächliche Port
+        - containerPort: 3000  # GEÄNDERT von 8080 zu 3000
         env:
         - name: VELERO_NAMESPACE
           value: velero
@@ -43,4 +43,4 @@ spec:
     app: velero-ui
   ports:
   - port: 80
-    targetPort: 8080  # Auf 8080 ändern, um mit dem tatsächlichen Port übereinzustimmen
+    targetPort: 3000  # GEÄNDERT von 8080 zu 3000
