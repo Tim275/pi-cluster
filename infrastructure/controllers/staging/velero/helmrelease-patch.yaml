@@ -1,0 +1,33 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: velero
+  namespace: velero
+spec:
+  values:
+    image:
+      repository: velero/velero
+      tag: v1.12.0  # ARM64-kompatible Version
+    
+    # Konfiguration für file-basierte Backups ohne CSI
+    credentials:
+      useSecret: true
+      existingSecret: aws-credentials
+    
+    configuration:
+      provider: aws
+      backupStorageLocation:
+        name: default
+        bucket: piclusterhomelab-velero
+        prefix: backups
+        config:
+          region: eu-central-1
+      defaultVolumesToFsBackup: true  # Aktiviert file-basierte Backups
+    
+    # Nur AWS-Plugin für S3-Integration
+    initContainers:
+      - name: velero-plugin-for-aws
+        image: velero/velero-plugin-for-aws:v1.8.0
+        volumeMounts:
+          - mountPath: /target
+            name: plugins

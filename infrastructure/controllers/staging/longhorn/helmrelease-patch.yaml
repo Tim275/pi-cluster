@@ -1,0 +1,46 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: longhorn
+  namespace: longhorn-system
+spec:
+  values:
+    persistence:
+      defaultClass: true
+      defaultClassReplicaCount: 1  # Reduziert für RPi
+    
+    defaultSettings:
+      # Optimiert für Raspberry Pi
+      guaranteedEngineManagerCPU: 0.05
+      guaranteedReplicaManagerCPU: 0.05
+      backupCompression: "lz4"  # Leichtere Kompression
+      
+      # Ressourceneinsparung
+      replicaAutoBalance: "least-effort"
+      storageMinimalAvailablePercentage: 10
+      concurrentReplicaRebuildPerNodeLimit: 1
+      
+      # Webhook Konfiguration
+      webhookCertRotationInterval: "8760h"  # 1 Jahr
+    
+    longhornManager:
+      tolerations:
+      - key: "node.kubernetes.io/memory-pressure"
+        operator: "Exists"
+        effect: "NoSchedule"
+      resources:
+        limits:
+          cpu: 200m
+          memory: 450Mi
+        requests:
+          cpu: 50m
+          memory: 250Mi
+          
+    longhornAdmissionWebhook:
+      resources:
+        limits:
+          cpu: 300m
+          memory: 350Mi
+        requests:
+          cpu: 100m
+          memory: 180Mi
