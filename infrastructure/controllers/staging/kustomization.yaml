@@ -7,5 +7,5 @@ resources:
   # - efk
   - external-secrets
   - cert-manager
-  - longhorn
-  - velero
+  # - longhorn # Disabled due to stability issues on Raspberry Pi
+  # - velero # Temporarily disabled
