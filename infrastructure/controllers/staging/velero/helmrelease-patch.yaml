@@ -12,7 +12,7 @@ spec:
     # Konfiguration für file-basierte Backups ohne CSI
     credentials:
       useSecret: true
-      existingSecret: aws-credentials
+      existingSecret: velero-aws-credentials  # GEÄNDERT von "aws-credentials" zu "velero-aws-credentials"
     
     configuration:
       provider: aws
