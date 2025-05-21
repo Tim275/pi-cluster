@@ -13,12 +13,12 @@ spec:
       labels:
         app: velero-ui
     spec:
-      serviceAccountName: velero-ui  # ServiceAccount hinzufügen
+      serviceAccountName: velero-ui
       containers:
       - name: velero-ui
         image: otwld/velero-ui:0.7.0
         ports:
-        - containerPort: 3000
+        - containerPort: 8080  # Auf 8080 ändern - das ist der tatsächliche Port
         env:
         - name: VELERO_NAMESPACE
           value: velero
@@ -43,4 +43,4 @@ spec:
     app: velero-ui
   ports:
   - port: 80
-    targetPort: 3000  # Auf Port 3000 ändern, da die Anwendung darauf hört
+    targetPort: 8080  # Auf 8080 ändern, um mit dem tatsächlichen Port übereinzustimmen
