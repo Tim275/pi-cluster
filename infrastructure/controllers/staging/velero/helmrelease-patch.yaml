@@ -7,19 +7,23 @@ spec:
   values:
     image:
       repository: velero/velero
-      tag: v1.11.1  # ARM64-compatible version
+      tag: v1.12.0  # ARM64-compatible version
     
-    # Enable CSI features 
+    # Enable CSI features
+    features: EnableCSI
+    
+    # CSI integration
     extraEnvVars:
       - name: VELERO_FEATURES
         value: "EnableCSI"
       - name: VELERO_DISABLE_API_GROUP_VERSIONS_CHECK
         value: "true"
-      - name: VELERO_DISABLE_BACKUPVOLUMESNAPSHOTLOCATION_CREATE_ITEMS
-        value: "true"
-      - name: AWS_SHARED_CREDENTIALS_FILE
-        value: /credentials/cloud
-      
-    credentials:
-      useSecret: true
-      existingSecret: aws-credentials
+    
+    # Resources suitable for Pi
+    resources:
+      requests:
+        cpu: 50m
+        memory: 128Mi
+      limits:
+        cpu: 200m
+        memory: 256Mi
