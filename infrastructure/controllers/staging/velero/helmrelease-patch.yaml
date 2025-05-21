@@ -12,6 +12,25 @@ spec:
     # Enable CSI features
     features: EnableCSI
     
+    # Configure backup locations
+    configuration:
+      provider: aws
+      backupStorageLocation:
+        name: default
+        bucket: piclusterhomelab-velero
+        prefix: backups
+        config:
+          region: eu-central-1
+      volumeSnapshotLocation:
+        name: aws
+        config:
+          region: eu-central-1
+    
+    # AWS credentials
+    credentials:
+      useSecret: true
+      existingSecret: aws-credentials
+      
     # CSI integration
     extraEnvVars:
       - name: VELERO_FEATURES
@@ -27,3 +46,7 @@ spec:
       limits:
         cpu: 200m
         memory: 256Mi
+        
+    # Force pod restart to reset stuck state
+    podAnnotations:
+      timestamp: "2025-05-21-09-42"
