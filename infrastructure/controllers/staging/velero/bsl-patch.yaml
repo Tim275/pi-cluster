@@ -1,0 +1,10 @@
+# Erstelle: infrastructure/controllers/staging/velero/bsl-patch.yaml
+apiVersion: velero.io/v1
+kind: BackupStorageLocation
+metadata:
+  name: default
+  namespace: velero
+spec:
+  provider: aws
+  objectStorage:
+    bucket: piclusterhomelab-velero
