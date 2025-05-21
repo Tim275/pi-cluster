@@ -3,7 +3,9 @@ kind: VolumeSnapshotClass
 metadata:
   name: longhorn-snapshot-class
   annotations:
-    snapshot.storage.kubernetes.io/is-default-class: "true"
+    snapshot.storage.kubernetes.io/is-default-class: "true" 
     velero.io/csi-volumesnapshot-class: "true"
 driver: driver.longhorn.io
-deletionPolicy: Delete
+deletionPolicy: Retain 
+parameters:
+  type: bak  

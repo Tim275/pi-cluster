@@ -5,11 +5,7 @@ metadata:
   namespace: velero
 spec:
   values:
-    image:
-      repository: velero/velero
-      tag: v1.12.0  # ARM64-compatible version
-    
-    # Enable CSI features
+    # Enable CSI features properly
     features: EnableCSI
     
     # Configure backup locations
@@ -25,28 +21,21 @@ spec:
         name: aws
         config:
           region: eu-central-1
+      # Add these parameters to fix backup issues
+      restoreResourcePriorities: namespaces,persistentvolumes,persistentvolumeclaims,secrets,configmaps
+      kubeAPIQPS: 20
+      kubeAPIBurst: 30
+      backupSyncPeriod: 1m
     
-    # AWS credentials
-    credentials:
-      useSecret: true
-      existingSecret: aws-credentials
-      
-    # CSI integration
-    extraEnvVars:
-      - name: VELERO_FEATURES
-        value: "EnableCSI"
-      - name: VELERO_DISABLE_API_GROUP_VERSIONS_CHECK
-        value: "true"
+    # Add the specific CSI plugin setup
+    initContainers:
+      - name: velero-plugin-for-csi
+        image: velero/velero-plugin-for-csi:v0.6.0
+        imagePullPolicy: IfNotPresent
+        volumeMounts:
+          - mountPath: /target
+            name: plugins
     
-    # Resources suitable for Pi
-    resources:
-      requests:
-        cpu: 50m
-        memory: 128Mi
-      limits:
-        cpu: 200m
-        memory: 256Mi
-        
-    # Force pod restart to reset stuck state
+    # Update pod annotations to force restart
     podAnnotations:
-      timestamp: "2025-05-21-09-42"
+      timestamp: "2025-05-21-10-56"
