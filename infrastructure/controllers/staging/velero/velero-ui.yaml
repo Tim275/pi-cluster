@@ -15,8 +15,8 @@ spec:
     spec:
       containers:
       - name: velero-ui
-        # Change to image that exists and works
-        image: otwld/velero-ui:latest
+        # Verwende die neueste verfügbare Version mit spezifischem Tag
+        image: otwld/velero-ui:0.7.0
         ports:
         - containerPort: 8080
         env:
