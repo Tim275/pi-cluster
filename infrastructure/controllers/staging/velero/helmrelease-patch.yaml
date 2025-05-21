@@ -1,0 +1,52 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: velero
+  namespace: velero
+spec:
+  values:
+    image:
+      repository: velero/velero
+      tag: v1.12.0  # ARM64-compatible version
+    
+    # Enable CSI features
+    features: EnableCSI
+    
+    # Configure backup locations
+    configuration:
+      provider: aws
+      backupStorageLocation:
+        name: default
+        bucket: piclusterhomelab-velero
+        prefix: backups
+        config:
+          region: eu-central-1
+      volumeSnapshotLocation:
+        name: aws
+        config:
+          region: eu-central-1
+    
+    # AWS credentials
+    credentials:
+      useSecret: true
+      existingSecret: aws-credentials
+      
+    # CSI integration
+    extraEnvVars:
+      - name: VELERO_FEATURES
+        value: "EnableCSI"
+      - name: VELERO_DISABLE_API_GROUP_VERSIONS_CHECK
+        value: "true"
+    
+    # Resources suitable for Pi
+    resources:
+      requests:
+        cpu: 50m
+        memory: 128Mi
+      limits:
+        cpu: 200m
+        memory: 256Mi
+        
+    # Force pod restart to reset stuck state
+    podAnnotations:
+      timestamp: "2025-05-21-09-42"
