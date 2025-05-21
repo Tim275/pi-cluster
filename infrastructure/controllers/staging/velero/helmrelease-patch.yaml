@@ -4,19 +4,21 @@ metadata:
   name: velero
   namespace: velero
 spec:
-  # Chart-Version hinzufügen
   chart:
     spec:
-      version: "3.2.0"  # Aktuellere Version
+      version: "3.2.0"  # Stabile Version für Raspberry Pi
   values:
+    # AWS-Konfiguration für direkten Zugriff auf S3
     credentials:
+      # Explizit den korrekten Secret-Namen angeben, den dein Pod sucht
+      existingSecret: aws-credentials # GEÄNDERT von velero-aws-credentials
       secretContents:
         cloud: |
           [default]
           aws_access_key_id=${AWS_ACCESS_KEY_ID}
           aws_secret_access_key=${AWS_SECRET_ACCESS_KEY}
-      existingSecret: velero-aws-credentials
     
+    # Optimale Backup-Konfiguration
     configuration:
       provider: aws
       backupStorageLocation:
@@ -25,17 +27,25 @@ spec:
         prefix: backups
         config:
           region: eu-central-1
+          s3ForcePathStyle: true # Erforderlich für Minio/S3-kompatible Server
+      # File-basierte Backups für optimale Kompatibilität
       defaultVolumesToFsBackup: true
     
+    # Aktuelle AWS S3 Plugin-Version
     initContainers:
       - name: velero-plugin-for-aws
         image: velero/velero-plugin-for-aws:v1.8.0
         volumeMounts:
           - mountPath: /target
             name: plugins
-            
-    # CRD-Management hinzufügen
+    
+    # Explizites CRD-Management für Backup-Features
     upgradeWorkflow:
       crds:
         shouldInstall: true
         shouldUpgrade: true
+    
+    # Backups optimiert für CSI-Snapshots mit Longhorn
+    snapshotsEnabled: true
+    features: 
+      - EnableCSI
