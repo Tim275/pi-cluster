@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: velero-ui
-        image: lirazsiri/velero-ui:latest
+        image: ghcr.io/durandsinclair/velero-ui:latest
         ports:
         - containerPort: 8080
         env:
@@ -31,13 +31,6 @@ spec:
             secretKeyRef:
               name: velero-ui-credentials
               key: ADMIN_PASSWORD
-        resources:
-          limits:
-            cpu: 200m
-            memory: 256Mi
-          requests:
-            cpu: 100m
-            memory: 128Mi
 ---
 apiVersion: v1
 kind: Service

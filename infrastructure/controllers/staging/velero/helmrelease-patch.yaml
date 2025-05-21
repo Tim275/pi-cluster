@@ -6,9 +6,12 @@ metadata:
 spec:
   values:
     credentials:
-      useSecret: true
-      name: cloud-credentials  # Name des Volumes innerhalb des Pods
-      secretName: velero-aws-credentials  # Name des Kubernetes Secrets
+      secretContents:
+        cloud: |
+          [default]
+          aws_access_key_id=${AWS_ACCESS_KEY_ID}
+          aws_secret_access_key=${AWS_SECRET_ACCESS_KEY}
+      existingSecret: velero-aws-credentials
     
     configuration:
       provider: aws
@@ -18,7 +21,7 @@ spec:
         prefix: backups
         config:
           region: eu-central-1
-      defaultVolumesToFsBackup: true  # File-basierte Backups
+      defaultVolumesToFsBackup: true
     
     initContainers:
       - name: velero-plugin-for-aws
