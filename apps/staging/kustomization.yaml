@@ -3,6 +3,6 @@ kind: Kustomization
 resources:
   - linkding
   - audiobookshelf
-  #- wallabag
+  - wallabag
   - homepage
  # - immich

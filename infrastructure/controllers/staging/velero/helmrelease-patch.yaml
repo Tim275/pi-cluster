@@ -1,0 +1,51 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: velero
+  namespace: velero
+spec:
+  values:
+    # Update Velero image to a more recent ARM-compatible version
+    image:
+      repository: velero/velero
+      tag: v1.12.0
+    
+    # Configure features
+    features: EnableCSI
+    
+    # Configure backup locations
+    configuration:
+      provider: aws
+      backupStorageLocation:
+        name: default
+        bucket: piclusterhomelab-velero
+        prefix: backups
+        config:
+          region: eu-central-1
+      volumeSnapshotLocation:
+        name: aws
+        config:
+          region: eu-central-1
+      restoreResourcePriorities: namespaces,persistentvolumes,persistentvolumeclaims,secrets,configmaps
+      kubeAPIQPS: 20
+      kubeAPIBurst: 30
+      backupSyncPeriod: 1m
+    
+    # Update plugins to match Velero version
+    initContainers:
+      - name: velero-plugin-for-aws
+        image: velero/velero-plugin-for-aws:v1.8.0
+        imagePullPolicy: IfNotPresent
+        volumeMounts:
+          - mountPath: /target
+            name: plugins
+      - name: velero-plugin-for-csi
+        image: velero/velero-plugin-for-csi:v0.6.1
+        imagePullPolicy: IfNotPresent
+        volumeMounts:
+          - mountPath: /target
+            name: plugins
+    
+    # Force restart
+    podAnnotations:
+      timestamp: "2025-05-21-11-30"
