@@ -1,4 +1,3 @@
-# Aktualisiere: infrastructure/controllers/staging/velero/kustomization.yaml
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
@@ -7,6 +6,6 @@ resources:
 - velero-ui.yaml
 - serviceaccount.yaml
 - velero-ui-credentials.yaml
+- backupstoragelocation.yaml
 patchesStrategicMerge:
 - helmrelease-patch.yaml
-- bsl-patch.yaml  
