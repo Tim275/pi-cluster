@@ -22,16 +22,16 @@ spec:
         env:
         - name: VELERO_NAMESPACE
           value: velero
-        - name: ADMIN_USERNAME
+        - name: BASIC_AUTH_USERNAME  # GEÄNDERT von ADMIN_USERNAME
           valueFrom:
             secretKeyRef:
               name: velero-ui-credentials
-              key: ADMIN_USERNAME
-        - name: ADMIN_PASSWORD
+              key: BASIC_AUTH_USERNAME
+        - name: BASIC_AUTH_PASSWORD  # GEÄNDERT von ADMIN_PASSWORD
           valueFrom:
             secretKeyRef:
               name: velero-ui-credentials
-              key: ADMIN_PASSWORD
+              key: BASIC_AUTH_PASSWORD
 ---
 apiVersion: v1
 kind: Service
