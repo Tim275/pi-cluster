@@ -13,7 +13,7 @@ spec:
     # Configure features
     features: EnableCSI
     
-    # Configure backup locations (keep your existing config)
+    # Configure backup locations
     configuration:
       provider: aws
       backupStorageLocation:
@@ -31,7 +31,7 @@ spec:
       kubeAPIBurst: 30
       backupSyncPeriod: 1m
     
-    # Update plugins to match Velero version - this is the key fix
+    # Update plugins to match Velero version
     initContainers:
       - name: velero-plugin-for-aws
         image: velero/velero-plugin-for-aws:v1.8.0
@@ -48,4 +48,4 @@ spec:
     
     # Force restart
     podAnnotations:
-      timestamp: "2025-05-21-11-15"
+      timestamp: "2025-05-21-11-30"
