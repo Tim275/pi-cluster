@@ -7,5 +7,6 @@ resources:
 - serviceaccount.yaml
 - velero-ui-credentials.yaml
 - backupstoragelocation.yaml
+- backup-settings.yaml 
 patchesStrategicMerge:
 - helmrelease-patch.yaml
