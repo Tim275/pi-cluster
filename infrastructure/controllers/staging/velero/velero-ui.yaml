@@ -15,8 +15,8 @@ spec:
     spec:
       containers:
       - name: velero-ui
-        # Verwende ein verfügbares offizielles Image
-        image: vfarcic/velero-dashboard:latest
+        # Change to image that exists and works
+        image: otwld/velero-ui:latest
         ports:
         - containerPort: 8080
         env:
