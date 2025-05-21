@@ -5,8 +5,6 @@ metadata:
   namespace: velero
   annotations:
     kubernetes.io/ingress.class: traefik
-    # Wichtig für Backend-Verbindung
-    traefik.ingress.kubernetes.io/service-weights: "velero-ui:100"
 spec:
   rules:
   - host: velero.timourhomelab.org
@@ -18,4 +16,4 @@ spec:
           service:
             name: velero-ui
             port:
-              number: 3000
+              number: 80  # Auf 80 belassen (Service-Port)
