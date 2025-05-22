@@ -17,7 +17,7 @@ spec:
   values:
     operator:
       enabled: true
-      ####//// AB hier neu ////#####
+
       # Add resource limits for Pi hardware
       resources:
         requests:

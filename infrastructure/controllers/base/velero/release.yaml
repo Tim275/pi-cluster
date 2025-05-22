@@ -29,7 +29,7 @@ spec:
       provider: aws
       backupStorageLocation:
         name: default
-        bucket: piclusterhomelab
+        bucket: piclusterhomelab-velero 
         config:
           region: eu-central-1
           s3ForcePathStyle: "true"

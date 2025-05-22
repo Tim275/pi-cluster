@@ -10,3 +10,4 @@ resources:
   - longhorn
   - velero
   - csi-snapshotter
+  - backup-storage-location.yaml
