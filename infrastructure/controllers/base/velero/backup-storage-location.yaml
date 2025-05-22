@@ -11,5 +11,6 @@ spec:
   config:
     region: eu-central-1
     s3ForcePathStyle: "true"
-    s3Url: "https://s3.amazonaws.com"
-    publicUrl: "https://s3.amazonaws.com"
+    # Regionale URL statt der generischen URL
+    s3Url: "https://s3.eu-central-1.amazonaws.com"
+    publicUrl: "https://s3.eu-central-1.amazonaws.com"
