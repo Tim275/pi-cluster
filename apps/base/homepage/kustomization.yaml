@@ -4,10 +4,13 @@ namespace: homepage
 resources:
   - namespace.yaml
   - serviceaccount.yaml
-  - clusterrole.yaml # This probably contains both ClusterRole and ClusterRoleBinding
+  - clusterrole.yaml 
   # - clusterrolebinding.yaml  # Remove this line, file doesn't exist
   - configmap.yaml
   - secret.yaml
   - service.yaml
   - deployment.yaml
-  - ingress.yaml # Uncomment if needed
+  - ingress.yaml
+  - certificate.yaml
+  
+  
