@@ -5,3 +5,4 @@ resources:
   - repository.yaml
   - release.yaml
   - aws-credentials.yaml
+  - backup-storage-location.yaml
