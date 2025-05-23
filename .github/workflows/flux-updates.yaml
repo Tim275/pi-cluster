@@ -1,13 +1,17 @@
 name: update-flux
 
 on:
-  workflow_dispatch:
+  workflow_dispatch:  # Manueller Trigger
   schedule:
-    - cron: "0 0 * * *"
+    - cron: "0 0 * * *"  # Täglich um Mitternacht
+
+# WICHTIG: Du musst in den Repository-Einstellungen folgendes aktivieren:
+# Settings > Actions > General > Workflow permissions > 
+# "Read and write permissions" + "Allow GitHub Actions to create and approve pull requests"
 
 permissions:
   contents: write
-  pull-requests: write
+  pull-requests: write  # Explizite PR-Berechtigung
 
 jobs:
   components:
@@ -15,8 +19,10 @@ jobs:
     steps:
       - name: Check out code
         uses: actions/checkout@v4
+      
       - name: Setup Flux CLI
         uses: fluxcd/flux2/action@main
+      
       - name: Check for updates
         id: update
         run: |
@@ -27,12 +33,26 @@ jobs:
 
           VERSION="$(flux -v)"
           echo "flux_version=$VERSION" >> $GITHUB_OUTPUT
+      
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v7
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           branch: update-flux
-          commit-message: Update to ${{ steps.update.outputs.flux_version }}
-          title: Update to ${{ steps.update.outputs.flux_version }}
+          commit-message: "Update Flux to ${{ steps.update.outputs.flux_version }}"
+          title: "Update Flux to ${{ steps.update.outputs.flux_version }}"
           body: |
-            ${{ steps.update.outputs.flux_version }}
+            # Automatisches Flux Update
+            
+            Diese PR aktualisiert die Flux-Komponenten auf Version ${{ steps.update.outputs.flux_version }}
+            
+            ## Änderungen
+            - Aktualisierung der Flux-Kernkomponenten
+            - Aktualisierung der Image-Reflector-Controller
+            - Aktualisierung der Image-Automation-Controller
+            
+            Nach dem Merge wird Flux automatisch die neuen Komponenten im Cluster anwenden.
+          labels: |
+            flux
+            automation
+            dependencies
