@@ -16,7 +16,7 @@ spec:
       serviceAccountName: velero-ui
       containers:
       - name: velero-ui
-        image: otwld/velero-ui:0.7.0
+        image: otwld/velero-ui:0.8.0
         ports:
         - containerPort: 3000  # GEÄNDERT von 8080 zu 3000
         env:
