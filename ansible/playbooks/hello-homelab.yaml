@@ -1,0 +1,20 @@
+---
+- name: "Hello Homelab - Erster Test"
+  hosts: all
+  
+  tasks:
+    - name: "Ping Test"
+      ping:
+      
+    - name: "Hostname anzeigen"
+      debug:
+        msg: "Hallo von {{ inventory_hostname }}"
+        
+    - name: "Pi-Temperatur prüfen"
+      shell: "vcgencmd measure_temp"
+      register: temp
+      become: yes
+      
+    - name: "Temperatur ausgeben"
+      debug:
+        msg: "{{ inventory_hostname }} Temperatur: {{ temp.stdout }}"

@@ -1,0 +1,35 @@
+---
+- name: "Basis-Setup für Homelab"
+  hosts: all
+  become: yes
+  
+  tasks:
+    - name: "System updaten"
+      apt:
+        update_cache: yes
+        upgrade: dist
+        
+    - name: "Nützliche Pakete installieren"
+      apt:
+        name:
+          - htop
+          - curl
+          - wget
+          - git
+          - vim
+        state: present
+        
+    - name: "Pi-Konfiguration für K3s"
+      lineinfile:
+        path: /boot/firmware/config.txt
+        line: "{{ item }}"
+      loop:
+        - "cgroup_enable=cpuset"
+        - "cgroup_enable=memory" 
+        - "cgroup_memory=1"
+      notify: reboot_pi
+      
+  handlers:
+    - name: reboot_pi
+      reboot:
+        reboot_timeout: 300

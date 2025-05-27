@@ -1,0 +1,28 @@
+all:
+  children:
+    masters:                          # 🎯 Master-Gruppe (für kubectl-Befehle)
+      hosts:
+        p1:
+          ansible_host: 192.168.68.52
+          ansible_user: p1
+          node_role: master
+          # Läuft: K3s Master, Cilium, Longhorn, Velero, Flux, External Secrets
+          
+    workers:                          # 👷 Worker-Gruppe  
+      hosts:
+        p2:
+          ansible_host: 192.168.68.56
+          ansible_user: p2
+          node_role: worker
+          # Läuft: Homepage, Linkding, Container-Workloads
+        p3:
+          ansible_host: 192.168.68.51
+          ansible_user: p3
+          node_role: data_worker
+          storage_node: true
+          # Läuft: Audiobookshelf, pgAdmin, Longhorn Storage
+          
+  vars:
+    ansible_ssh_common_args: '-F /dev/null -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
+    ansible_ssh_pipelining: yes
+    ansible_python_interpreter: /usr/bin/python3

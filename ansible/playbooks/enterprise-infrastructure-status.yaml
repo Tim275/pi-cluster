@@ -1,0 +1,48 @@
+---
+- name: "Enterprise Homelab Infrastructure Status"
+  hosts: all
+  gather_facts: yes
+  
+  tasks:
+    - name: "Hardware & System Status"
+      debug:
+        msg: |
+          === {{ inventory_hostname }} ({{ (ansible_memtotal_mb/1024)|round(0) }}GB Pi5) ===
+          Uptime: {{ (ansible_uptime_seconds|int / 3600)|round(1) }}h
+          Load: {{ ansible_loadavg.1m }}
+          
+    - name: "Enterprise Apps Status (Master p1)"
+      shell: |
+        echo "🏠 ENTERPRISE HOMELAB STATUS 🏠"
+        echo ""
+        echo "=== Core Infrastructure ==="
+        echo "🔗 Cilium CNI: $(kubectl get pods -n kube-system -l k8s-app=cilium --no-headers 2>/dev/null | grep -c Running || echo '❌')/$(kubectl get pods -n kube-system -l k8s-app=cilium --no-headers 2>/dev/null | wc -l || echo '0') pods"
+        echo "💾 Longhorn Storage: $(kubectl get pods -n longhorn-system --no-headers 2>/dev/null | grep -c Running || echo '❌')/$(kubectl get pods -n longhorn-system --no-headers 2>/dev/null | wc -l || echo '0') pods"
+        echo "🔄 Velero Backup: $(kubectl get pods -n velero --no-headers 2>/dev/null | grep -c Running || echo '❌')/$(kubectl get pods -n velero --no-headers 2>/dev/null | wc -l || echo '0') pods"
+        echo ""
+        echo "=== Database & Data ==="
+        echo "🗄️ CloudNativePG: $(kubectl get pods -A -l app.kubernetes.io/name=cloudnative-pg --no-headers 2>/dev/null | grep -c Running || echo '❌') operators"
+        echo "🔐 External Secrets: $(kubectl get pods -n external-secrets --no-headers 2>/dev/null | grep -c Running || echo '❌')/$(kubectl get pods -n external-secrets --no-headers 2>/dev/null | wc -l || echo '0') pods"
+        echo ""
+        echo "=== GitOps & Management ==="
+        echo "🚀 Flux CD: $(kubectl get pods -n flux-system --no-headers 2>/dev/null | grep -c Running || echo '❌')/$(kubectl get pods -n flux-system --no-headers 2>/dev/null | wc -l || echo '0') pods"
+        echo ""
+        echo "=== Self-Hosted Apps ==="
+        echo "🏠 Homepage: $(kubectl get pods -A -l app.kubernetes.io/name=homepage --no-headers 2>/dev/null | grep -c Running || echo '❌') instances"
+        echo "🔗 Linkding: $(kubectl get pods -A -l app.kubernetes.io/name=linkding --no-headers 2>/dev/null | grep -c Running || echo '❌') instances"
+        echo "📚 Audiobookshelf: $(kubectl get pods -A -l app.kubernetes.io/name=audiobookshelf --no-headers 2>/dev/null | grep -c Running || echo '❌') instances"
+        echo "🐘 pgAdmin: $(kubectl get pods -A -l app.kubernetes.io/name=pgadmin --no-headers 2>/dev/null | grep -c Running || echo '❌') instances"
+        echo ""
+        echo "=== Cluster Nodes ==="
+        kubectl get nodes -o wide --no-headers 2>/dev/null | wc -l | xargs echo "Active Nodes:"
+        echo ""
+        echo "=== AWS S3 Backups ==="
+        kubectl get backups -A --no-headers 2>/dev/null | wc -l | xargs echo "Total Backups:"
+      register: enterprise_status
+      when: inventory_hostname == "p1"
+      failed_when: false
+      
+    - name: "Enterprise Infrastructure Overview"
+      debug:
+        msg: "{{ enterprise_status.stdout_lines | join('\n') }}"
+      when: inventory_hostname == "p1" and enterprise_status is defined
