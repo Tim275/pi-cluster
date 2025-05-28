@@ -8,8 +8,9 @@ resources:
   - linkding-container-env-secret.yaml
   - ingress.yaml
   - configmap.yaml
-  - database.yaml # Temporarily disabled
-  - database-secret.yaml # Temporarily disabled
+ # - database.yaml # Temporarily disabled
+ # - database-secret.yaml # Temporarily disabled
+ # - linkding-container-env.yaml  #temporäry disabled
   - aws-credentials.yaml
   - scheduled-backup.yaml
   # - networkpolicy.yaml
