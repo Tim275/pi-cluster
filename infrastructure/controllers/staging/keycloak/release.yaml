@@ -1,0 +1,53 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: keycloak
+  namespace: keycloak
+spec:
+  interval: 5m
+  chart:
+    spec:
+      chart: keycloak
+      version: ">=21.0.0"
+      sourceRef:
+        kind: HelmRepository
+        name: bitnami
+        namespace: keycloak
+      interval: 5m
+  values:
+    global:
+      storageClass: longhorn
+
+    # Production mode (wie dein Cloudflare Zero Trust Setup)
+    production: true
+    proxyHeaders: xforwarded
+
+    # Admin user
+    auth:
+      adminUser: admin
+      # Password wird automatisch generiert
+
+    # H2 Embedded Database (einfach für Start)
+    postgresql:
+      enabled: false
+
+    # Persistence für H2 Database
+    persistence:
+      enabled: true
+      storageClass: longhorn
+      size: 2Gi
+
+    # Resource Limits für Raspberry Pi
+    resources:
+      limits:
+        memory: 1Gi
+        cpu: 500m
+      requests:
+        memory: 512Mi
+        cpu: 250m
+
+    # Security
+    serviceAccount:
+      create: true
+      automountServiceAccountToken: false

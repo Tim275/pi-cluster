@@ -9,3 +9,4 @@ resources:
   - cert-manager
   - longhorn # Optimiert für Raspberry Pi
   - velero
+  - keycloak
