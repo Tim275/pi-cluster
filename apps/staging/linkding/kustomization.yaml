@@ -8,12 +8,12 @@ resources:
   - linkding-container-env-secret.yaml
   - ingress.yaml
   - configmap.yaml
-  # - database.yaml # Temporarily disabled
+  - database.yaml # Temporarily disabled
   # - linkding-container-env.yaml  #temporäry disabled
   - aws-credentials.yaml
   - scheduled-backup.yaml
   # - networkpolicy.yaml
 
 # Strategic Merge: Staging database-secret überschreibt Base linkding-secret
-patchesStrategicMerge:
-  - database-secret.yaml # Überschreibt ../../base/linkding/linkding-secret.yaml
+#patchesStrategicMerge:
+#  - database-secret.yaml # Überschreibt ../../base/linkding/linkding-secret.yaml
