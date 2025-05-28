@@ -1,0 +1,9 @@
+# Ansible Vault Secrets (NIEMALS ins Git!)
+.vault_password
+*.vault
+vault_*.yaml
+*_vault.yaml
+
+# Backup-Dateien
+*.backup
+*.bak
