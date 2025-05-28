@@ -1,35 +1,164 @@
 ---
-- name: "Basis-Setup für Homelab"
+- name: "Basis-Setup for Homelab (Enterprise-Ready & Safe)"
   hosts: all
   become: yes
+  gather_facts: yes
   
   tasks:
-    - name: "System updaten"
+    - name: "📊 System-Info anzeigen"
+      debug:
+        msg: |
+          === {{ inventory_hostname }} BASIC SETUP ===
+          🍓 Pi Model: {{ ansible_lsb.description | default('Raspberry Pi') }}
+          💾 RAM: {{ (ansible_memtotal_mb/1024)|round(1) }}GB
+          📡 IP: {{ ansible_default_ipv4.address }}
+          🎯 Rolle: {{ node_role | default('worker') }}
+          
+    - name: "📦 System updaten (Safe Mode)"
       apt:
         update_cache: yes
-        upgrade: dist
+        upgrade: safe        # ✅ SICHER: Nur Security-Updates (nicht dist)
+        autoremove: yes      # 🧹 Aufräumen alter Pakete
         
-    - name: "Nützliche Pakete installieren"
+    - name: "🔧 Essential Pakete installieren (Enterprise-Ready)"
       apt:
         name:
-          - htop
-          - curl
-          - wget
-          - git
-          - vim
+          # 📊 System-Monitoring & Debug-Tools
+          - htop          # 📈 Interaktiver Prozess-Monitor (CPU, RAM, Prozesse)
+          - tree          # 📁 Verzeichnis-Struktur schön anzeigen
+          - ncdu          # 💽 Disk-Usage-Analyzer (wo ist der Speicher hin?)
+          - iotop         # 💿 I/O-Monitoring (Storage-Performance überwachen)
+          
+          # 🌐 Netzwerk & Download-Tools
+          - curl          # 🌍 HTTP-Client für API-Calls (kubectl, helm, AWS S3)
+          - wget          # 📥 File-Download-Tool (Scripts, Binaries)
+          - git           # 🔄 Version Control (für Flux GitOps Repository)
+          
+          # 📝 Development & Configuration-Tools
+          - vim           # ✏️ Text-Editor (YAML, Config-Files editieren)
+          - jq            # 📊 JSON-Parser (kubectl output formatieren)
+          - yq            # 📋 YAML-Parser (Kubernetes-Manifests bearbeiten)
+          
+          # 🔐 Kubernetes & Container-Essentials (CRITICAL für K3s/Cilium)
+          - iptables      # 🔥 Firewall-Engine (K3s/Cilium Service-Mesh)
+          - conntrack     # 🔗 Connection-Tracking (für Cilium eBPF)
+          - ebtables      # 🌉 Bridge-Firewall (Container-zu-Container-Networking)
+          - ethtool       # 🔧 Ethernet-Interface-Tool (Netzwerk-Tuning)
+          - socat         # 📡 Socket-Tool (K3s Port-Forwarding & Debugging)
+          
         state: present
         
-    - name: "Pi-Konfiguration für K3s"
+    - name: "🍓 Raspberry Pi 5: cgroups für K3s aktivieren"
       lineinfile:
-        path: /boot/firmware/config.txt
-        line: "{{ item }}"
-      loop:
-        - "cgroup_enable=cpuset"
-        - "cgroup_enable=memory" 
-        - "cgroup_memory=1"
+        path: /boot/firmware/cmdline.txt  # 🍓 Raspberry Pi 5 Pfad
+        regexp: '^(.*)$'
+        line: '\1 cgroup_enable=cpuset cgroup_enable=memory cgroup_memory=1 swapaccount=1'
+        backrefs: yes
       notify: reboot_pi
       
+    - name: "🌐 Container-Netzwerk-Module laden (Essential für Cilium)"
+      modprobe:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - overlay       # 📦 Container-Overlay-Filesystem (für Pod-Storage)
+        - br_netfilter  # 🌉 Bridge-Netzwerk-Filter (Cilium eBPF braucht das)
+        
+    - name: "📝 Kernel-Module persistent machen"
+      lineinfile:
+        path: /etc/modules-load.d/k8s.conf
+        line: "{{ item }}"
+        create: yes
+      loop:
+        - overlay       # 📦 Für Container-Storage (Longhorn)
+        - br_netfilter  # 🌉 Für Pod-zu-Pod-Kommunikation (Cilium)
+        
+    - name: "⚙️ Kubernetes-Netzwerk-Einstellungen konfigurieren (Conservative)"
+      sysctl:
+        name: "{{ item.key }}"
+        value: "{{ item.value }}"
+        state: present
+        sysctl_file: /etc/sysctl.d/99-kubernetes.conf
+        reload: yes
+      loop:
+        # ✅ STANDARD Kubernetes-Werte (Cilium-kompatibel)
+        - key: "net.bridge.bridge-nf-call-iptables"
+          value: "1"    # 🌉 Bridge-Traffic durch iptables leiten
+        - key: "net.bridge.bridge-nf-call-ip6tables"  
+          value: "1"    # 🌉 Auch für IPv6
+        - key: "net.ipv4.ip_forward"
+          value: "1"    # 📡 IP-Forwarding (Router-Modus für Pods)
+        - key: "vm.max_map_count"
+          value: "262144"  # 🗄️ Memory-Mapping (für Longhorn Storage)
+        # ✅ REDUZIERT für Stabilität  
+        - key: "fs.inotify.max_user_watches"
+          value: "65536"   # 👁️ File-Watching (für Flux GitOps) - konservativ
+          
+    - name: "🚫 Swap deaktivieren (K3s Requirement)"
+      shell: |
+        swapoff -a
+        sed -i '/ swap / s/^/#/' /etc/fstab
+      register: swap_result
+      changed_when: "'swapoff' in swap_result.stdout or swap_result.rc == 0"
+      
+    - name: "🌡️ Raspberry Pi Temperatur-Monitoring einrichten"
+      copy:
+        dest: /usr/local/bin/pi-temp-check
+        mode: '0755'
+        content: |
+          #!/bin/bash
+          # 🌡️ Enterprise Homelab Temperature Check
+          temp=$(vcgencmd measure_temp | cut -d= -f2 | cut -d\' -f1)
+          echo "🌡️ {{ inventory_hostname }}: ${temp}°C"
+          if [ "$(echo "$temp > 70.0" | bc -l 2>/dev/null)" = "1" ]; then
+            echo "⚠️ WARNING: High temperature on {{ inventory_hostname }}!"
+          fi
+          
+    - name: "📋 Nützliche Bash-Aliases für Homelab"
+      blockinfile:
+        path: "/home/{{ ansible_user }}/.bashrc"
+        marker: "# {mark} ENTERPRISE HOMELAB ALIASES"
+        block: |
+          # 🏠 Enterprise Homelab Aliases
+          alias ll='ls -alF'                              # 📁 Detaillierte Datei-Liste
+          alias temp='vcgencmd measure_temp'              # 🌡️ Pi-Temperatur
+          alias k='kubectl'                               # ⚡ Kubectl-Shortcut
+          alias kgp='kubectl get pods -A'                 # 📦 Alle Pods anzeigen
+          alias kgs='kubectl get svc -A'                  # 🔗 Alle Services anzeigen
+          alias kgn='kubectl get nodes -o wide'           # 🖥️ Node-Status
+          alias flux-status='flux get all -A'            # 🚀 Flux GitOps Status
+          alias longhorn='kubectl get pods -n longhorn-system'  # 💾 Longhorn Storage
+          alias homelab-temp='sudo /usr/local/bin/pi-temp-check'  # 🌡️ Temp-Check
+          
+    - name: "✅ Basic-Setup Summary"
+      debug:
+        msg: |
+          🎯 SAFE BASIC SETUP COMPLETED auf {{ inventory_hostname }}!
+          
+          📦 Installierte Pakete:
+          • System: htop, tree, ncdu, iotop
+          • Netzwerk: curl, wget, git
+          • Development: vim, jq, yq
+          • Kubernetes: iptables, conntrack, ebtables, ethtool, socat
+          
+          ⚙️ Kubernetes-Vorbereitungen:
+          • 🍓 cgroups aktiviert (Raspberry Pi 5)
+          • 🌐 Container-Module geladen (overlay, br_netfilter)
+          • 📡 Netzwerk-Forwarding aktiviert
+          • 🚫 Swap deaktiviert
+          • 🌡️ Temperatur-Monitoring eingerichtet
+          
+          🔄 REBOOT ERFORDERLICH für cgroup-Änderungen!
+          
+          Nach Reboot bereit für:
+          • K3s Installation
+          • Cilium eBPF Networking  
+          • Longhorn Distributed Storage
+          • Velero + AWS S3 Backups
+          • Enterprise Apps: Homepage, Linkding, Audiobookshelf, pgAdmin
+          
   handlers:
     - name: reboot_pi
       reboot:
         reboot_timeout: 300
+        msg: "🔄 Rebooting {{ inventory_hostname }} for cgroup & kernel changes"

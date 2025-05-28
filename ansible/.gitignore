@@ -7,3 +7,4 @@ vault_*.yaml
 # Backup-Dateien
 *.backup
 *.bak
+Dockerfile

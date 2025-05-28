@@ -1,20 +1,58 @@
 ---
-- name: "Hello Homelab - Erster Test"
+- name: "🏠 Hello Homelab - System Connection Test"
   hosts: all
+  gather_facts: yes
   
   tasks:
-    - name: "Ping Test"
+    - name: "🏓 Ping Test (Connectivity Check)"
       ping:
       
-    - name: "Hostname anzeigen"
+    - name: "👋 Hostname & Basic Info"
       debug:
-        msg: "Hallo von {{ inventory_hostname }}"
-        
-    - name: "Pi-Temperatur prüfen"
+        msg: |
+          🎯 === {{ inventory_hostname }} ===
+          🏠 Hostname: {{ ansible_hostname }}
+          🍓 Pi Model: {{ ansible_lsb.description | default('Raspberry Pi') }}
+          💾 RAM: {{ (ansible_memtotal_mb/1024)|round(1) }}GB
+          📡 IP: {{ ansible_default_ipv4.address }}
+          🎭 Role: {{ node_role | default('worker') }}
+          
+    - name: "🌡️ Pi-Temperatur prüfen (Read-Only)"
       shell: "vcgencmd measure_temp"
       register: temp
       become: yes
+      changed_when: false
       
-    - name: "Temperatur ausgeben"
+    - name: "📊 System-Load prüfen (Read-Only)"
+      shell: "uptime"
+      register: uptime_info
+      changed_when: false
+      
+    - name: "📈 System-Status anzeigen"
       debug:
-        msg: "{{ inventory_hostname }} Temperatur: {{ temp.stdout }}"
+        msg: |
+          🖥️ {{ inventory_hostname }} Status:
+          🌡️ Temperatur: {{ temp.stdout }}
+          📈 Load Average: {{ ansible_loadavg['1m'] | round(2) }}
+          ⏰ Uptime: {{ (ansible_uptime_seconds / 3600) | round(1) }}h ({{ (ansible_uptime_seconds / 86400) | round(1) }} Tage)
+          💾 RAM Usage: {{ ((ansible_memtotal_mb - ansible_memfree_mb) / ansible_memtotal_mb * 100) | round(1) }}%
+          👤 SSH User: {{ ansible_user }}
+          ✅ System ist bereit!
+          
+    - name: "🎉 Cluster-Overview"
+      debug:
+        msg: |
+          🏢 === RASPBERRY PI CLUSTER STATUS ===
+          
+          🖥️ Hardware-Overview:
+          🎖️ Master Node (p1):     {{ hostvars['p1']['ansible_default_ipv4']['address'] }} - {{ (hostvars['p1']['ansible_memtotal_mb']/1024)|round(1) }}GB RAM
+          👷 Worker Node (p2):     {{ hostvars['p2']['ansible_default_ipv4']['address'] }} - {{ (hostvars['p2']['ansible_memtotal_mb']/1024)|round(1) }}GB RAM
+          💾 Data Worker (p3):     {{ hostvars['p3']['ansible_default_ipv4']['address'] }} - {{ (hostvars['p3']['ansible_memtotal_mb']/1024)|round(1) }}GB RAM
+          
+          🔥 Total RAM: {{ ((hostvars['p1']['ansible_memtotal_mb'] + hostvars['p2']['ansible_memtotal_mb'] + hostvars['p3']['ansible_memtotal_mb'])/1024)|round(1) }}GB
+          
+          ✅ Alle Nodes sind erreichbar und bereit!
+      run_once: true
+      delegate_to: localhost
+
+      #ansible-playbook playbooks/hello-homelab.yaml
