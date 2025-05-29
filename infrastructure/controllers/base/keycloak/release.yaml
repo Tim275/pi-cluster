@@ -12,31 +12,167 @@ spec:
       version: ">=21.0.0"
       sourceRef:
         kind: HelmRepository
-        name: bitnami
+        name: codecentric  # ← Fixed: Use codecentric instead of bitnami
         namespace: keycloak
       interval: 5m
   values:
-    global:
-      storageClass: longhorn
+    # Keycloak Image Configuration
+    image:
+      repository: quay.io/keycloak/keycloak
+      tag: "25.0.0"
 
-    # Production mode (wie dein Cloudflare Zero Trust Setup)
-    production: true
-    proxyHeaders: xforwarded
-
-    # Admin user
-    auth:
-      adminUser: admin
-      # Password wird automatisch generiert
-
-    # H2 Embedded Database (einfach für Start)
+    # ========================================
+    # DATABASE CONFIGURATION
+    # ========================================
+    
+    # Option 1: H2 Embedded Database (Standard für Baby Steps)
     postgresql:
       enabled: false
 
+    # H2 Database Configuration (wenn postgresql.enabled: false)
+    extraEnv: |
+      - name: KC_DB
+        value: "h2-file"
+      - name: KC_DB_URL_PATH
+        value: "/opt/keycloak/data/h2/keycloakdb"
+
     # Persistence für H2 Database
     persistence:
-      enabled: true
-      storageClass: longhorn
-      size: 2Gi
+      # For H2 file storage
+      deployPostgres: false
+      dbVendor: h2
+      existingSecret: ""
+      existingSecretKey: password
+
+    # Storage für H2 Files
+    extraVolumes: |
+      - name: keycloak-data
+        persistentVolumeClaim:
+          claimName: keycloak-data-pvc
+
+    extraVolumeMounts: |
+      - name: keycloak-data
+        mountPath: /opt/keycloak/data
+        subPath: keycloak
+
+    # PVC für H2 Database
+    extraObjects:
+      - apiVersion: v1
+        kind: PersistentVolumeClaim
+        metadata:
+          name: keycloak-data-pvc
+          namespace: keycloak
+        spec:
+          accessModes:
+            - ReadWriteOnce
+          storageClassName: longhorn
+          resources:
+            requests:
+              storage: 2Gi
+
+    # Option 2: CloudNativePG External Database (OPTIONAL - auskommentiert)
+    # ========================================
+    # CLOUDNATIVE-PG INTEGRATION (OPTIONAL)
+    # ========================================
+    # Um CloudNativePG zu verwenden, uncomment diese Sektion und comment H2 aus:
+    #
+    # postgresql:
+    #   enabled: false  # Disable built-in PostgreSQL
+    #
+    # # Remove H2 configuration
+    # extraEnv: |
+    #   - name: KC_DB
+    #     value: "postgres"
+    #   - name: KC_DB_URL_HOST
+    #     value: "keycloak-db-staging-rw"
+    #   - name: KC_DB_URL_PORT
+    #     value: "5432"
+    #   - name: KC_DB_URL_DATABASE
+    #     value: "keycloak"
+    #   - name: KC_DB_USERNAME
+    #     valueFrom:
+    #       secretKeyRef:
+    #         name: keycloak-db-staging-app
+    #         key: username
+    #   - name: KC_DB_PASSWORD
+    #     valueFrom:
+    #       secretKeyRef:
+    #         name: keycloak-db-staging-app
+    #         key: password
+    #
+    # # Remove H2 persistence
+    # persistence:
+    #   deployPostgres: false
+    #   dbVendor: postgres
+    #   dbHost: "keycloak-db-staging-rw"
+    #   dbPort: 5432
+    #   dbName: "keycloak"
+    #   existingSecret: "keycloak-db-staging-app"
+    #   existingSecretKey: "password"
+    #
+    # # Remove H2 volumes
+    # extraVolumes: ""
+    # extraVolumeMounts: ""
+    # extraObjects: []
+    #
+    # # CloudNativePG Database Cluster Definition (goes in databases/data/keycloak/cloudnativepg/):
+    # # ---
+    # # apiVersion: postgresql.cnpg.io/v1
+    # # kind: Cluster
+    # # metadata:
+    # #   name: keycloak-db-staging
+    # #   namespace: keycloak
+    # # spec:
+    # #   description: Postgres database cluster for keycloak
+    # #   imageName: ghcr.io/cloudnative-pg/postgresql:16.6-30-bookworm
+    # #   instances: 2
+    # #
+    # #   inheritedMetadata:
+    # #     labels:
+    # #       app: keycloak-database
+    # #
+    # #   bootstrap:
+    # #     initdb:
+    # #       database: keycloak           # Creates keycloak database
+    # #       owner: keycloak             # Creates keycloak user
+    # #
+    # #   monitoring:
+    # #     enablePodMonitor: true
+    # #
+    # #   storage:
+    # #     size: 5Gi                     # Larger than linkding for enterprise SSO
+    # #     storageClass: longhorn
+    # #     pvcTemplate:
+    # #       accessModes:
+    # #         - ReadWriteOnce
+    # #
+    # #   backup:
+    # #     barmanObjectStore:
+    # #       destinationPath: "s3://piclusterhomelab/keycloak-db/"
+    # #       s3Credentials:
+    # #         accessKeyId:
+    # #           name: aws-creds
+    # #           key: ACCESS_KEY_ID
+    # #         secretAccessKey:
+    # #           name: aws-creds
+    # #           key: ACCESS_SECRET_KEY
+    # #       retentionPolicy: 30d        # Longer retention for SSO database
+
+    # ========================================
+    # ADMIN & AUTH CONFIGURATION
+    # ========================================
+
+    # Admin User Configuration
+    auth:
+      adminUser: admin
+      # adminPassword wird automatisch generiert und in Secret gespeichert
+
+    # Production Mode Configuration
+    extraEnvFrom: ""
+    
+    # ========================================
+    # RESOURCES & SECURITY
+    # ========================================
 
     # Resource Limits für Raspberry Pi
     resources:
@@ -47,7 +183,35 @@ spec:
         memory: 512Mi
         cpu: 250m
 
+    # Service Configuration
+    service:
+      type: ClusterIP
+      port: 8080
+
     # Security
     serviceAccount:
       create: true
       automountServiceAccountToken: false
+
+    # Pod Security Context
+    podSecurityContext:
+      fsGroup: 1000
+
+    securityContext:
+      runAsUser: 1000
+      runAsNonRoot: true
+
+    # ========================================
+    # INGRESS & NETWORKING (wird in staging überschrieben)
+    # ========================================
+    
+    ingress:
+      enabled: false  # Wird in staging/keycloak/ingress-patch.yaml aktiviert
+
+  # ========================================
+  # FLUX DEPENDENCIES (OPTIONAL)
+  # ========================================
+  # Uncomment wenn CloudNativePG verwendet wird:
+  # dependsOn:
+  #   - name: keycloak-database-cluster
+  #     namespace: keycloak
