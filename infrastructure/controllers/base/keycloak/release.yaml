@@ -17,49 +17,75 @@ spec:
       interval: 5m
   values:
     # ========================================
-    # MINIMAL KEYCLOAK CONFIGURATION
+    # KEYCLOAK IMAGE & CONFIG
     # ========================================
     
-    # Keycloak Image
+    # Keycloak Image (Latest stable)
     image:
       repository: quay.io/keycloak/keycloak
       tag: "26.0.7"
 
     # ========================================
-    # DATABASE: In-Memory H2 (einfachste)
+    # STARTUP CONFIGURATION (CRITICAL!)
     # ========================================
     
-    # H2 In-Memory Database (keine Persistence)
-    database:
-      vendor: h2-mem
-
-    # ========================================
-    # ADMIN USER
-    # ========================================
-    
-    # Admin User
-    auth:
-      adminUser: admin
-      # adminPassword wird automatisch generiert
-
-    # ========================================
-    # COMMAND OVERRIDE (explizit)
-    # ========================================
-    
-    # Explizite Start-Command
-    command:
-      - /opt/keycloak/bin/kc.sh
+    # Keycloak Start Arguments (Development Mode)
     args:
       - start-dev
       - --http-enabled=true
       - --http-port=8080
       - --hostname-strict=false
       - --hostname-strict-https=false
+      - --proxy=edge  # Important for NGINX proxy
+      - --health-enabled=true
+
+    # ========================================
+    # DATABASE: H2 In-Memory (Einfachster Start)
+    # ========================================
+    
+    # Database Configuration (H2 In-Memory)
+    # Keine DB-Konfiguration nötig für H2-Memory
+
+    # ========================================
+    # ADMIN USER
+    # ========================================
+    
+    # Admin User Configuration
+    extraEnv: |
+      - name: KEYCLOAK_ADMIN
+        value: "admin"
+      - name: KEYCLOAK_ADMIN_PASSWORD
+        value: "admin123"  # Temporär für ersten Start
+
+    # ========================================
+    # NETWORKING & SERVICE
+    # ========================================
+    
+    # Service Configuration
+    service:
+      type: ClusterIP
+      httpPort: 8080
+
+    # Health Checks
+    livenessProbe:
+      httpGet:
+        path: /health/live
+        port: 8080
+      initialDelaySeconds: 90
+      timeoutSeconds: 5
+
+    readinessProbe:
+      httpGet:
+        path: /health/ready
+        port: 8080
+      initialDelaySeconds: 60
+      timeoutSeconds: 5
 
     # ========================================
     # RESOURCES
     # ========================================
     
+    # Resource Limits für Raspberry Pi
     resources:
       limits:
         memory: 1Gi
@@ -69,30 +95,31 @@ spec:
         cpu: 250m
 
     # ========================================
-    # SERVICE
+    # SECURITY & PERMISSIONS
     # ========================================
     
-    service:
-      type: ClusterIP
-      httpPort: 8080
+    # Pod Security Context
+    podSecurityContext:
+      runAsUser: 1000
+      runAsGroup: 1000
+      fsGroup: 1000
 
-    # ========================================
-    # INGRESS (deaktiviert)
-    # ========================================
-    
-    ingress:
-      enabled: false
+    # Container Security Context
+    securityContext:
+      allowPrivilegeEscalation: false
+      runAsNonRoot: true
+      runAsUser: 1000
+      capabilities:
+        drop:
+        - ALL
 
-    # ========================================
-    # SECURITY (minimal)
-    # ========================================
-    
+    # Service Account
     serviceAccount:
       create: true
 
     # ========================================
-    # REMOVE ALL CUSTOM CONFIG
+    # INGRESS (deaktiviert für ersten Test)
     # ========================================
-    # Keine extraVolumes, extraVolumeMounts, custom persistence
-    # Keine podSecurityContext, securityContext Overrides
-    # Lass das Chart alles selbst handhaben
+    
+    ingress:
+      enabled: false
