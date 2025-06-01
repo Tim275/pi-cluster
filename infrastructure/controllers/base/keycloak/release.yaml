@@ -26,60 +26,53 @@ spec:
       tag: "26.0.7"
 
     # ========================================
-    # STARTUP CONFIGURATION (CRITICAL!)
+    # STARTUP ARGUMENTS (KeycloakX Format)
     # ========================================
     
-    # Keycloak Start Arguments (Development Mode)
+    # Command override for KeycloakX chart
+    command:
+      - /opt/keycloak/bin/kc.sh
     args:
       - start-dev
       - --http-enabled=true
       - --http-port=8080
       - --hostname-strict=false
       - --hostname-strict-https=false
-      - --proxy=edge  # Important for NGINX proxy
+      - --proxy=edge
       - --health-enabled=true
 
     # ========================================
-    # DATABASE: H2 In-Memory (Einfachster Start)
+    # ADMIN USER (Environment Variables)
     # ========================================
     
-    # Database Configuration (H2 In-Memory)
-    # Keine DB-Konfiguration nötig für H2-Memory
-
-    # ========================================
-    # ADMIN USER
-    # ========================================
-    
-    # Admin User Configuration
-    extraEnv: |
+    # Environment Variables (KeycloakX format)
+    extraEnv:
       - name: KEYCLOAK_ADMIN
         value: "admin"
       - name: KEYCLOAK_ADMIN_PASSWORD
-        value: "admin123"  # Temporär für ersten Start
+        value: "admin123"
 
     # ========================================
-    # NETWORKING & SERVICE
+    # SERVICE CONFIGURATION
     # ========================================
     
-    # Service Configuration
+    # Service settings
+    http:
+      port: 8080
+
     service:
       type: ClusterIP
-      httpPort: 8080
+      port: 8080
 
-    # Health Checks
-    livenessProbe:
-      httpGet:
-        path: /health/live
-        port: 8080
-      initialDelaySeconds: 90
-      timeoutSeconds: 5
-
-    readinessProbe:
-      httpGet:
-        path: /health/ready
-        port: 8080
-      initialDelaySeconds: 60
-      timeoutSeconds: 5
+    # ========================================
+    # HEALTH CHECKS (SIMPLIFIED)
+    # ========================================
+    
+    # Remove complex health checks that cause template errors
+    # livenessProbe: {}
+    # readinessProbe: {}
+    
+    # Use default health checks from chart
 
     # ========================================
     # RESOURCES
@@ -95,31 +88,42 @@ spec:
         cpu: 250m
 
     # ========================================
-    # SECURITY & PERMISSIONS
+    # PERSISTENCE (OPTIONAL)
     # ========================================
     
-    # Pod Security Context
-    podSecurityContext:
-      runAsUser: 1000
-      runAsGroup: 1000
-      fsGroup: 1000
+    # Persistence settings (simplified)
+    persistence:
+      deployPostgres: false  # No PostgreSQL
 
-    # Container Security Context
-    securityContext:
-      allowPrivilegeEscalation: false
-      runAsNonRoot: true
-      runAsUser: 1000
-      capabilities:
-        drop:
-        - ALL
-
+    # ========================================
+    # SECURITY & RBAC
+    # ========================================
+    
     # Service Account
     serviceAccount:
       create: true
 
+    # RBAC
+    rbac:
+      create: true
+
+    # Security Context (simplified)
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 1000
+
+    podSecurityContext:
+      fsGroup: 1000
+
     # ========================================
-    # INGRESS (deaktiviert für ersten Test)
+    # INGRESS (deaktiviert)
     # ========================================
     
     ingress:
       enabled: false
+
+    # ========================================
+    # REPLICAS
+    # ========================================
+    
+    replicas: 1
