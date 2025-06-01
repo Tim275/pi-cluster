@@ -17,35 +17,26 @@ spec:
       interval: 5m
   values:
     # ========================================
-    # KEYCLOAK IMAGE & CONFIG
+    # MINIMAL KEYCLOAK CONFIGURATION
     # ========================================
     
-    # Keycloak Image (Latest stable)
+    # Keycloak Image
     image:
       repository: quay.io/keycloak/keycloak
       tag: "26.0.7"
 
     # ========================================
-    # STARTUP ARGUMENTS (KeycloakX Format)
+    # STARTUP & ADMIN CONFIG
     # ========================================
     
-    # Command override for KeycloakX chart
-    command:
-      - /opt/keycloak/bin/kc.sh
+    # Start in development mode
     args:
       - start-dev
       - --http-enabled=true
       - --http-port=8080
       - --hostname-strict=false
-      - --hostname-strict-https=false
-      - --proxy=edge
-      - --health-enabled=true
 
-    # ========================================
-    # ADMIN USER (Environment Variables)
-    # ========================================
-    
-    # Environment Variables (KeycloakX format)
+    # Admin credentials
     extraEnv:
       - name: KEYCLOAK_ADMIN
         value: "admin"
@@ -53,32 +44,15 @@ spec:
         value: "admin123"
 
     # ========================================
-    # SERVICE CONFIGURATION
+    # BASIC SETTINGS
     # ========================================
     
-    # Service settings
-    http:
-      port: 8080
-
+    # Service
     service:
       type: ClusterIP
       port: 8080
 
-    # ========================================
-    # HEALTH CHECKS (SIMPLIFIED)
-    # ========================================
-    
-    # Remove complex health checks that cause template errors
-    # livenessProbe: {}
-    # readinessProbe: {}
-    
-    # Use default health checks from chart
-
-    # ========================================
-    # RESOURCES
-    # ========================================
-    
-    # Resource Limits für Raspberry Pi
+    # Resources
     resources:
       limits:
         memory: 1Gi
@@ -87,43 +61,9 @@ spec:
         memory: 512Mi
         cpu: 250m
 
-    # ========================================
-    # PERSISTENCE (OPTIONAL)
-    # ========================================
-    
-    # Persistence settings (simplified)
-    persistence:
-      deployPostgres: false  # No PostgreSQL
-
-    # ========================================
-    # SECURITY & RBAC
-    # ========================================
-    
-    # Service Account
-    serviceAccount:
-      create: true
-
-    # RBAC
-    rbac:
-      create: true
-
-    # Security Context (simplified)
-    securityContext:
-      runAsNonRoot: true
-      runAsUser: 1000
-
-    podSecurityContext:
-      fsGroup: 1000
-
-    # ========================================
-    # INGRESS (deaktiviert)
-    # ========================================
-    
+    # Ingress disabled
     ingress:
       enabled: false
 
-    # ========================================
-    # REPLICAS
-    # ========================================
-    
+    # Replicas
     replicas: 1
