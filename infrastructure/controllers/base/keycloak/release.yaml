@@ -44,29 +44,45 @@ spec:
         value: "admin123"
 
     # ========================================
-    # CHART-SPECIFIC HEALTH CHECK DISABLE
+    # HTTP CONFIGURATION (KEY FIX!)
     # ========================================
     
-    # Disable KeycloakX chart health checks completely
-    health:
-      enabled: false
-    
-    # Alternative: Set correct ports for KeycloakX chart
+    # Fix HTTP configuration for modern Keycloak
     http:
-      port: 8080
-    
-    # Disable management port (causes port 9000 issue)
-    management:
-      enabled: false
+      relativePath: ""  # ✅ No /auth prefix for modern Keycloak
+      internalPort: 8080  # ✅ Use port 8080
+      internalScheme: HTTP
 
-    # Override probe settings (Chart-specific)
-    probes:
-      startup:
-        enabled: false
-      liveness:
-        enabled: false
-      readiness:
-        enabled: false
+    # ========================================
+    # HEALTH CHECK FIX
+    # ========================================
+    
+    # Override probes to use correct paths
+    startupProbe: |
+      httpGet:
+        path: '/health'
+        port: 8080
+        scheme: HTTP
+      initialDelaySeconds: 30
+      timeoutSeconds: 5
+      failureThreshold: 60
+      periodSeconds: 10
+
+    livenessProbe: |
+      httpGet:
+        path: '/health/live'
+        port: 8080
+        scheme: HTTP
+      initialDelaySeconds: 60
+      timeoutSeconds: 5
+
+    readinessProbe: |
+      httpGet:
+        path: '/health/ready'
+        port: 8080
+        scheme: HTTP
+      initialDelaySeconds: 30
+      timeoutSeconds: 5
 
     # ========================================
     # BASIC SETTINGS
