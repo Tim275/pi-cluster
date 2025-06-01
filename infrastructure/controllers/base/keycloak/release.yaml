@@ -25,92 +25,29 @@ spec:
       tag: "26.0.7"
 
     # ========================================
-    # KEYCLOAK STARTUP COMMANDS (FIX)
+    # CHART-KOMPATIBLE KONFIGURATION
     # ========================================
     
-    # Explicit start command für KeycloakX
-    command:
-      - /opt/keycloak/bin/kc.sh
-    args:
-      - start
-      - --optimized  # Use optimized mode
-      - --hostname-strict=false  # Allow flexible hostname
-      - --proxy=edge  # Behind reverse proxy
-      - --http-enabled=true  # Enable HTTP
+    # Verwende Chart-eigene HTTP-Konfiguration (nicht überschreiben)
+    http:
+      # Let chart handle HTTP configuration
+      relativePath: /auth  # Chart default
 
     # ========================================
-    # DATABASE CONFIGURATION
+    # DATABASE CONFIGURATION (SIMPLIFIED)
     # ========================================
     
+    # H2 File Database (Chart-kompatibel)
     database:
       vendor: h2-file
-      hostname: ""
-      port: ""
-      database: ""
-      username: ""
-      password: ""
 
     # ========================================
     # ADMIN CONFIGURATION
     # ========================================
     
+    # Admin User (Chart-kompatible Syntax)
     auth:
       adminUser: admin
-
-    # Environment Variables für Keycloak
-    extraEnv: |
-      - name: KEYCLOAK_ADMIN
-        value: admin
-      - name: KEYCLOAK_ADMIN_PASSWORD
-        valueFrom:
-          secretKeyRef:
-            name: keycloak-keycloakx
-            key: admin-password
-      - name: KC_DB
-        value: "h2-file"
-      - name: KC_DB_URL_PATH
-        value: "/opt/keycloak/data/h2/keycloakdb"
-      - name: KC_HTTP_ENABLED
-        value: "true"
-      - name: KC_HOSTNAME_STRICT
-        value: "false"
-      - name: KC_PROXY
-        value: "edge"
-
-    # ========================================
-    # HEALTH CHECKS (SIMPLIFIED)
-    # ========================================
-    
-    # Simplified Health Checks
-    livenessProbe:
-      enabled: true
-      httpGet:
-        path: /health
-        port: 8080
-      initialDelaySeconds: 120  # Mehr Zeit für H2 Setup
-      timeoutSeconds: 10
-      periodSeconds: 30
-      failureThreshold: 5
-
-    readinessProbe:
-      enabled: true
-      httpGet:
-        path: /health/ready
-        port: 8080
-      initialDelaySeconds: 60
-      timeoutSeconds: 10
-      periodSeconds: 15
-      failureThreshold: 5
-
-    startupProbe:
-      enabled: true
-      httpGet:
-        path: /health
-        port: 8080
-      initialDelaySeconds: 60
-      timeoutSeconds: 10
-      periodSeconds: 15
-      failureThreshold: 40  # 10 Minuten startup time
 
     # ========================================
     # RESOURCES & PERFORMANCE
@@ -130,12 +67,17 @@ spec:
     
     service:
       type: ClusterIP
-      port: 8080
+      httpPort: 8080
 
     # ========================================
     # PERSISTENCE (MIT PVC)
     # ========================================
     
+    # Chart-eigene Persistence
+    persistence:
+      deployPostgres: false  # Disable built-in PostgreSQL
+      
+    # Extra Volumes für H2 Database
     extraVolumes: |
       - name: keycloak-data
         persistentVolumeClaim:
@@ -160,14 +102,23 @@ spec:
       runAsUser: 1000
       runAsNonRoot: true
 
-    # Ingress (wird in staging überschrieben)
+    # ========================================
+    # INGRESS (wird in staging überschrieben)
+    # ========================================
+    
     ingress:
       enabled: false
 
     # ========================================
+    # REMOVE CUSTOM CONFIGURATION
+    # ========================================
+    # Entferne alle custom command/args/extraEnv/health checks
+    # Lass das Chart seine eigenen Defaults verwenden
+
+    # ========================================
     # CLOUDNATIVE-PG INTEGRATION (OPTIONAL - auskommentiert)
     # ========================================
-    # Um CloudNativePG zu verwenden, uncomment diese Sektion:
+    # Um CloudNativePG zu verwenden:
     #
     # database:
     #   vendor: postgres
@@ -177,40 +128,6 @@ spec:
     #   existingSecret: "keycloak-db-staging-app"
     #   existingSecretUserKey: "username"
     #   existingSecretPasswordKey: "password"
-    #
-    # # PostgreSQL Environment Variables
-    # extraEnv: |
-    #   - name: KC_DB
-    #     value: "postgres"
-    #   - name: KC_DB_URL_HOST
-    #     value: "keycloak-db-staging-rw"
-    #   - name: KC_DB_URL_PORT
-    #     value: "5432"
-    #   - name: KC_DB_URL_DATABASE
-    #     value: "keycloak"
-    #   - name: KC_DB_USERNAME
-    #     valueFrom:
-    #       secretKeyRef:
-    #         name: keycloak-db-staging-app
-    #         key: username
-    #   - name: KC_DB_PASSWORD
-    #     valueFrom:
-    #       secretKeyRef:
-    #         name: keycloak-db-staging-app
-    #         key: password
-    #   - name: KEYCLOAK_ADMIN
-    #     value: admin
-    #   - name: KEYCLOAK_ADMIN_PASSWORD
-    #     valueFrom:
-    #       secretKeyRef:
-    #         name: keycloak-keycloakx
-    #         key: admin-password
-    #   - name: KC_HTTP_ENABLED
-    #     value: "true"
-    #   - name: KC_HOSTNAME_STRICT
-    #     value: "false"
-    #   - name: KC_PROXY
-    #     value: "edge"
     #
     # # Remove H2 volumes for PostgreSQL
     # extraVolumes: ""
