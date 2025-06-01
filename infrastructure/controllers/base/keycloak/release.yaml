@@ -1,3 +1,4 @@
+---
 apiVersion: helm.toolkit.fluxcd.io/v2beta1
 kind: HelmRelease
 metadata:
@@ -7,11 +8,11 @@ spec:
   interval: 5m
   chart:
     spec:
-      chart: keycloakx  # ← GEÄNDERT von 'keycloak' zu 'keycloakx'
-      version: ">=7.0.0"  # ← Update Version Range
+      chart: keycloakx
+      version: ">=7.0.0"
       sourceRef:
         kind: HelmRepository
-        name: codecentric  # ← Behalten wir codecentric
+        name: codecentric
         namespace: keycloak
       interval: 5m
   values:
@@ -19,18 +20,16 @@ spec:
     # KEYCLOAK IMAGE & BASIC CONFIG
     # ========================================
     
-    # Keycloak Image (KeycloakX verwendet neueres Image)
     image:
       repository: quay.io/keycloak/keycloak
-      tag: "26.0.7"  # Matches chart app version
+      tag: "26.0.7"
 
     # ========================================
-    # DATABASE CONFIGURATION  
+    # DATABASE CONFIGURATION
     # ========================================
     
-    # H2 Embedded Database (einfacher Start)
     database:
-      vendor: h2-file  # KeycloakX syntax für H2
+      vendor: h2-file  # Mit persistence
       hostname: ""
       port: ""
       database: ""
@@ -38,23 +37,76 @@ spec:
       password: ""
 
     # ========================================
+    # HEALTH CHECKS (FIX)
+    # ========================================
+    
+    # Fix Health Check Configuration
+    http:
+      relativePath: /health  # ← Korrekter Health Endpoint für KeycloakX
+
+    # Probe Configuration
+    livenessProbe:
+      enabled: true
+      httpGet:
+        path: /health
+        port: http
+      initialDelaySeconds: 60  # ← Mehr Zeit für Startup
+      timeoutSeconds: 5
+      periodSeconds: 30
+      failureThreshold: 3
+
+    readinessProbe:
+      enabled: true
+      httpGet:
+        path: /health/ready
+        port: http
+      initialDelaySeconds: 30
+      timeoutSeconds: 5
+      periodSeconds: 10
+      failureThreshold: 3
+
+    startupProbe:
+      enabled: true
+      httpGet:
+        path: /health
+        port: http
+      initialDelaySeconds: 30  # ← Startup Zeit
+      timeoutSeconds: 5
+      periodSeconds: 10
+      failureThreshold: 60  # ← 10 Minuten Startup Zeit
+
+    # ========================================
     # ADMIN CONFIGURATION
     # ========================================
     
-    # Admin User
     auth:
       adminUser: admin
-      # adminPassword wird automatisch generiert
 
     # ========================================
-    # STORAGE & PERSISTENCE
+    # RESOURCES & PERFORMANCE
     # ========================================
     
-    # Persistence für H2 Database
-    persistence:
-      deployPostgres: false  # Disable PostgreSQL
-      
-    # Extra Volumes für H2 File Storage
+    resources:
+      limits:
+        memory: 1Gi
+        cpu: 500m
+      requests:
+        memory: 512Mi
+        cpu: 250m
+
+    # ========================================
+    # SERVICE CONFIGURATION
+    # ========================================
+    
+    service:
+      type: ClusterIP
+      port: 8080  # ← Stelle sicher dass Port 8080 verwendet wird
+
+    # ========================================
+    # PERSISTENCE (MIT PVC)
+    # ========================================
+    
+    # Volume Mounts für H2 File Database
     extraVolumes: |
       - name: keycloak-data
         persistentVolumeClaim:
@@ -65,81 +117,20 @@ spec:
         mountPath: /opt/keycloak/data
         subPath: keycloak
 
-    # PVC für H2 Database Files
-    extraObjects:
-      - apiVersion: v1
-        kind: PersistentVolumeClaim
-        metadata:
-          name: keycloak-data-pvc
-          namespace: keycloak
-        spec:
-          accessModes:
-            - ReadWriteOnce
-          storageClassName: longhorn
-          resources:
-            requests:
-              storage: 2Gi
-
-    # ========================================
-    # CLOUDNATIVE-PG INTEGRATION (OPTIONAL - auskommentiert)
-    # ========================================
-    # Um CloudNativePG zu verwenden, uncomment diese Sektion:
-    #
-    # database:
-    #   vendor: postgres
-    #   hostname: "keycloak-db-staging-rw"  # CloudNativePG read-write service
-    #   port: 5432
-    #   database: "keycloak"
-    #   existingSecret: "keycloak-db-staging-app"  # CloudNativePG auto-generated secret
-    #   existingSecretUserKey: "username"
-    #   existingSecretPasswordKey: "password"
-    #
-    # # Remove H2 configuration
-    # persistence:
-    #   deployPostgres: false
-    #
-    # extraVolumes: ""
-    # extraVolumeMounts: ""
-    # extraObjects: []
-
-    # ========================================
-    # RESOURCES & PERFORMANCE
-    # ========================================
-    
-    # Resource Limits für Raspberry Pi
-    resources:
-      limits:
-        memory: 1Gi
-        cpu: 500m
-      requests:
-        memory: 512Mi
-        cpu: 250m
-
-    # ========================================
-    # NETWORKING & SERVICE
-    # ========================================
-    
-    # Service Configuration
-    service:
-      type: ClusterIP
-      port: 8080
-
-    # Ingress (wird in staging überschrieben)
-    ingress:
-      enabled: false
-
     # ========================================
     # SECURITY
     # ========================================
     
-    # Service Account
     serviceAccount:
       create: true
 
-    # Security Context
     podSecurityContext:
       fsGroup: 1000
 
     securityContext:
       runAsUser: 1000
       runAsNonRoot: true
+
+    # Ingress (wird in staging überschrieben)
+    ingress:
+      enabled: false
