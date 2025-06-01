@@ -36,7 +36,7 @@ spec:
       - --http-port=8080
       - --hostname-strict=false
 
-    # Admin credentials (STRING format für KeycloakX Chart!)
+    # Admin credentials
     extraEnv: |
       - name: KEYCLOAK_ADMIN
         value: "admin"
@@ -44,31 +44,29 @@ spec:
         value: "admin123"
 
     # ========================================
-    # HEALTH CHECKS DISABLED (Chart überschreibt sie sowieso)
+    # CHART-SPECIFIC HEALTH CHECK DISABLE
     # ========================================
     
-    # Disable all health checks to let Keycloak start
-    startupProbe:
-      exec:
-        command:
-        - /bin/true
-      initialDelaySeconds: 5
-      periodSeconds: 10
-      failureThreshold: 600  # 100 minutes timeout
+    # Disable KeycloakX chart health checks completely
+    health:
+      enabled: false
     
-    livenessProbe:
-      exec:
-        command:
-        - /bin/true
-      initialDelaySeconds: 120
-      periodSeconds: 30
+    # Alternative: Set correct ports for KeycloakX chart
+    http:
+      port: 8080
     
-    readinessProbe:
-      exec:
-        command:
-        - /bin/true
-      initialDelaySeconds: 60
-      periodSeconds: 10
+    # Disable management port (causes port 9000 issue)
+    management:
+      enabled: false
+
+    # Override probe settings (Chart-specific)
+    probes:
+      startup:
+        enabled: false
+      liveness:
+        enabled: false
+      readiness:
+        enabled: false
 
     # ========================================
     # BASIC SETTINGS
