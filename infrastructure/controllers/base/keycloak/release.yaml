@@ -1,47 +1,107 @@
 ---
-apiVersion: helm.toolkit.fluxcd.io/v2beta1
-kind: HelmRelease
+apiVersion: apps/v1
+kind: Deployment
 metadata:
   name: keycloak
   namespace: keycloak
+  labels:
+    app: keycloak
+    app.kubernetes.io/name: keycloak
+    app.kubernetes.io/component: identity-provider
 spec:
-  interval: 5m
-  chart:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: keycloak
+  template:
+    metadata:
+      labels:
+        app: keycloak
+        app.kubernetes.io/name: keycloak
+        app.kubernetes.io/component: identity-provider
     spec:
-      chart: keycloakx
-      version: ">=7.0.0"
-      sourceRef:
-        kind: HelmRepository
-        name: codecentric
-        namespace: keycloak
-      interval: 5m
-  values:
-    # ========================================
-    # MINIMAL CONFIGURATION ONLY
-    # ========================================
-    
-    # Keycloak Image
-    image:
-      repository: quay.io/keycloak/keycloak
-      tag: "26.0.7"
-    
-    # Admin credentials
-    extraEnv:
-      - name: KEYCLOAK_ADMIN
-        value: "admin"
-      - name: KEYCLOAK_ADMIN_PASSWORD  
-        value: "admin123"
-    
-    # Start in development mode
-    args:
-      - start-dev
-      - --http-enabled=true
-      - --http-port=8080
-      - --hostname-strict=false
-    
-    # Basic settings
-    replicas: 1
-    
-    # Disable ingress
-    ingress:
-      enabled: false
+      containers:
+      - name: keycloak
+        image: quay.io/keycloak/keycloak:26.0.7
+        command:
+        - /opt/keycloak/bin/kc.sh
+        - start-dev
+        - --http-enabled=true
+        - --http-port=8080
+        - --hostname-strict=false
+        - --proxy=edge
+        env:
+        - name: KEYCLOAK_ADMIN
+          value: admin
+        - name: KEYCLOAK_ADMIN_PASSWORD
+          value: admin123  # TODO: Move to Secret in production
+        ports:
+        - name: http
+          containerPort: 8080
+          protocol: TCP
+        # Health checks
+        livenessProbe:
+          httpGet:
+            path: /health/live
+            port: http
+          initialDelaySeconds: 60
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /health/ready
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        # Resources für Raspberry Pi
+        resources:
+          limits:
+            memory: 1Gi
+            cpu: 500m
+          requests:
+            memory: 512Mi
+            cpu: 250m
+        # Security Context
+        securityContext:
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          runAsUser: 1000
+          capabilities:
+            drop:
+            - ALL
+      # Pod Security Context
+      securityContext:
+        fsGroup: 1000
+        runAsNonRoot: true
+        runAsUser: 1000
+      # Service Account
+      serviceAccountName: keycloak
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: keycloak
+  namespace: keycloak
+  labels:
+    app: keycloak
+    app.kubernetes.io/name: keycloak
+    app.kubernetes.io/component: identity-provider
+spec:
+  type: ClusterIP
+  ports:
+  - name: http
+    port: 8080
+    targetPort: http
+    protocol: TCP
+  selector:
+    app: keycloak
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: keycloak
+  namespace: keycloak
+  labels:
+    app: keycloak
+    app.kubernetes.io/name: keycloak
+    app.kubernetes.io/component: identity-provider
+automountServiceAccountToken: false
