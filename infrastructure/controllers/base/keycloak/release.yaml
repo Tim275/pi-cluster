@@ -29,8 +29,6 @@ spec:
         - --http-enabled=true
         - --http-port=8080
         - --hostname-strict=false
-        - --hostname-strict-https=false
-        - --proxy-headers=forwarded  # ← FIXED: Use correct proxy option
         env:
         - name: KEYCLOAK_ADMIN
           value: admin
@@ -39,24 +37,6 @@ spec:
         ports:
         - name: http
           containerPort: 8080
-          protocol: TCP
-        # WORKING Health checks (simplified timing)
-        livenessProbe:
-          httpGet:
-            path: /health/live
-            port: http
-          initialDelaySeconds: 120  # More time for startup
-          periodSeconds: 30
-          timeoutSeconds: 5
-          failureThreshold: 3
-        readinessProbe:
-          httpGet:
-            path: /health/ready
-            port: http
-          initialDelaySeconds: 90   # More time for startup
-          periodSeconds: 10
-          timeoutSeconds: 5
-          failureThreshold: 3
         # Resources für Raspberry Pi
         resources:
           limits:
@@ -65,16 +45,7 @@ spec:
           requests:
             memory: 512Mi
             cpu: 250m
-        # SIMPLIFIED Security Context (no runAsUser conflicts)
-        securityContext:
-          allowPrivilegeEscalation: false
-          readOnlyRootFilesystem: false  # Keycloak needs to write temp files
-          capabilities:
-            drop:
-            - ALL
-      # SIMPLIFIED Pod Security Context
-      securityContext:
-        fsGroup: 1000
+        # NO HEALTH CHECKS - Let Keycloak start completely first
       # Service Account
       serviceAccountName: keycloak
 ---
