@@ -3,5 +3,5 @@ kind: Kustomization
 namespace: keycloak
 resources:
   - namespace.yaml
-  - release.yaml  # Jetzt native K8s manifests statt Helm
-  # - repository.yaml  # ← REMOVED: Nicht mehr nötig
+  - release.yaml  # Native K8s manifests statt Helm
+  # repository.yaml removed - nicht mehr nötig
