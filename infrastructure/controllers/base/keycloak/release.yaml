@@ -36,62 +36,58 @@ spec:
       - --http-port=8080
       - --hostname-strict=false
 
-    # Admin credentials
-    extraEnv: |
+    # Admin credentials (FIXED FORMAT)
+    extraEnv:
       - name: KEYCLOAK_ADMIN
         value: "admin"
       - name: KEYCLOAK_ADMIN_PASSWORD
         value: "admin123"
 
     # ========================================
-    # HTTP CONFIGURATION (KEY FIX!)
+    # HTTP & SERVICE CONFIGURATION (FIXED!)
     # ========================================
     
-    # Fix HTTP configuration for modern Keycloak
+    # HTTP Configuration
     http:
-      relativePath: ""  # ✅ No /auth prefix for modern Keycloak
-      internalPort: 8080  # ✅ Use port 8080
-      internalScheme: HTTP
+      port: 8080
+      # Remove other http configs that cause issues
 
+    # Service Configuration (FIXED PORT REFERENCES)
+    service:
+      type: ClusterIP
+      httpPort: 8080  # Use httpPort instead of port
+      
     # ========================================
-    # HEALTH CHECK FIX
+    # HEALTH CHECKS (FIXED FORMAT)
     # ========================================
     
-    # Override probes to use correct paths
-    startupProbe: |
+    # Health Checks (using proper YAML format, not pipe strings)
+    startupProbe:
       httpGet:
-        path: '/health'
-        port: 8080
-        scheme: HTTP
+        path: /health/ready
+        port: http  # Use port name instead of number
       initialDelaySeconds: 30
       timeoutSeconds: 5
       failureThreshold: 60
       periodSeconds: 10
 
-    livenessProbe: |
+    livenessProbe:
       httpGet:
-        path: '/health/live'
-        port: 8080
-        scheme: HTTP
+        path: /health/live
+        port: http  # Use port name instead of number
       initialDelaySeconds: 60
       timeoutSeconds: 5
 
-    readinessProbe: |
+    readinessProbe:
       httpGet:
-        path: '/health/ready'
-        port: 8080
-        scheme: HTTP
+        path: /health/ready
+        port: http  # Use port name instead of number
       initialDelaySeconds: 30
       timeoutSeconds: 5
 
     # ========================================
     # BASIC SETTINGS
     # ========================================
-    
-    # Service
-    service:
-      type: ClusterIP
-      port: 8080
 
     # Resources
     resources:
