@@ -17,17 +17,20 @@ spec:
       interval: 5m
   values:
     # ========================================
-    # MINIMAL KEYCLOAK CONFIGURATION
+    # MINIMAL CONFIGURATION ONLY
     # ========================================
     
     # Keycloak Image
     image:
       repository: quay.io/keycloak/keycloak
       tag: "26.0.7"
-
-    # ========================================
-    # STARTUP & ADMIN CONFIG
-    # ========================================
+    
+    # Admin credentials
+    extraEnv:
+      - name: KEYCLOAK_ADMIN
+        value: "admin"
+      - name: KEYCLOAK_ADMIN_PASSWORD  
+        value: "admin123"
     
     # Start in development mode
     args:
@@ -35,72 +38,10 @@ spec:
       - --http-enabled=true
       - --http-port=8080
       - --hostname-strict=false
-
-    # Admin credentials (FIXED FORMAT)
-    extraEnv:
-      - name: KEYCLOAK_ADMIN
-        value: "admin"
-      - name: KEYCLOAK_ADMIN_PASSWORD
-        value: "admin123"
-
-    # ========================================
-    # HTTP & SERVICE CONFIGURATION (FIXED!)
-    # ========================================
     
-    # HTTP Configuration
-    http:
-      port: 8080
-      # Remove other http configs that cause issues
-
-    # Service Configuration (FIXED PORT REFERENCES)
-    service:
-      type: ClusterIP
-      httpPort: 8080  # Use httpPort instead of port
-      
-    # ========================================
-    # HEALTH CHECKS (FIXED FORMAT)
-    # ========================================
+    # Basic settings
+    replicas: 1
     
-    # Health Checks (using proper YAML format, not pipe strings)
-    startupProbe:
-      httpGet:
-        path: /health/ready
-        port: http  # Use port name instead of number
-      initialDelaySeconds: 30
-      timeoutSeconds: 5
-      failureThreshold: 60
-      periodSeconds: 10
-
-    livenessProbe:
-      httpGet:
-        path: /health/live
-        port: http  # Use port name instead of number
-      initialDelaySeconds: 60
-      timeoutSeconds: 5
-
-    readinessProbe:
-      httpGet:
-        path: /health/ready
-        port: http  # Use port name instead of number
-      initialDelaySeconds: 30
-      timeoutSeconds: 5
-
-    # ========================================
-    # BASIC SETTINGS
-    # ========================================
-
-    # Resources
-    resources:
-      limits:
-        memory: 1Gi
-        cpu: 500m
-      requests:
-        memory: 512Mi
-        cpu: 250m
-
-    # Ingress disabled
+    # Disable ingress
     ingress:
       enabled: false
-
-    # Replicas
-    replicas: 1
