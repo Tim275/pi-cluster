@@ -44,6 +44,36 @@ spec:
         value: "admin123"
 
     # ========================================
+    # HEALTH CHECKS (CORRECT PATHS & PORTS)
+    # ========================================
+    
+    # Override incorrect health check configuration
+    startupProbe:
+      httpGet:
+        path: /health
+        port: 8080
+      initialDelaySeconds: 30
+      periodSeconds: 5
+      timeoutSeconds: 2
+      failureThreshold: 60
+    
+    livenessProbe:
+      httpGet:
+        path: /health/live
+        port: 8080
+      initialDelaySeconds: 60
+      periodSeconds: 10
+      timeoutSeconds: 2
+    
+    readinessProbe:
+      httpGet:
+        path: /health/ready  
+        port: 8080
+      initialDelaySeconds: 30
+      periodSeconds: 5
+      timeoutSeconds: 2
+
+    # ========================================
     # BASIC SETTINGS
     # ========================================
     
