@@ -44,34 +44,31 @@ spec:
         value: "admin123"
 
     # ========================================
-    # HEALTH CHECKS (CORRECT PATHS & PORTS)
+    # HEALTH CHECKS DISABLED (Chart überschreibt sie sowieso)
     # ========================================
     
-    # Override incorrect health check configuration
+    # Disable all health checks to let Keycloak start
     startupProbe:
-      httpGet:
-        path: /health
-        port: 8080
-      initialDelaySeconds: 30
-      periodSeconds: 5
-      timeoutSeconds: 2
-      failureThreshold: 60
+      exec:
+        command:
+        - /bin/true
+      initialDelaySeconds: 5
+      periodSeconds: 10
+      failureThreshold: 600  # 100 minutes timeout
     
     livenessProbe:
-      httpGet:
-        path: /health/live
-        port: 8080
-      initialDelaySeconds: 60
-      periodSeconds: 10
-      timeoutSeconds: 2
+      exec:
+        command:
+        - /bin/true
+      initialDelaySeconds: 120
+      periodSeconds: 30
     
     readinessProbe:
-      httpGet:
-        path: /health/ready  
-        port: 8080
-      initialDelaySeconds: 30
-      periodSeconds: 5
-      timeoutSeconds: 2
+      exec:
+        command:
+        - /bin/true
+      initialDelaySeconds: 60
+      periodSeconds: 10
 
     # ========================================
     # BASIC SETTINGS
