@@ -17,40 +17,47 @@ spec:
       interval: 5m
   values:
     # ========================================
-    # KEYCLOAK IMAGE & BASIC CONFIG
+    # MINIMAL KEYCLOAK CONFIGURATION
     # ========================================
     
+    # Keycloak Image
     image:
       repository: quay.io/keycloak/keycloak
       tag: "26.0.7"
 
     # ========================================
-    # CHART-KOMPATIBLE KONFIGURATION
+    # DATABASE: In-Memory H2 (einfachste)
     # ========================================
     
-    # Verwende Chart-eigene HTTP-Konfiguration (nicht überschreiben)
-    http:
-      # Let chart handle HTTP configuration
-      relativePath: /auth  # Chart default
-
-    # ========================================
-    # DATABASE CONFIGURATION (SIMPLIFIED)
-    # ========================================
-    
-    # H2 File Database (Chart-kompatibel)
+    # H2 In-Memory Database (keine Persistence)
     database:
-      vendor: h2-file
+      vendor: h2-mem
 
     # ========================================
-    # ADMIN CONFIGURATION
+    # ADMIN USER
     # ========================================
     
-    # Admin User (Chart-kompatible Syntax)
+    # Admin User
     auth:
       adminUser: admin
+      # adminPassword wird automatisch generiert
 
     # ========================================
-    # RESOURCES & PERFORMANCE
+    # COMMAND OVERRIDE (explizit)
+    # ========================================
+    
+    # Explizite Start-Command
+    command:
+      - /opt/keycloak/bin/kc.sh
+    args:
+      - start-dev
+      - --http-enabled=true
+      - --http-port=8080
+      - --hostname-strict=false
+      - --hostname-strict-https=false
+
+    # ========================================
+    # RESOURCES
     # ========================================
     
     resources:
@@ -62,7 +69,7 @@ spec:
         cpu: 250m
 
     # ========================================
-    # SERVICE CONFIGURATION
+    # SERVICE
     # ========================================
     
     service:
@@ -70,65 +77,22 @@ spec:
       httpPort: 8080
 
     # ========================================
-    # PERSISTENCE (MIT PVC)
-    # ========================================
-    
-    # Chart-eigene Persistence
-    persistence:
-      deployPostgres: false  # Disable built-in PostgreSQL
-      
-    # Extra Volumes für H2 Database
-    extraVolumes: |
-      - name: keycloak-data
-        persistentVolumeClaim:
-          claimName: keycloak-data-pvc
-
-    extraVolumeMounts: |
-      - name: keycloak-data
-        mountPath: /opt/keycloak/data
-        subPath: keycloak
-
-    # ========================================
-    # SECURITY
-    # ========================================
-    
-    serviceAccount:
-      create: true
-
-    podSecurityContext:
-      fsGroup: 1000
-
-    securityContext:
-      runAsUser: 1000
-      runAsNonRoot: true
-
-    # ========================================
-    # INGRESS (wird in staging überschrieben)
+    # INGRESS (deaktiviert)
     # ========================================
     
     ingress:
       enabled: false
 
     # ========================================
-    # REMOVE CUSTOM CONFIGURATION
+    # SECURITY (minimal)
     # ========================================
-    # Entferne alle custom command/args/extraEnv/health checks
-    # Lass das Chart seine eigenen Defaults verwenden
+    
+    serviceAccount:
+      create: true
 
     # ========================================
-    # CLOUDNATIVE-PG INTEGRATION (OPTIONAL - auskommentiert)
+    # REMOVE ALL CUSTOM CONFIG
     # ========================================
-    # Um CloudNativePG zu verwenden:
-    #
-    # database:
-    #   vendor: postgres
-    #   hostname: "keycloak-db-staging-rw"
-    #   port: 5432
-    #   database: "keycloak"
-    #   existingSecret: "keycloak-db-staging-app"
-    #   existingSecretUserKey: "username"
-    #   existingSecretPasswordKey: "password"
-    #
-    # # Remove H2 volumes for PostgreSQL
-    # extraVolumes: ""
-    # extraVolumeMounts: ""
+    # Keine extraVolumes, extraVolumeMounts, custom persistence
+    # Keine podSecurityContext, securityContext Overrides
+    # Lass das Chart alles selbst handhaben

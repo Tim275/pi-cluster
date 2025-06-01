@@ -5,4 +5,4 @@ resources:
   - namespace.yaml
   - repository.yaml
   - release.yaml
-  - pvc.yaml
+  # - pvc.yaml  # ← ENTFERNT für h2-mem database
