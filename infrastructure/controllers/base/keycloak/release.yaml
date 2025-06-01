@@ -36,8 +36,8 @@ spec:
       - --http-port=8080
       - --hostname-strict=false
 
-    # Admin credentials
-    extraEnv:
+    # Admin credentials (STRING format für KeycloakX Chart!)
+    extraEnv: |
       - name: KEYCLOAK_ADMIN
         value: "admin"
       - name: KEYCLOAK_ADMIN_PASSWORD
