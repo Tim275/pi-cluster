@@ -23,7 +23,7 @@ spec:
       dnsPolicy: ClusterFirst
       initContainers:
         - name: postgresql-isready
-          image: "postgres:14-alpine"
+          image: "postgres:17-alpine"
           imagePullPolicy: IfNotPresent
           env:
             - name: POSTGRES_USER
