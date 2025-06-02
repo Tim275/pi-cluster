@@ -1,0 +1,32 @@
+apiVersion: v1
+kind: Secret
+metadata:
+    name: linkding-superuser
+    namespace: linkding
+type: Opaque
+stringData:
+    LD_DB_USER: ENC[AES256_GCM,data:y6naYJlrpQo=,iv:4zj98cMy6zAl/AsihPdLJcKX9ccBBbEr5V35NSUOgCE=,tag:t/tWAN62OtVgDmaAQro/jw==,type:str]
+    LD_DB_PASSWORD: ENC[AES256_GCM,data:NqcxCQSSE9NcWQbcxryW09UnTfMHERj9R32Y1r2jgGHWrCbuCzginMIrJUL8AqH+LdwSG4Ok0ErY8YeL2fEeXg==,iv:xHDchTvbVCD9WNK3BPQgEJOaKpzVdEDYXc7Y59MdCA4=,tag:wOcGoDhBCndKWGCsEIiLQg==,type:str]
+    LD_DB_HOST: ENC[AES256_GCM,data:E4NCeCG7zc/Nk5ra4k/eb01lpPifb5Vy2NnLoDKn2zO+cHrkh9IWAImUYNoly5MtjQ==,iv:otihD1HITJ8MH1t11MO4b+xmjgriCDV5/8FIf3xXxTo=,tag:fW0q6ZTRDv4zdJQEBtCm6A==,type:str]
+    LD_DB_PORT: ENC[AES256_GCM,data:tReb2A==,iv:q0Uh/oNccjBejrqxj6KjzQ6xS/a5FTtW5il0T5ySJNc=,tag:2nho7pr8eFLpW+ePnUA5mA==,type:str]
+    LD_DB_NAME: ENC[AES256_GCM,data:L3K0QnUCWbE=,iv:/5XmLmkQq09NpLIM0hXpT8hg8bc0pk5H7YdSh6okyK8=,tag:p35RcAP3EBw3wIT0pJVe3Q==,type:str]
+sops:
+    kms: []
+    gcp_kms: []
+    azure_kv: []
+    hc_vault: []
+    age:
+        - recipient: age10ysfmeczf9rvgd6alaqe4ffna3wm7s78y9wkysargvd7fxaq5u4s8gru2g
+          enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSA2ZE1tWWJHWldNb1FGTzEy
+            WVFFMGp1dmk1SXpCZnpQQ1BpOEZTZWRhKzFNCnZZTlVFc1I3cGZ4cnl4ekl1ZXE2
+            NmF2RXg1dk9MVkJ1MXVuNFlMbUtIYjAKLS0tIGJFSlpzOFd3TDJIS0ZhbTZ2ek1Z
+            dURveWwvakJHaHhZVUNMVzdMNE9xK2MK964rptzpTTYQMHeeUA61E9qN5PSwXYqD
+            +pb8bgxLJGziiweYamPQ1ugUQ9JpkJhdoQPTdqcksMTdqQNT9WU2Wg==
+            -----END AGE ENCRYPTED FILE-----
+    lastmodified: "2025-06-02T09:38:24Z"
+    mac: ENC[AES256_GCM,data:r1W3W8jfPGBRoozD7hA7bAj4JbIsCVBRabQX7FEpquh/TmqgFg9DJyNJtFItRYrVOiphCfl9B/iZC/iQAOkgl8ymw9DLZSTudD+qHiwRoX1uF2i0mRXhzVyqtL6eDMlcbZWRy6wUT1IW8uAnyXgFcKSqBOA8kCVT1nan26kIwwQ=,iv:t+IF959VkJrr+yTYxppfkRa/ynCjcKrFHj0kJw6ObCc=,tag:cUtjUrLYcJTJ69K14z/3kA==,type:str]
+    pgp: []
+    encrypted_regex: ^(data|stringData)$
+    version: 3.9.4
