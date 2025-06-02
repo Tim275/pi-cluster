@@ -13,6 +13,7 @@ resources:
   - aws-credentials.yaml
   - scheduled-backup.yaml
   # - networkpolicy.yaml
+  - database-secret.yaml # Temporarily disabled
 
 # Strategic Merge: Staging database-secret überschreibt Base linkding-secret
 #patchesStrategicMerge:
