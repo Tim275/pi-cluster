@@ -42,7 +42,7 @@ spec:
             - until pg_isready -U "${POSTGRES_USER}" -d "dbname=${POSTGRES_DB}" -h immich-db-rw.immich -p 5432; do echo "waiting for database"; sleep 2; done
       containers:
         - name: immich-server
-          image: "ghcr.io/immich-app/immich-server:v1.132.3"
+          image: "ghcr.io/immich-app/immich-server:v1.135.3"
           command: ["node", "dist/main.js", "immich"]
           imagePullPolicy: IfNotPresent
           securityContext:
