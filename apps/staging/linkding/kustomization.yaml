@@ -8,7 +8,7 @@ resources:
   - linkding-container-env-secret.yaml
   - ingress.yaml
   - configmap.yaml
-  #- database.yaml
+  - database.yaml
   - aws-credentials.yaml
  # - scheduled-backup.yaml
   # - networkpolicy.yaml

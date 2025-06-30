@@ -8,5 +8,5 @@ resources:
   - external-secrets
   - cert-manager
   - longhorn # Optimiert für Raspberry Pi
- # - velero
+  - velero
   - keycloak
