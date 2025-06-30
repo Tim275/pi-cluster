@@ -10,7 +10,7 @@ resources:
   - configmap.yaml
   #- database.yaml
   - aws-credentials.yaml
-  - scheduled-backup.yaml
+ # - scheduled-backup.yaml
   # - networkpolicy.yaml
 
 # Use strategic merge to OVERRIDE the base secret
