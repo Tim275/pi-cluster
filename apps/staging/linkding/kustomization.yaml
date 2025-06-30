@@ -8,11 +8,9 @@ resources:
   - linkding-container-env-secret.yaml
   - ingress.yaml
   - configmap.yaml
-  - database.yaml
+  #- database.yaml
   - aws-credentials.yaml
   - scheduled-backup.yaml
   # - networkpolicy.yaml
 
 # Use strategic merge to OVERRIDE the base secret
-patchesStrategicMerge:
-  - linkding-superuser.yaml # This overrides ../../base/linkding/linkding-secret.yaml
