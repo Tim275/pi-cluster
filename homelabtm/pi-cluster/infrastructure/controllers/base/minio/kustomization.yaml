@@ -1,0 +1,5 @@
+resources:
+  - namespace.yaml
+  - minio-secret.yaml
+  - repository.yaml
+  - release.yaml
