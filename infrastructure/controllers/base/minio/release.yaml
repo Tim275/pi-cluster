@@ -18,6 +18,8 @@ spec:
     drivesPerNode: 1
     replicas: 3
     pools: 1
+
+    # Affinity für Raspberry Pi Cluster (arm64)
     affinity:
       nodeAffinity:
         requiredDuringSchedulingIgnoredDuringExecution:
@@ -26,7 +28,12 @@ spec:
             - key: kubernetes.io/arch
               operator: In
               values:
-              - amd64
+              - arm64
+
+    # Alternative: MinIO auf allen Nodes erlauben (Affinity entfernen oder auskommentieren)
+    # affinity:
+    #   {}
+
     persistence:
       enabled: true
       storageClass: longhorn
