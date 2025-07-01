@@ -6,7 +6,7 @@ resources:
   - cloudflare.yaml
   - cloudflare-secret.yaml
   - linkding-container-env-secret.yaml
-  - database-secret.yaml
+#  - database-secret.yaml
   - ingress.yaml
   - configmap.yaml
   - database.yaml
