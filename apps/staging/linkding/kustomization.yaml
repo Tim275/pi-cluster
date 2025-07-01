@@ -11,6 +11,6 @@ resources:
   - database.yaml
   - aws-credentials.yaml
  # - scheduled-backup.yaml
-  # - networkpolicy.yaml
+  - networkpolicy.yaml
 
 # Use strategic merge to OVERRIDE the base secret

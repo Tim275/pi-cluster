@@ -1,3 +1,17 @@
+# 1. DENY-ALL: Alles wird standardmäßig blockiert
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: deny-all
+  namespace: linkding
+spec:
+  endpointSelector: {}
+  ingress: []
+  egress: []
+### kommentiert nachdem ich es hinbekommen hab wuhu :)
+---
+
+# 2. App-Policy: Erlaube Traffic zur App (z.B. von cloudflared, monitoring, operator)
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
@@ -6,26 +20,30 @@ metadata:
 spec:
   endpointSelector:
     matchLabels:
-      app: linkding
+      policy-type: "app"
   ingress:
-    # Erlaube Zugriff von cloudflared Pods
+    # Erlaube Traffic von cloudflared im selben Namespace
     - fromEndpoints:
         - matchLabels:
             app: cloudflared
-            namespace: linkding
-    - fromEndpoints:
-        - {}
+            io.kubernetes.pod.namespace: linkding
+    # Erlaube Traffic von Monitoring
     - fromEndpoints:
         - matchLabels:
             io.kubernetes.pod.namespace: monitoring
+    # Erlaube Traffic vom Postgres-Operator (Namespace ggf. anpassen)
     - fromEndpoints:
         - matchLabels:
             io.kubernetes.pod.namespace: cnpg-system
+    # Optional: Erlaube Traffic von überall (z.B. für Debugging)
+    # - fromEndpoints:
+    #     - {}
   egress:
+    # DNS
     - toEndpoints:
         - matchLabels:
-            io.kubernetes.pod.namespace: kube-system
             k8s-app: kube-dns
+            io.kubernetes.pod.namespace: kube-system
       toPorts:
         - ports:
             - port: "53"
@@ -33,21 +51,21 @@ spec:
           rules:
             dns:
               - matchPattern: "*"
-        - ports:
-            - port: "53"
-              protocol: TCP
+    # Erlaube alles im Namespace (optional)
     - toEndpoints:
         - {}
+    # Internet
     - toEntities:
         - world
       toPorts:
         - ports:
             - port: "443"
-        - ports:
             - port: "80"
-        - ports:
             - port: "7844"
+
 ---
+
+# 3. Database-Policy: Erlaube Traffic zur Datenbank (z.B. von App, Monitoring, Operator)
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
@@ -56,31 +74,23 @@ metadata:
 spec:
   endpointSelector:
     matchLabels:
-      app: linkding-database
+      policy-type: "database"
   ingress:
-    # Erlaube Zugriff von pgadmin
+    # Erlaube Traffic von App
     - fromEndpoints:
         - matchLabels:
-            io.kubernetes.pod.namespace: pgadmin
-      toPorts:
-        - ports:
-            - port: "5432"
-    # Erlaube Zugriff von anderen Database-Pods (für Replikation)
-    - fromEndpoints:
-        - matchLabels:
-            app: linkding-database
-      toPorts:
-        - ports:
-            - port: "5432"
-    - fromEndpoints:
-        - {}
+            policy-type: "app"
+            io.kubernetes.pod.namespace: linkding
+    # Erlaube Traffic von Monitoring
     - fromEndpoints:
         - matchLabels:
             io.kubernetes.pod.namespace: monitoring
+    # Erlaube Traffic vom Postgres-Operator (Namespace ggf. anpassen)
     - fromEndpoints:
         - matchLabels:
             io.kubernetes.pod.namespace: cnpg-system
   egress:
+    # DNS
     - toEndpoints:
         - matchLabels:
             k8s-app: kube-dns
@@ -92,147 +102,18 @@ spec:
           rules:
             dns:
               - matchPattern: "*"
-        - ports:
-            - port: "53"
-              protocol: TCP
-    # Erlaube Kommunikation mit anderen Database-Pods (für Replikation)
-    - toEndpoints:
-        - matchLabels:
-            app: linkding-database
-      toPorts:
-        - ports:
-            - port: "5432"
+    # Erlaube alles im Namespace (optional)
     - toEndpoints:
         - {}
+    # Kubernetes API Server
     - toEntities:
         - kube-apiserver
       toPorts:
         - ports:
             - port: "6443"
+    # Internet
     - toEntities:
         - world
       toPorts:
         - ports:
             - port: "443"
----
-apiVersion: cilium.io/v2
-kind: CiliumNetworkPolicy
-metadata:
-  name: cloudflared
-  namespace: linkding
-spec:
-  endpointSelector:
-    matchLabels:
-      app: cloudflared
-  ingress:
-    - fromEndpoints:
-        - {}
-  egress:
-    # DNS-Zugriff
-    - toEndpoints:
-        - matchLabels:
-            io.kubernetes.pod.namespace: kube-system
-            k8s-app: kube-dns
-      toPorts:
-        - ports:
-            - port: "53"
-              protocol: UDP
-          rules:
-            dns:
-              - matchPattern: "*"
-        - ports:
-            - port: "53"
-              protocol: TCP
-    # Zugriff auf linkding app
-    - toEndpoints:
-        - matchLabels:
-            app: linkding
-      toPorts:
-        - ports:
-            - port: "9090"
-              protocol: TCP
-    # Internet-Zugriff
-    - toEntities:
-        - world
-      toPorts:
-        - ports:
-            - port: "7844"
-              protocol: UDP
-        - ports:
-            - port: "443"
-              protocol: TCP
-        - ports:
-            - port: "80"
-              protocol: TCP
----
-apiVersion: cilium.io/v2
-kind: CiliumNetworkPolicy
-metadata:
-  name: deny-all
-  namespace: linkding
-spec:
-  endpointSelector: {}
-  ingress:
-    - {}
-  egress:
-    - {}
----
-apiVersion: cilium.io/v2
-kind: CiliumNetworkPolicy
-metadata:
-  name: allow-webhook
-  namespace: cnpg-system
-spec:
-  endpointSelector:
-    matchLabels:
-      app.kubernetes.io/name: cloudnative-pg
-      app.kubernetes.io/component: webhook
-  ingress:
-    # Erlaube Zugriff von allen Namespaces
-    - fromEndpoints:
-        - {}
-    # Expliziter Zugriff von Monitoring
-    - fromEndpoints:
-        - matchLabels:
-            io.kubernetes.pod.namespace: monitoring
-  egress:
-    # DNS-Zugriff (UDP und TCP)
-    - toEndpoints:
-        - matchLabels:
-            k8s-app: kube-dns
-            io.kubernetes.pod.namespace: kube-system
-      toPorts:
-        - ports:
-            - port: "53"
-              protocol: UDP
-          rules:
-            dns:
-              - matchPattern: "*"
-        - ports:
-            - port: "53"
-              protocol: TCP
-    # Zugriff auf Kubernetes API Server
-    - toEntities:
-        - kube-apiserver
-      toPorts:
-        - ports:
-            - port: "6443"
-              protocol: TCP
-    # Zugriff auf andere CloudNativePG-Komponenten
-    - toEndpoints:
-        - matchLabels:
-            app.kubernetes.io/name: cloudnative-pg
-      toPorts:
-        - ports:
-            - port: "8080"
-              protocol: TCP
-    # Erlaube Zugriff auf beliebige Endpoints im Cluster
-    - toEndpoints:
-        - {}
-    # Internet-Zugriff wenn benötigt
-    - toEntities:
-        - world
-      toPorts:
-        - ports:
-            - port: "443"
-              protocol: TCP

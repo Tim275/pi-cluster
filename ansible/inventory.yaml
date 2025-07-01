@@ -8,7 +8,7 @@ all:
           ansible_host: "{{ vault_master_ip }}"      # 🔐 Verschlüsselte IP aus Vault
           ansible_user: p1
           node_role: master
-          
+
     workers:
       hosts:
         p2:
@@ -21,14 +21,14 @@ all:
           ansible_user: p3
           node_role: data_worker
           storage_node: true
-          # Enterprise-Apps: , pgAdmin, Longhorn 
-          
+          # Enterprise-Apps: pgAdmin, Longhorn
+
   vars:
     # SSH-Einstellungen für Enterprise-Homelab
     ansible_ssh_common_args: '-F /dev/null -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
     ansible_ssh_pipelining: yes
     ansible_python_interpreter: /usr/bin/python3
-    
+
     # Cluster-Config aus Vault
     k3s_cluster_cidr: "{{ vault_cluster_cidr | default('10.42.0.0/16') }}"
     k3s_service_cidr: "{{ vault_service_cidr | default('10.43.0.0/16') }}"
@@ -48,3 +48,7 @@ all:
 
 # Verschlüsselten Inhalt anzeigen (gibberish)
 # cat group_vars/all.yaml
+
+
+
+##ansible-vault edit all.yaml --vault-password-file .vault_password
