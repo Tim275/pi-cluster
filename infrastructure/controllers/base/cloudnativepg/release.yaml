@@ -28,7 +28,7 @@ spec:
           memory: 128Mi
       # Schedule on your secondary node which likely has more available resources
       nodeSelector:
-        kubernetes.io/hostname: p2
+        kubernetes.io/hostname: p3
       # Tolerations in case your nodes have taints
       tolerations:
         - key: "node-role.kubernetes.io/control-plane"
