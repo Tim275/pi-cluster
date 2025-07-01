@@ -1,29 +1,32 @@
-# created: 2025-07-01T12:45:00+02:00
-# public key: age10ysfmeczf9rvgd6alaqe4ffna3wm7s78y9wkysargvd7fxaq5u4s8gru2g
 apiVersion: v1
 kind: Secret
 metadata:
-  name: linkding-superuser
-  namespace: linkding
+    name: linkding-superuser
+    namespace: linkding
 type: Opaque
 stringData:
-  LD_DB_USER: ENC[AES256_GCM,data:9QwqQw==,iv:6v3w4Qw4Qw4Qw4Qw4Qw4Qw==,tag:Qw4Qw4Qw4Qw4Qw==,type:str]
-  LD_DB_PASSWORD: ENC[AES256_GCM,data:pvwxAJ0kYE1yHh2fGPnl0imItwdb0P270qnJVstWpjpSxR8lFbs3NawoHaFmtNZd,iv:Qw4Qw4Qw4Qw4Qw4Qw4Qw4Q==,tag:Qw4Qw4Qw4Qw4Qw==,type:str]
-  LD_DB_HOST: ENC[AES256_GCM,data:bGlua2RpbmctZGItc3RhZ2luZy1ydw==,iv:Qw4Qw4Qw4Qw4Qw4Qw4Qw4Q==,tag:Qw4Qw4Qw4Qw4Qw==,type:str]
-  LD_DB_PORT: ENC[AES256_GCM,data:NTQzMg==,iv:Qw4Qw4Qw4Qw4Qw4Qw4Qw4Q==,tag:Qw4Qw4Qw4Qw4Qw==,type:str]
-  LD_DB_NAME: ENC[AES256_GCM,data:bGlua2Rpbmc=,iv:Qw4Qw4Qw4Qw4Qw4Qw4Qw4Q==,tag:Qw4Qw4Qw4Qw4Qw==,type:str]
+    LD_DB_USER: ENC[AES256_GCM,data:SSNnJzmQrHo=,iv:XTsjY9wHVqwwFbC1XZobX4iZQoV+umuETgMNdFvAJU8=,tag:B+tnVrbpJjBydzshNjDD9w==,type:str]
+    LD_DB_PASSWORD: ENC[AES256_GCM,data:IVBbz/1FOLvCCHb/hiO9FhBxhrclcjLqg8tvaB+yxzDLSsIzj450qVnOWt32ZysC5xcBoQoVzSngU8X9FmHj6w==,iv:yDiDFlfzg+zknYxIyD6sGOTVREi3/N1Kq3avLPbvT9c=,tag:D4zeQ19cUsu1wACJ/aTSlg==,type:str]
+    LD_DB_HOST: ENC[AES256_GCM,data:VXRpxSzPSxC18xbJSsbP/7j1LjEC4g==,iv:dIrUDhmeQSDRAQ4LqTBJ1Fb6oOZb76seunbxbBt6d5o=,tag:K6JkduWymlFlwsm/HQRp7g==,type:str]
+    LD_DB_PORT: ENC[AES256_GCM,data:BelHtg==,iv:kWgit8+1X6S6ONNRH2YcglYS/5I3AIkHc8KvNvUloy4=,tag:Ai+okLFfKcvyxPQ5fU7E1Q==,type:str]
+    LD_DB_NAME: ENC[AES256_GCM,data:Fwz177N5yrs=,iv:0N5gEqvqHsKcOnSbxuUORJ4w+0evLQ0blE+alN6U4CU=,tag:kQiTIqzobGCDhEGa+IzZFA==,type:str]
 sops:
-  age:
-    - recipient: age10ysfmeczf9rvgd6alaqe4ffna3wm7s78y9wkysargvd7fxaq5u4s8gru2g
-      enc: |
-        -----BEGIN AGE ENCRYPTED FILE-----
-        YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxIFh4eXh4eHh4eHh4eHh4eHh4
-        eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4
-        eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4
-        LS0tIFh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4
-        eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4
-        -----END AGE ENCRYPTED FILE-----
-  lastmodified: "2025-07-01T12:45:00Z"
-  mac: ENC[AES256_GCM,data:Qw4Qw4Qw4Qw4Qw4Qw4Qw4Qw4Qw4Qw4Qw4Qw4Qw4Qw4Qw4Qw4Qw4Qw4Qw4Qw4Qw4Qw4Qw4Qw4Qw4Qw4Qw4Qw4Qw4Qw4Qw4Qw4Qw4Qw4Qw4Qw4Qw4Qw==,iv:Qw4Qw4Qw4Qw4Qw4Qw4Qw4Q==,tag:Qw4Qw4Qw4Qw4Qw==,type:str]
-  encrypted_regex: ^(data|stringData)$
-  version: 3.9.4
+    kms: []
+    gcp_kms: []
+    azure_kv: []
+    hc_vault: []
+    age:
+        - recipient: age10ysfmeczf9rvgd6alaqe4ffna3wm7s78y9wkysargvd7fxaq5u4s8gru2g
+          enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSB1WG1RM3diaU9nK014YTJY
+            NUFaaXQ4N2J5WnRvbVJVcFkyQU9FUHNJTHlNCnpxUmtYR0gxdFA0Lzk2WFE5Zk9q
+            d1NzM09XTVcvZ3dENjEra0RjbXIwMzAKLS0tIDNORTVod0dhM3ZaQUNrOWhGdVFh
+            OGM3bUlvOHNFMlhIU3NIM1NwdkhjT3cKtmvRQXWrl8srN3x2dQqczCGOKPTzoBEA
+            I+YsjncuEheJ6y5viVnjOEdBuos4xAUYRLm6xLFThAV6XJwemqOx2g==
+            -----END AGE ENCRYPTED FILE-----
+    lastmodified: "2025-07-01T18:33:15Z"
+    mac: ENC[AES256_GCM,data:S0R1JF+g0Pz14teaXH2BxfwFrfX7f1hISEfrs0eaXnGu6Bl68QCbpr525nIFU/7CTy2NDX5MWCP1KwjX1MWN7DAriZZ3MHUOX7s1Fwt6Inc+m7Gdm00yPMfhXOoJbUyyvjqTPWWXx1o/7pBGue6zTjbN49SyprUC86cSmR4vjZ8=,iv:FB2spfa6/zSKPcXsGg3YnSeNK8K/bLa4hGoGP7hIako=,tag:AQXg3tv7vg7oUuJrdxp2DA==,type:str]
+    pgp: []
+    encrypted_regex: ^(data|stringData)$
+    version: 3.9.4
