@@ -10,3 +10,4 @@ resources:
   - longhorn # Optimiert für Raspberry Pi
   - velero
   - keycloak
+  - minio 
