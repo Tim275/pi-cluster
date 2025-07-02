@@ -78,7 +78,7 @@ Everything needed to run my cluster & deploy my applications
         <td><a href="https://developers.cloudflare.com/cloudflare-one/">Cloudflare Zero Trust</a></td>
         <td>Used for private tunnels to expose public services (without requiring a public IP).</td>
     </tr>
-      <tr>
+    <tr>
         <td><img width="32" src="https://camo.githubusercontent.com/662c24a27156a7786f976a03eb81891d7cee8c289c19eb474e8f4112624e0138/68747470733a2f2f63646e2e6a7364656c6976722e6e65742f67682f77616c6b78636f64652f64617368626f6172642d69636f6e732f7376672f636572742d6d616e616765722e737667"></td>
         <td><a href="https://cert-manager.io/">Cert Manager</a></td>
         <td>X.509 certificate management for Kubernetes with Let's Encrypt integration</td>
@@ -114,6 +114,11 @@ Everything needed to run my cluster & deploy my applications
         <td>Cloud object storage for database backups and disaster recovery</td>
     </tr>
     <tr>
+        <td><img width="32" src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/svg/minio.svg"></td>
+        <td><a href="https://min.io/">MinIO</a></td>
+        <td>High performance, S3-compatible object storage for Kubernetes, used for local backups and as S3 target for apps</td>
+    </tr>
+    <tr>
         <td><img width="32" src="https://camo.githubusercontent.com/5926145ade5befaf2944f207cc20674864519e81d1b2c82123df6a45057fdca8/68747470733a2f2f7777772e7376677265706f2e636f6d2f646f776e6c6f61642f3437373036362f6c6f636b2e737667"></td>
         <td><a href="https://external-secrets.io/">External Secrets Operator</a></td>
         <td>Kubernetes operator that integrates external secret management systems like AWS Secrets Manager</td>
@@ -128,16 +133,16 @@ Everything needed to run my cluster & deploy my applications
         <td><a href="https://www.elastic.co/">Elasticsearch</a></td>
         <td>Search engine and analytics</td>
     </tr>
-   <tr>
-    <td><img width="32" src="https://raw.githubusercontent.com/cncf/artwork/master/projects/longhorn/icon/color/longhorn-icon-color.svg"></td>
-    <td><a href="https://longhorn.io/">Longhorn</a></td>
-    <td>Verteiltes Blockspeicher-System für Kubernetes mit einfacher Verwaltung von persistenten Volumes und automatischer Replikation über mehrere Raspberry Pis</td>
-</tr>
-<tr>
-    <td><img width="32" src="https://landscape.cncf.io/logos/9190c1dbdd1f79f2ea3d961d23e322515c9b8122b6ae23ba75ab4e848fff7ffa.svg"></td>
-    <td><a href="https://velero.io/">Velero</a></td>
-    <td>Backup und Disaster Recovery für Kubernetes-Ressourcen und persistente Volumes mit AWS S3-Integration zur Datensicherung</td>
-</tr>
+    <tr>
+        <td><img width="32" src="https://raw.githubusercontent.com/cncf/artwork/master/projects/longhorn/icon/color/longhorn-icon-color.svg"></td>
+        <td><a href="https://longhorn.io/">Longhorn</a></td>
+        <td>Distributed block storage system for Kubernetes with easy management of persistent volumes and automatic replication across multiple Raspberry Pis</td>
+    </tr>
+    <tr>
+        <td><img width="32" src="https://landscape.cncf.io/logos/9190c1dbdd1f79f2ea3d961d23e322515c9b8122b6ae23ba75ab4e848fff7ffa.svg"></td>
+        <td><a href="https://velero.io/">Velero</a></td>
+        <td>Backup and disaster recovery for Kubernetes resources and persistent volumes with AWS S3 integration for data protection</td>
+    </tr>
 </table>
 
 ## Cluster Management Interface

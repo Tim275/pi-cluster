@@ -1,0 +1,36 @@
+# Ingress für MinIO S3-API und Konsole (z.B. für nginx Ingress Controller)
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: minio
+  namespace: minio
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    cert-manager.io/cluster-issuer: letsencrypt-issuer
+spec:
+  tls:
+    - hosts:
+        - minio.timourhomelab.org
+        - minio-console.timourhomelab.org
+      secretName: minio-tls
+  rules:
+    - host: minio.timourhomelab.org
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: minio
+                port:
+                  number: 9000
+    - host: minio-console.timourhomelab.org
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: minio
+                port:
+                  number: 9001
