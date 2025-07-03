@@ -7,10 +7,12 @@ spec:
   members: 3
   type: ReplicaSet
   version: "6.0.11"
-  podTemplate:
+  statefulSetConfiguration:
     spec:
-      nodeSelector:
-        kubernetes.io/hostname: p3
+      template:
+        spec:
+          nodeSelector:
+            kubernetes.io/hostname: p3
   security:
     authentication:
       modes: ["SCRAM"]
