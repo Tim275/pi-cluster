@@ -11,3 +11,4 @@ resources:
   - velero
   - keycloak
   - minio 
+  - mongodb
