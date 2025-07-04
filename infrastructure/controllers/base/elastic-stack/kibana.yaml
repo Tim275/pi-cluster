@@ -14,31 +14,31 @@ spec:
         disabled: true
   podTemplate:
     spec:
-      # Strikter NodeSelector für p3
-      nodeSelector:
-        kubernetes.io/hostname: p3
-      # Zusätzlich: Node Affinity für mehr Kontrolle
+      # Bevorzuge p3, aber kann auch auf p2 laufen
       affinity:
         nodeAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            nodeSelectorTerms:
-            - matchExpressions:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            preference:
+              matchExpressions:
               - key: kubernetes.io/hostname
                 operator: In
                 values: ["p3"]
+          - weight: 50
+            preference:
+              matchExpressions:
+              - key: kubernetes.io/hostname
+                operator: In
+                values: ["p2"]
       containers:
       - name: kibana
         resources:
           requests:
             memory: 512Mi
-            cpu: 100m
+            cpu: 150m
           limits:
             memory: 1Gi
-            cpu: 250m
-
-
-
-
+            cpu: 300m
 
 
 

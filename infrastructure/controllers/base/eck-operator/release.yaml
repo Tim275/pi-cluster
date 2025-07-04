@@ -14,12 +14,55 @@ spec:
         name: elastic
         namespace: elastic-system
   values:
-    # ECK Operator Konfiguration für Raspberry Pi
+    # ECK Operator auf p2 und p3 (High Availability)
+    nodeSelector: {}  # Entferne spezifischen Node Selector
+    # Oder explizit beide Nodes erlauben
+    affinity:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+          - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values: ["p2", "p3"]
     installCRDs: true
+    # Weniger Ressourcen für beide Nodes
     resources:
       limits:
-        memory: 512Mi
+        memory: 256Mi    # Weniger Memory für beide Nodes
         cpu: 100m
       requests:
-        memory: 256Mi
-        cpu: 100m
+        memory: 128Mi    # Minimal Request
+        cpu: 50m
+    # Replica Count für HA
+    replicaCount: 1      # Nur 1 Replica (automatisch auf verfügbaren Nodes)
+
+
+
+
+
+#apiVersion: helm.toolkit.fluxcd.io/v2beta1
+#kind: HelmRelease
+#metadata:
+ # name: eck-operator
+ # namespace: elastic-system
+#spec:
+ # interval: 5m
+ # chart:
+ #   spec:
+  #    chart: eck-operator
+   #   version: 2.15.0
+   #   sourceRef:
+   #     kind: HelmRepository
+   #     name: elastic
+   #     namespace: elastic-system
+ # values:
+    # ECK Operator Konfiguration für Raspberry Pi
+  #  installCRDs: true
+  #  resources:
+  #    limits:
+  #      memory: 512Mi
+   #     cpu: 100m
+  #    requests:
+   #    memory: 256Mi
+    #    cpu: 100m

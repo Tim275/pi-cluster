@@ -7,17 +7,13 @@ spec:
   version: 8.15.0
   nodeSets:
   - name: default
-    count: 2    # 2 Nodes für Primary + Replica
+    count: 2    # 2 Nodes - 1 auf p2, 1 auf p3
     config:
       node.store.allow_mmap: false
-      # Multi-Node Cluster Settings
       cluster.initial_master_nodes: ["efk-es-default-0", "efk-es-default-1"]
       discovery.seed_hosts: ["efk-es-default-0.efk-es-default", "efk-es-default-1.efk-es-default"]
-      # Index Settings
-      index.number_of_replicas: 1  # 1 Replica pro Index
-      index.number_of_shards: 1    # 1 Primary Shard
-      # Cluster Health
-      cluster.routing.allocation.awareness.attributes: "rack_id"
+      index.number_of_replicas: 1  # 1 Replica für HA
+      index.number_of_shards: 1
     volumeClaimTemplates: 
       - metadata:
           name: elasticsearch-data
@@ -30,7 +26,7 @@ spec:
           storageClassName: longhorn
     podTemplate:
       spec:
-        # Verteile auf p2 und p3
+        # Beide Nodes p2 und p3
         affinity:
           nodeAffinity:
             requiredDuringSchedulingIgnoredDuringExecution:
@@ -49,15 +45,57 @@ spec:
         - name: elasticsearch
           resources:
             requests:
-              memory: 1Gi      # 1GB Request pro Node
-              cpu: 200m        # Weniger CPU für Single User
+              memory: 1Gi      # Weniger für beide Nodes
+              cpu: 250m
             limits:
-              memory: 1.5Gi    # 1.5GB Limit pro Node (statt 2GB)
-              cpu: 400m        # Weniger CPU Limit
+              memory: 1.5Gi    # Sparsamer für beide Nodes
+              cpu: 500m
           env:
           - name: ES_JAVA_OPTS
-            value: "-Xms512m -Xmx512m"  # 512MB Heap pro Node (minimal)
+            value: "-Xms1g -Xmx1g"  # 1GB Heap für beide
   http:
     tls:
       selfSignedCertificate:
         disabled: true
+
+
+
+
+
+#apiVersion: elasticsearch.k8s.elastic.co/v1
+#kind: Elasticsearch
+#metadata:
+  #name: efk
+  #namespace: elastic
+#spec:
+  #version: 8.15.0
+  #nodeSets:
+ # - name: default
+   # count: 1    # Ein Node für Test
+   # config:
+   #   node.store.allow_mmap: false  # Wichtig für Raspberry Pi
+  #  volumeClaimTemplates: 
+   #   - metadata:
+   #       name: elasticsearch-data
+  #      spec:
+  #        accessModes:
+   #       - ReadWriteOnce
+  #        resources:
+   #         requests:
+   #           storage: 5Gi
+   #       storageClassName: longhorn  # Deine Storage Class
+   # podTemplate:
+   #   spec:
+   #     containers:
+   ##     - name: elasticsearch
+   #       resources:
+   #         requests:
+   #           memory: 1Gi
+   ##           cpu: 500m
+    #        limits:
+   #           memory: 2Gi  # Angepasst für Raspberry Pi
+       #       cpu: 1000m
+ # http:
+   # tls:
+    #  selfSignedCertificate:
+   #     disabled: true  # TLS deaktiviert für einfacheren Test
