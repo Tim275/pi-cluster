@@ -7,19 +7,69 @@ spec:
   version: 8.15.0
   count: 1
   elasticsearchRef:
-    name: "efk"  # Referenz zu Elasticsearch
+    name: "efk"
   http:
     tls:
       selfSignedCertificate:
-        disabled: true  # TLS deaktiviert für einfacheren Test
+        disabled: true
   podTemplate:
     spec:
+      # Strikter NodeSelector für p3
+      nodeSelector:
+        kubernetes.io/hostname: p3
+      # Zusätzlich: Node Affinity für mehr Kontrolle
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: kubernetes.io/hostname
+                operator: In
+                values: ["p3"]
       containers:
       - name: kibana
         resources:
           requests:
             memory: 512Mi
-            cpu: 250m
+            cpu: 100m
           limits:
             memory: 1Gi
-            cpu: 500m
+            cpu: 250m
+
+
+
+
+
+
+
+
+
+
+
+
+
+#apiVersion: kibana.k8s.elastic.co/v1
+#kind: Kibana
+#metadata:
+ # name: kibana
+ # namespace: elastic
+#spec:
+ # version: 8.15.0
+  #count: 1
+  #elasticsearchRef:
+ #  name: "efk"  # Referenz zu Elasticsearch
+  #http:
+    #tls:
+    #  selfSignedCertificate:
+    #    disabled: true  # TLS deaktiviert für einfacheren Test
+ # podTemplate:
+  #  spec:
+  #    containers:
+ #     - name: kibana
+ #       resources:
+   #       requests:
+   #         memory: 512Mi
+   #         cpu: 250m
+  #        limits:
+   #         memory: 1Gi
+    #        cpu: 500m
