@@ -7,9 +7,17 @@ spec:
   version: 8.15.0
   nodeSets:
   - name: default
-    count: 1    # Ein Node für Test
+    count: 2    # 2 Nodes für Primary + Replica
     config:
-      node.store.allow_mmap: false  # Wichtig für Raspberry Pi
+      node.store.allow_mmap: false
+      # Multi-Node Cluster Settings
+      cluster.initial_master_nodes: ["efk-es-default-0", "efk-es-default-1"]
+      discovery.seed_hosts: ["efk-es-default-0.efk-es-default", "efk-es-default-1.efk-es-default"]
+      # Index Settings
+      index.number_of_replicas: 1  # 1 Replica pro Index
+      index.number_of_shards: 1    # 1 Primary Shard
+      # Cluster Health
+      cluster.routing.allocation.awareness.attributes: "rack_id"
     volumeClaimTemplates: 
       - metadata:
           name: elasticsearch-data
@@ -19,19 +27,37 @@ spec:
           resources:
             requests:
               storage: 5Gi
-          storageClassName: longhorn  # Deine Storage Class
+          storageClassName: longhorn
     podTemplate:
       spec:
+        # Verteile auf p2 und p3
+        affinity:
+          nodeAffinity:
+            requiredDuringSchedulingIgnoredDuringExecution:
+              nodeSelectorTerms:
+              - matchExpressions:
+                - key: kubernetes.io/hostname
+                  operator: In
+                  values: ["p2", "p3"]
+          podAntiAffinity:
+            requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  elasticsearch.k8s.elastic.co/cluster-name: efk
+              topologyKey: kubernetes.io/hostname
         containers:
         - name: elasticsearch
           resources:
             requests:
-              memory: 1Gi
-              cpu: 500m
+              memory: 1Gi      # 1GB Request pro Node
+              cpu: 200m        # Weniger CPU für Single User
             limits:
-              memory: 2Gi  # Angepasst für Raspberry Pi
-              cpu: 1000m
+              memory: 1.5Gi    # 1.5GB Limit pro Node (statt 2GB)
+              cpu: 400m        # Weniger CPU Limit
+          env:
+          - name: ES_JAVA_OPTS
+            value: "-Xms512m -Xmx512m"  # 512MB Heap pro Node (minimal)
   http:
     tls:
       selfSignedCertificate:
-        disabled: true  # TLS deaktiviert für einfacheren Test
+        disabled: true
