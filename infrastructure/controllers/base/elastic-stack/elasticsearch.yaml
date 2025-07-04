@@ -7,13 +7,15 @@ spec:
   version: 8.15.0
   nodeSets:
   - name: default
-    count: 2    # 2 Nodes - 1 auf p2, 1 auf p3
+    count: 2
     config:
       node.store.allow_mmap: false
+      # Multi-Node Cluster Settings (NODE LEVEL)
       cluster.initial_master_nodes: ["efk-es-default-0", "efk-es-default-1"]
       discovery.seed_hosts: ["efk-es-default-0.efk-es-default", "efk-es-default-1.efk-es-default"]
-      index.number_of_replicas: 1  # 1 Replica für HA
-      index.number_of_shards: 1
+      # ENTFERNE Index Settings von hier!
+      # index.number_of_replicas: 1  # ❌ RAUS!
+      # index.number_of_shards: 1    # ❌ RAUS!
     volumeClaimTemplates: 
       - metadata:
           name: elasticsearch-data
@@ -26,7 +28,6 @@ spec:
           storageClassName: longhorn
     podTemplate:
       spec:
-        # Beide Nodes p2 und p3
         affinity:
           nodeAffinity:
             requiredDuringSchedulingIgnoredDuringExecution:
@@ -45,20 +46,18 @@ spec:
         - name: elasticsearch
           resources:
             requests:
-              memory: 1Gi      # Weniger für beide Nodes
+              memory: 1Gi
               cpu: 250m
             limits:
-              memory: 1.5Gi    # Sparsamer für beide Nodes
+              memory: 2Gi
               cpu: 500m
           env:
           - name: ES_JAVA_OPTS
-            value: "-Xms1g -Xmx1g"  # 1GB Heap für beide
+            value: "-Xms1g -Xmx1g"
   http:
     tls:
       selfSignedCertificate:
         disabled: true
-
-
 
 
 
