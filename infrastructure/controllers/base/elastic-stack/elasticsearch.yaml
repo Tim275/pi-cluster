@@ -1,0 +1,37 @@
+apiVersion: elasticsearch.k8s.elastic.co/v1
+kind: Elasticsearch
+metadata:
+  name: efk
+  namespace: elastic
+spec:
+  version: 8.15.0
+  nodeSets:
+  - name: default
+    count: 1    # Ein Node für Test
+    config:
+      node.store.allow_mmap: false  # Wichtig für Raspberry Pi
+    volumeClaimTemplates: 
+      - metadata:
+          name: elasticsearch-data
+        spec:
+          accessModes:
+          - ReadWriteOnce
+          resources:
+            requests:
+              storage: 5Gi
+          storageClassName: longhorn  # Deine Storage Class
+    podTemplate:
+      spec:
+        containers:
+        - name: elasticsearch
+          resources:
+            requests:
+              memory: 1Gi
+              cpu: 500m
+            limits:
+              memory: 2Gi  # Angepasst für Raspberry Pi
+              cpu: 1000m
+  http:
+    tls:
+      selfSignedCertificate:
+        disabled: true  # TLS deaktiviert für einfacheren Test

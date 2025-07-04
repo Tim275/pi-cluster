@@ -11,5 +11,7 @@ resources:
   - velero
   - csi-snapshotter
   - minio
+  - eck-operator # ECK Operator für Elasticsearch
+  - elastic-stack/     # Elasticsearch & Kibana
   
- 
+ ## 
