@@ -3,6 +3,3 @@ kind: Kustomization
 resources:
   - ../../base/elastic-stack
 # Warte auf ECK Operator CRDs
-dependsOn:
-  - name: eck-operator
-    namespace: elastic-system
