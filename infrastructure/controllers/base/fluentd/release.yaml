@@ -14,43 +14,26 @@ spec:
         name: fluent
         namespace: fluent
   values:
-    # Fluentd image (custom aggregator image aus dem Tutorial)
+    # Fluentd image
     image:
-      repository: "ricsanfre/fluentd-aggregator"
-      pullPolicy: "IfNotPresent"
+      repository: "fluent/fluentd"
       tag: "v1.17.1-debian-1.0"
 
-    # Deploy fluentd as deployment
+    # Deploy als Deployment
     kind: "Deployment"
     replicaCount: 1
     
-    # Enabling HPA (disabled for initial setup)
-    autoscaling:
-      enabled: false
-      minReplicas: 1
-      maxReplicas: 100
-      targetCPUUtilizationPercentage: 80
-
-    # Do not create serviceAccount and RBAC
+    # Keine Service Account/RBAC
     serviceAccount:
       create: false
     rbac:
       create: false
 
-    # Security context
-    securityContext:
-      capabilities:
-        drop:
-        - ALL
-      readOnlyRootFilesystem: false
-      runAsNonRoot: true
-      runAsUser: 1000
-
-    # Do not mount logs directories
+    # Keine Log-Verzeichnisse mounten
     mountVarLogDirectory: false
     mountDockerContainersDirectory: false
 
-    # Environment variables für Elasticsearch
+    # Elasticsearch Environment Variables
     env:
       - name: FLUENT_ELASTICSEARCH_HOST
         value: "efk-es-http.elastic.svc.cluster.local"
@@ -72,14 +55,11 @@ spec:
             name: fluentd-secrets
             key: fluentd-shared-key
 
-    # Providing fluentd external configuration
+    # Externe Konfiguration verwenden
     mainConfigMapNameOverride: fluentd-main-config
     extraFilesConfigMapNameOverride: fluentd-extra-files
 
-    # Do not create additional config maps
-    configMapConfigs: []
-
-    # Additional Volumes and VolumeMounts
+    # Template Volume
     volumes:
       - name: fluentd-es-template
         configMap:
@@ -90,48 +70,15 @@ spec:
       - name: fluentd-es-template
         mountPath: /etc/fluent/template
 
-    # Service - Exporting forwarder port
+    # Service für Forwarder
     service:
       type: "ClusterIP"
-      annotations: {}
       ports:
       - name: forwarder
         protocol: TCP
         containerPort: 24224
 
-    # Fluentd list of plugins to install
-    plugins: []
-
-    # Enable prometheus Service Monitor
-    metrics:
-      serviceMonitor:
-        enabled: true
-        additionalLabels: {}
-      prometheusRule:
-        enabled: false
-
-    # Grafana Dashboard
-    dashboards:
-      enabled: "true"
-      labels:
-        grafana_dashboard: "1"
-
-    # Ressourcen für Raspberry Pi
-    resources:
-      limits:
-        memory: 1Gi
-        cpu: 500m
-      requests:
-        memory: 512Mi
-        cpu: 250m
-
-    # Node Affinity - bevorzuge p3 für bessere Performance
-    affinity:
-      nodeAffinity:
-        preferredDuringSchedulingIgnoredDuringExecution:
-        - weight: 100
-          preference:
-            matchExpressions:
-            - key: kubernetes.io/hostname
-              operator: In
-              values: ["p3"]
+    # Plugins
+    plugins:
+      - fluent-plugin-elasticsearch
+      - fluent-plugin-prometheus
