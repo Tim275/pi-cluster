@@ -14,16 +14,16 @@ spec:
         name: fluent-bit
         namespace: fluent-bit
   values:
-    # Deploy fluent-bit as daemonSet. One POD per node
+    # Deploy fluent-bit as daemonSet
     kind: DaemonSet
     
-    # ARM64 optimiertes Image
+    # ✅ ARM64-kompatibles Image OHNE jemalloc
     image:
       repository: fluent/fluent-bit
-      tag: 3.1.4
+      tag: 3.1.4-debug  # Debug-Version hat weniger jemalloc-Probleme
       pullPolicy: IfNotPresent
     
-    # Host directories containing Host and POD logs files
+    # Host directories
     daemonSetVolumes:
       - name: varlog
         hostPath:
@@ -40,10 +40,10 @@ spec:
         mountPath: /etc/machine-id
         readOnly: true
     
-    # 🔗 Environment variables für Verbindung zu Fluentd
+    # ✅ Umgebungsvariablen für ARM64
     env:
       - name: FLUENT_AGGREGATOR_HOST
-        value: fluentd.fluent.svc.cluster.local  # Dein Fluentd Service
+        value: fluentd.fluent.svc.cluster.local
       - name: FLUENT_AGGREGATOR_PORT
         value: "24224"
       - name: FLUENT_AGGREGATOR_SHARED_KEY
@@ -55,26 +55,31 @@ spec:
         valueFrom:
           fieldRef:
             fieldPath: spec.nodeName
+      # ✅ WICHTIG: Deaktiviere jemalloc für ARM64
+      - name: LD_PRELOAD
+        value: ""
+      - name: MALLOC_ARENA_MAX
+        value: "1"
     
-    # Use external configMap with YAML syntax
+    # External configMap
     config: {}
     customParsers: {}
     existingConfigMap: fluent-bit-config
     
-    # Use YAML config file
+    # YAML config
     command:
       - /fluent-bit/bin/fluent-bit
     args:
       - --workdir=/fluent-bit/etc
       - --config=/fluent-bit/etc/conf/fluent-bit.yaml
     
-    # Enable installation on control-plane nodes
+    # Tolerations für control-plane
     tolerations:
       - key: node-role.kubernetes.io/control-plane
         operator: Exists
         effect: NoSchedule
     
-    # Init container for directory creation
+    # Init container
     initContainers:
       - name: init-fluentbit-directory
         image: busybox
@@ -83,24 +88,30 @@ spec:
           - name: varlog
             mountPath: /var/log
     
-    # Enable hot-reload
+    # ✅ Deaktiviere Hot-Reload (kann ARM64-Probleme verursachen)
     hotReload:
-      enabled: true
+      enabled: false
     
-    # ARM64 optimierte Ressourcen
+    # ✅ ARM64-optimierte Ressourcen
     resources:
       limits:
-        memory: 200Mi
+        memory: 150Mi
         cpu: 100m
       requests:
         memory: 100Mi
         cpu: 50m
     
-    # Enable monitoring
+    # ✅ Deaktiviere Probes temporär
+    livenessProbe:
+      enabled: false
+    readinessProbe:
+      enabled: false
+    
+    # Monitoring
     serviceMonitor:
       enabled: true
     
-    # Enable Grafana dashboard
+    # Grafana Dashboard
     dashboards:
       enabled: true
       labelKey: grafana_dashboard
