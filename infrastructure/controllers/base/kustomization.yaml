@@ -13,5 +13,6 @@ resources:
   - minio
   - eck-operator # ECK Operator für Elasticsearch
   - elastic-stack/     # Elasticsearch & Kibana
+  - fluendd/          # Fluentd für Log Aggregation
   
  ## 
