@@ -14,10 +14,11 @@ spec:
         name: fluent
         namespace: fluent
   values:
-    # Fluentd image
+    # ✅ ARM64-kompatibles Image OHNE jemalloc
     image:
-      repository: "fluent/fluentd"
-      tag: "v1.17.1-debian-1.0"
+      repository: "fluent/fluentd-kubernetes-daemonset"
+      tag: "v1.17.1-debian-elasticsearch8-arm64-1.0"
+      pullPolicy: "IfNotPresent"
 
     # Deploy als Deployment
     kind: "Deployment"
@@ -33,7 +34,7 @@ spec:
     mountVarLogDirectory: false
     mountDockerContainersDirectory: false
 
-    # Elasticsearch Environment Variables
+    # ✅ ARM64-optimierte Umgebungsvariablen
     env:
       - name: FLUENT_ELASTICSEARCH_HOST
         value: "efk-es-http.elastic.svc.cluster.local"
@@ -54,8 +55,13 @@ spec:
           secretKeyRef:
             name: fluentd-secrets
             key: fluentd-shared-key
+      # ✅ WICHTIG: Disable jemalloc für ARM64
+      - name: RUBY_GC_HEAP_GROWTH_FACTOR
+        value: "1.1"
+      - name: RUBY_GC_HEAP_GROWTH_MAX_SLOTS
+        value: "10000"
 
-    # Externe Konfiguration verwenden
+    # Externe Konfiguration
     mainConfigMapNameOverride: fluentd-main-config
     extraFilesConfigMapNameOverride: fluentd-extra-files
 
@@ -70,7 +76,7 @@ spec:
       - name: fluentd-es-template
         mountPath: /etc/fluent/template
 
-    # Service für Forwarder
+    # Service
     service:
       type: "ClusterIP"
       ports:
@@ -78,7 +84,33 @@ spec:
         protocol: TCP
         containerPort: 24224
 
-    # Plugins
+    # ✅ Plugins explizit installieren
     plugins:
       - fluent-plugin-elasticsearch
       - fluent-plugin-prometheus
+
+    # ✅ ARM64-optimierte Ressourcen
+    resources:
+      limits:
+        memory: 512Mi
+        cpu: 200m
+      requests:
+        memory: 256Mi
+        cpu: 100m
+
+    # ✅ Deaktiviere Health Probes temporär
+    livenessProbe:
+      enabled: false
+    readinessProbe:
+      enabled: false
+
+    # Node Affinity
+    affinity:
+      nodeAffinity:
+        preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          preference:
+            matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values: ["p3"]
