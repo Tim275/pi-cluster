@@ -16,10 +16,10 @@ spec:
   values:
     kind: DaemonSet
     
-    # ✅ Verwende das Standard-Image mit ARM64-Unterstützung
+    # ✅ Verwende das offizielle ARM64-Image
     image:
       repository: fluent/fluent-bit
-      tag: 3.0.7  # Ältere Version ohne jemalloc-Probleme
+      tag: 2.2.2  # Bewährte Version ohne jemalloc-Probleme
       pullPolicy: IfNotPresent
     
     # Host directories
@@ -39,7 +39,7 @@ spec:
         mountPath: /etc/machine-id
         readOnly: true
     
-    # ✅ Environment variables - DEAKTIVIERE jemalloc
+    # Environment variables
     env:
       - name: FLUENT_AGGREGATOR_HOST
         value: fluentd.fluent.svc.cluster.local
@@ -54,28 +54,20 @@ spec:
         valueFrom:
           fieldRef:
             fieldPath: spec.nodeName
-      # ✅ WICHTIG: Deaktiviere jemalloc komplett
-      - name: MALLOC_CONF
-        value: "junk:false"
-      - name: LD_PRELOAD
-        value: ""
-      - name: MALLOC_ARENA_MAX
-        value: "1"
     
-    # External configMap (wie im ricsanfre Tutorial)
+    # External configMap
     config: {}
     customParsers: {}
     existingConfigMap: fluent-bit-config
     
-    # ✅ Command mit verbose logging
+    # Command
     command:
       - /fluent-bit/bin/fluent-bit
     args:
       - --workdir=/fluent-bit/etc
       - --config=/fluent-bit/etc/conf/fluent-bit.yaml
-      - --verbose
     
-    # Tolerations für control-plane
+    # Tolerations
     tolerations:
       - key: node-role.kubernetes.io/control-plane
         operator: Exists
@@ -90,7 +82,7 @@ spec:
           - name: varlog
             mountPath: /var/log
     
-    # ✅ Keine Hot-Reload (ARM64-Stabilität)
+    # Keine Hot-Reload
     hotReload:
       enabled: false
     
@@ -103,7 +95,7 @@ spec:
         memory: 64Mi
         cpu: 50m
     
-    # ✅ Deaktiviere Health Probes temporär
+    # Deaktiviere Health Probes
     livenessProbe:
       enabled: false
     readinessProbe:
