@@ -4,6 +4,6 @@ resources:
   - namespace.yaml
   - repository.yaml
   - configmap.yaml
-  - secrets.yaml
+  - secret.yaml
   - es-template.yaml
   - release.yaml
