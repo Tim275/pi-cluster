@@ -1,39 +1,38 @@
 apiVersion: helm.toolkit.fluxcd.io/v2beta1
 kind: HelmRelease
 metadata:
-  name: fluent-bit
-  namespace: fluent-bit
+  name: vector
+  namespace: fluent-bit  # Gleicher Namespace für einfache Migration
 spec:
   interval: 5m
   chart:
     spec:
-      chart: fluent-bit
-      version: 0.47.0
+      chart: vector
+      version: "0.35.0"
       sourceRef:
         kind: HelmRepository
-        name: fluent-bit
+        name: vector
         namespace: fluent-bit
   values:
-    kind: DaemonSet
+    # Vector als DaemonSet für Log Collection
+    role: "Agent"
     
-    # ✅ Aktualisiertes Image mit besserer ARM64 Unterstützung
+    # ✅ ARM64-kompatibles Image (kein jemalloc Problem)
     image:
-      repository: fluent/fluent-bit
-      tag: "3.2.0"
+      repository: timberio/vector
+      tag: "0.37.1-alpine"
       pullPolicy: IfNotPresent
     
     # ✅ ARM64 Node Targeting
     nodeSelector:
       kubernetes.io/arch: arm64
     
-    # ✅ Environment variables für 16KB Page Size Fix - jemalloc deaktivieren
+    # Environment variables
     env:
-      - name: MALLOC_CONF
-        value: "background_thread:false,narenas:1,tcache:false,dirty_decay_ms:0,muzzy_decay_ms:0"
-      - name: FLB_JEMALLOC_DISABLE
-        value: "true"
+      - name: VECTOR_LOG_LEVEL
+        value: "info"
       - name: FLUENT_AGGREGATOR_HOST
-        value: fluentd.fluent.svc.cluster.local
+        value: "fluentd.fluent.svc.cluster.local"
       - name: FLUENT_AGGREGATOR_PORT
         value: "24224"
       - name: FLUENT_AGGREGATOR_SHARED_KEY
@@ -41,95 +40,138 @@ spec:
           secretKeyRef:
             name: fluent-bit-env-secret
             key: FLUENT_AGGREGATOR_SHARED_KEY
-      - name: FLUENT_SELFHOSTNAME
+      - name: NODE_NAME
         valueFrom:
           fieldRef:
             fieldPath: spec.nodeName
     
-    # Host directories
-    daemonSetVolumes:
+    # Vector Konfiguration - kompatibel mit Fluent Bit Setup
+    customConfig:
+      data_dir: "/var/lib/vector"
+      api:
+        enabled: true
+        address: "0.0.0.0:8686"
+        playground: false
+      
+      sources:
+        kubernetes_logs:
+          type: "kubernetes_logs"
+          exclude_paths_glob_patterns:
+            - "/var/log/containers/vector-*"
+            - "/var/log/containers/fluent-*"
+          extra_field_selector: ""
+          extra_label_selector: ""
+          max_read_bytes: 2048
+          max_line_bytes: 32768
+          glob_minimum_cooldown_ms: 1000
+          fingerprint_lines: 1
+          ignore_older_secs: 600
+      
+      transforms:
+        kubernetes_filter:
+          type: "filter"
+          inputs: ["kubernetes_logs"]
+          condition: |
+            exists(.kubernetes.pod_labels) && 
+            !starts_with(.kubernetes.pod_name, "vector") &&
+            !starts_with(.kubernetes.pod_name, "fluent")
+        
+        kubernetes_remap:
+          type: "remap"
+          inputs: ["kubernetes_filter"]
+          source: |
+            .tag = "kube." + .kubernetes.pod_namespace + "." + .kubernetes.pod_name + "." + .kubernetes.container_name
+            .host = get_env_var!("NODE_NAME")
+            
+            # Fluentd kompatible Felder
+            .container_name = .kubernetes.container_name
+            .namespace_name = .kubernetes.pod_namespace
+            .pod_name = .kubernetes.pod_name
+            .pod_id = .kubernetes.pod_uid
+            .labels = .kubernetes.pod_labels
+            .annotations = .kubernetes.pod_annotations
+      
+      sinks:
+        fluentd_forward:
+          type: "socket"
+          mode: "tcp"
+          inputs: ["kubernetes_remap"]
+          address: "{{ .Values.env[1].value }}:{{ .Values.env[2].value }}"
+          encoding:
+            codec: "json"
+          framing:
+            method: "newline_delimited"
+          healthcheck:
+            enabled: true
+    
+    # Host directories - gleich wie Fluent Bit
+    extraVolumes:
       - name: varlog
         hostPath:
           path: /var/log
+      - name: varlibdockercontainers
+        hostPath:
+          path: /var/lib/docker/containers
       - name: etcmachineid
         hostPath:
           path: /etc/machine-id
           type: File
     
-    daemonSetVolumeMounts:
+    extraVolumeMounts:
       - name: varlog
         mountPath: /var/log
+        readOnly: true
+      - name: varlibdockercontainers
+        mountPath: /var/lib/docker/containers
+        readOnly: true
       - name: etcmachineid
         mountPath: /etc/machine-id
         readOnly: true
     
-    # External configMap
-    config: {}
-    customParsers: {}
-    existingConfigMap: fluent-bit-config
-    
-    # Command
-    command:
-      - /fluent-bit/bin/fluent-bit
-    args:
-      - --workdir=/fluent-bit/etc
-      - --config=/fluent-bit/etc/conf/fluent-bit.yaml
-    
-    # Tolerations
+    # Tolerations - gleich wie Fluent Bit
     tolerations:
       - key: node-role.kubernetes.io/control-plane
         operator: Exists
         effect: NoSchedule
     
-    # Init container
-    initContainers:
-      - name: init-fluentbit-directory
-        image: busybox
-        command: ['/bin/sh', '-c', 'if [ ! -d /var/log/fluentbit ]; then mkdir -p /var/log/fluentbit; fi ; if [ ! -d /var/log/fluentbit/tail-db ]; then mkdir -p /var/log/fluentbit/tail-db; fi ; if [ ! -d /var/log/fluentbit/storage ]; then mkdir -p /var/log/fluentbit/storage; fi']
-        volumeMounts:
-          - name: varlog
-            mountPath: /var/log
-    
-    # Keine Hot-Reload
-    hotReload:
-      enabled: false
-    
-    # ✅ ARM64-optimierte Ressourcen (16KB Page aligned)
+    # ✅ ARM64-optimierte Ressourcen
     resources:
       limits:
-        memory: 256Mi  # 268,435,456 bytes = 16384 × 16KB aligned
+        memory: 256Mi
         cpu: 200m
       requests:
-        memory: 256Mi  # Gleich wie limit für ARM64 Stabilität
+        memory: 128Mi  # Vector ist effizienter als Fluent Bit
         cpu: 100m
     
-    # ✅ Aktivierte Health Probes mit höherer Toleranz für ARM64
+    # Health checks
     livenessProbe:
-      enabled: true
       httpGet:
-        path: /
-        port: 2020
-      initialDelaySeconds: 30  # Erhöhte Toleranz für ARM64
+        path: /health
+        port: 8686
+      initialDelaySeconds: 30
       periodSeconds: 15
-      failureThreshold: 5
+      failureThreshold: 3
     
     readinessProbe:
-      enabled: true
       httpGet:
-        path: /api/v1/health
-        port: 2020
+        path: /health
+        port: 8686
       initialDelaySeconds: 10
       periodSeconds: 10
       failureThreshold: 3
     
-    # Monitoring
+    # Service für Monitoring
+    service:
+      enabled: true
+      type: ClusterIP
+      ports:
+        - name: api
+          port: 8686
+          targetPort: 8686
+          protocol: TCP
+    
+    # ServiceMonitor für Prometheus
     serviceMonitor:
       enabled: true
-    
-    # Dashboard
-    dashboards:
-      enabled: true
-      labelKey: grafana_dashboard
-      labelValue: 1
-      annotations:
-        grafana_folder: "Logging"
+      path: /metrics
+      port: api
