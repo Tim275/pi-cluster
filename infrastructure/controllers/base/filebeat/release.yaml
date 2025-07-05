@@ -18,14 +18,13 @@ spec:
       enabled: true
     nodeSelector:
       kubernetes.io/arch: arm64
-    # Entferne extraVolumes/extraVolumeMounts!
-    # extraVolumes: []
-    # extraVolumeMounts: []
+    
     extraEnvs:
       - name: NODE_NAME
         valueFrom:
           fieldRef:
             fieldPath: spec.nodeName
+    
     filebeatConfig:
       filebeat.yml: |
         filebeat.inputs:
@@ -66,10 +65,23 @@ spec:
           name: filebeat
           keepfiles: 7
           permissions: 0644
-    serviceAccount:
-      name: filebeat
+    
+    # ✅ KORREKTE ServiceAccount-Syntax
+    serviceAccountName: filebeat
+    
+    # ✅ RBAC separat aktivieren
     rbac:
       create: true
+    
+    # ✅ ClusterRole separat aktivieren
+    clusterRoleRules:
+      - apiGroups: [""]
+        resources: ["nodes", "namespaces", "pods", "services", "endpoints", "events"]
+        verbs: ["get", "list", "watch"]
+      - apiGroups: ["apps"]
+        resources: ["replicasets", "deployments", "daemonsets", "statefulsets"]
+        verbs: ["get", "list", "watch"]
+    
     resources:
       limits:
         memory: 200Mi
@@ -77,10 +89,12 @@ spec:
       requests:
         memory: 100Mi
         cpu: 50m
+    
     tolerations:
       - key: node-role.kubernetes.io/control-plane
         operator: Exists
         effect: NoSchedule
+    
     serviceMonitor:
       enabled: true
       labels:
