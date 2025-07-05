@@ -60,6 +60,11 @@ spec:
         value: "1.1"
       - name: RUBY_GC_HEAP_GROWTH_MAX_SLOTS
         value: "10000"
+      # ✅ Beats Input Port (für Filebeat)
+      - name: FLUENTD_BEATS_BIND
+        value: "0.0.0.0"
+      - name: FLUENTD_BEATS_PORT
+        value: "5044"
 
     # Externe Konfiguration
     mainConfigMapNameOverride: fluentd-main-config
@@ -76,18 +81,24 @@ spec:
       - name: fluentd-es-template
         mountPath: /etc/fluent/template
 
-    # Service
+    # ✅ Service mit beiden Ports (Filebeat & Fluent Bit)
     service:
       type: "ClusterIP"
       ports:
       - name: forwarder
         protocol: TCP
         containerPort: 24224
+        port: 24224
+      - name: beats      # ✅ Für Filebeat
+        protocol: TCP
+        containerPort: 5044
+        port: 5044
 
     # ✅ Plugins explizit installieren
     plugins:
       - fluent-plugin-elasticsearch
       - fluent-plugin-prometheus
+      - fluent-plugin-beats    # ✅ Für Filebeat Input
 
     # ✅ ARM64-optimierte Ressourcen
     resources:

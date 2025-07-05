@@ -16,23 +16,33 @@ metadata:
 data:
   01_sources.conf: |-
     ## FluentD config file
-    ## Sources - logs from fluentbit forwarders
+    ## ✅ AKTIV: Sources - logs von Filebeat
     <source>
-        @type forward
-        @label @FORWARD
-        bind "#{ENV['FLUENTD_FORWARD_BIND'] || '0.0.0.0'}"
-        port "#{ENV['FLUENTD_FORWARD_PORT'] || '24224'}"
-        # Enabling TLS (commented out for initial setup)
-        # <transport tls>
-        #     cert_path /etc/fluent/certs/tls.crt
-        #     private_key_path /etc/fluent/certs/tls.key
-        # </transport>
-        # Enabling access security
-        <security>
-            self_hostname "#{ENV['FLUENTD_FORWARD_SEC_SELFHOSTNAME'] || 'fluentd-aggregator'}"
-            shared_key "#{ENV['FLUENT_AGGREGATOR_SHARED_KEY'] || 'sharedkey'}"
-        </security>
+        @type beats
+        @label @BEATS
+        bind "#{ENV['FLUENTD_BEATS_BIND'] || '0.0.0.0'}"
+        port "#{ENV['FLUENTD_BEATS_PORT'] || '5044'}"
+        metadata_as_tag true
     </source>
+    
+    ## ✅ KOMMENTIERT: Sources - logs von Fluent Bit forwarders
+    ## Für Fluent Bit aktivieren, für Filebeat deaktivieren
+    # <source>
+    #     @type forward
+    #     @label @FORWARD
+    #     bind "#{ENV['FLUENTD_FORWARD_BIND'] || '0.0.0.0'}"
+    #     port "#{ENV['FLUENTD_FORWARD_PORT'] || '24224'}"
+    #     # Enabling TLS (commented out for initial setup)
+    #     # <transport tls>
+    #     #     cert_path /etc/fluent/certs/tls.crt
+    #     #     private_key_path /etc/fluent/certs/tls.key
+    #     # </transport>
+    #     # Enabling access security
+    #     <security>
+    #         self_hostname "#{ENV['FLUENTD_FORWARD_SEC_SELFHOSTNAME'] || 'fluentd-aggregator'}"
+    #         shared_key "#{ENV['FLUENT_AGGREGATOR_SHARED_KEY'] || 'sharedkey'}"
+    #     </security>
+    # </source>
     
     ## Enable Prometheus end point
     <source>
@@ -52,18 +62,52 @@ data:
     </source>
   
   02_filters.conf: |-
-    ## Filters
-    <label @FORWARD>
-        # Re-route fluentd logs
-        <match kube.var.log.containers.fluentd**>
-            @type relabel
-            @label @FLUENT_LOG
-        </match>
-        <match **>
+    ## ✅ AKTIV: Filters für Filebeat
+    <label @BEATS>
+        # Parse Filebeat JSON logs
+        <filter beats.**>
+            @type parser
+            key_name message
+            reserve_data true
+            remove_key_name_field true
+            emit_invalid_record_to_error false
+            <parse>
+                @type json
+                json_parser_class: json
+            </parse>
+        </filter>
+        
+        # Add cluster metadata for Beats logs
+        <filter beats.**>
+            @type record_transformer
+            enable_ruby
+            <record>
+                cluster_name pi-cluster
+                log_source filebeat
+                timestamp ${time.strftime('%Y-%m-%dT%H:%M:%S.%3NZ', time)}
+            </record>
+        </filter>
+        
+        # Re-route beats logs to dispatch
+        <match beats.**>
             @type relabel
             @label @DISPATCH
         </match>
     </label>
+    
+    ## ✅ KOMMENTIERT: Filters für Fluent Bit
+    ## Für Fluent Bit aktivieren, für Filebeat deaktivieren
+    # <label @FORWARD>
+    #     # Re-route fluentd logs
+    #     <match kube.var.log.containers.fluentd**>
+    #         @type relabel
+    #         @label @FLUENT_LOG
+    #     </match>
+    #     <match **>
+    #         @type relabel
+    #         @label @DISPATCH
+    #     </match>
+    # </label>
   
   03_dispatch.conf: |-
     # Discard FLUENTD LOGS
@@ -102,21 +146,31 @@ data:
   04_output.conf: |-
     # Elastic Search Output
     <label @OUTPUT_ES>
-        # Setup index name. Index per namespace or per container
-        <filter kube.**>
+        # ✅ AKTIV: Setup index name für Filebeat
+        <filter beats.**>
             @type record_transformer
             enable_ruby
             <record>
-                index_name ${record['namespace']}
+                index_name ${record['kubernetes'] && record['kubernetes']['namespace'] ? record['kubernetes']['namespace'] : 'filebeat'}
             </record>
         </filter>
-        <filter host.**>
-            @type record_transformer
-            enable_ruby
-            <record>
-                index_name "host"
-            </record>
-        </filter>
+        
+        # ✅ KOMMENTIERT: Setup index name für Fluent Bit
+        ## Für Fluent Bit aktivieren, für Filebeat deaktivieren
+        # <filter kube.**>
+        #     @type record_transformer
+        #     enable_ruby
+        #     <record>
+        #         index_name ${record['namespace']}
+        #     </record>
+        # </filter>
+        # <filter host.**>
+        #     @type record_transformer
+        #     enable_ruby
+        #     <record>
+        #         index_name "host"
+        #     </record>
+        # </filter>
         
         # Send received logs to elasticsearch
         <match **>
@@ -139,11 +193,18 @@ data:
             suppress_type_name true
             sniffer_class_name Fluent::Plugin::ElasticsearchSimpleSniffer
             
-            # Do not use logstash format
+            # ✅ AKTIV: Filebeat-Format
             logstash_format false
             index_name fluentd-${index_name}
             time_key time
             include_timestamp true
+            
+            # ✅ KOMMENTIERT: Fluent Bit-Format
+            ## Für Fluent Bit aktivieren, für Filebeat deaktivieren
+            # logstash_format false
+            # index_name fluentd-${index_name}
+            # time_key time
+            # include_timestamp true
             
             # ILM Settings - WITH ROLLOVER support
             index_date_pattern ""

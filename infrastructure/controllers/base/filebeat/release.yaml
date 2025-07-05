@@ -56,6 +56,7 @@ spec:
                       kubernetes.pod.name: "filebeat"
                   - contains:
                       kubernetes.pod.name: "fluentd"
+        # ✅ Output zu Fluentd (Port 5044 für Beats Input)
         output.logstash:
           hosts: ["fluentd.fluent.svc.cluster.local:5044"]
         logging.level: info
@@ -66,14 +67,10 @@ spec:
           keepfiles: 7
           permissions: 0644
     
-    # ✅ KORREKTE ServiceAccount-Syntax
-    serviceAccountName: filebeat
-    
-    # ✅ RBAC separat aktivieren
+    # ✅ Lass das Chart das ServiceAccount automatisch erstellen
     rbac:
       create: true
     
-    # ✅ ClusterRole separat aktivieren
     clusterRoleRules:
       - apiGroups: [""]
         resources: ["nodes", "namespaces", "pods", "services", "endpoints", "events"]
