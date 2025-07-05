@@ -16,11 +16,35 @@ spec:
   values:
     kind: DaemonSet
     
-    # ✅ Verwende ein bewährtes ARM64-Image
+    # ✅ Aktualisiertes Image mit besserer ARM64 Unterstützung
     image:
-      repository: rancher/mirrored-fluent-fluent-bit
-      tag: 2.2.2
+      repository: fluent/fluent-bit
+      tag: "3.2.0"
       pullPolicy: IfNotPresent
+    
+    # ✅ ARM64 Node Targeting
+    nodeSelector:
+      kubernetes.io/arch: arm64
+    
+    # ✅ Environment variables für 16KB Page Size Fix
+    env:
+      - name: MALLOC_CONF
+        value: "lg_dirty_mult:-1"
+      - name: LD_PRELOAD
+        value: ""
+      - name: FLUENT_AGGREGATOR_HOST
+        value: fluentd.fluent.svc.cluster.local
+      - name: FLUENT_AGGREGATOR_PORT
+        value: "24224"
+      - name: FLUENT_AGGREGATOR_SHARED_KEY
+        valueFrom:
+          secretKeyRef:
+            name: fluent-bit-env-secret
+            key: FLUENT_AGGREGATOR_SHARED_KEY
+      - name: FLUENT_SELFHOSTNAME
+        valueFrom:
+          fieldRef:
+            fieldPath: spec.nodeName
     
     # Host directories
     daemonSetVolumes:
@@ -38,22 +62,6 @@ spec:
       - name: etcmachineid
         mountPath: /etc/machine-id
         readOnly: true
-    
-    # Environment variables
-    env:
-      - name: FLUENT_AGGREGATOR_HOST
-        value: fluentd.fluent.svc.cluster.local
-      - name: FLUENT_AGGREGATOR_PORT
-        value: "24224"
-      - name: FLUENT_AGGREGATOR_SHARED_KEY
-        valueFrom:
-          secretKeyRef:
-            name: fluent-bit-env-secret
-            key: FLUENT_AGGREGATOR_SHARED_KEY
-      - name: FLUENT_SELFHOSTNAME
-        valueFrom:
-          fieldRef:
-            fieldPath: spec.nodeName
     
     # External configMap
     config: {}
@@ -86,20 +94,33 @@ spec:
     hotReload:
       enabled: false
     
-    # ARM64-optimierte Ressourcen
+    # ✅ ARM64-optimierte Ressourcen (16KB Page aligned)
     resources:
       limits:
-        memory: 128Mi
-        cpu: 100m
+        memory: 256Mi  # 268,435,456 bytes = 16384 × 16KB aligned
+        cpu: 200m
       requests:
-        memory: 64Mi
-        cpu: 50m
+        memory: 256Mi  # Gleich wie limit für ARM64 Stabilität
+        cpu: 100m
     
-    # Deaktiviere Health Probes
+    # ✅ Aktivierte Health Probes mit höherer Toleranz für ARM64
     livenessProbe:
-      enabled: false
+      enabled: true
+      httpGet:
+        path: /
+        port: 2020
+      initialDelaySeconds: 30  # Erhöhte Toleranz für ARM64
+      periodSeconds: 15
+      failureThreshold: 5
+    
     readinessProbe:
-      enabled: false
+      enabled: true
+      httpGet:
+        path: /api/v1/health
+        port: 2020
+      initialDelaySeconds: 10
+      periodSeconds: 10
+      failureThreshold: 3
     
     # Monitoring
     serviceMonitor:
