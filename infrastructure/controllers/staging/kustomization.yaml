@@ -14,3 +14,4 @@ resources:
   - eck-operator/      # ECK Operator
   - elastic-stack/     # Elasticsearch & Kibana
   - fluentd/          # Fluentd für Log Aggregation
+  - fluent-bit/       # Fluent Bit für Log Aggregation (optional, wenn du

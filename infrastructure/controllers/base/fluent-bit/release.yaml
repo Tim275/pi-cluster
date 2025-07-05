@@ -1,0 +1,109 @@
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: fluent-bit
+  namespace: fluent-bit
+spec:
+  interval: 5m
+  chart:
+    spec:
+      chart: fluent-bit
+      version: 0.47.0
+      sourceRef:
+        kind: HelmRepository
+        name: fluent-bit
+        namespace: fluent-bit
+  values:
+    # Deploy fluent-bit as daemonSet. One POD per node
+    kind: DaemonSet
+    
+    # ARM64 optimiertes Image
+    image:
+      repository: fluent/fluent-bit
+      tag: 3.1.4
+      pullPolicy: IfNotPresent
+    
+    # Host directories containing Host and POD logs files
+    daemonSetVolumes:
+      - name: varlog
+        hostPath:
+          path: /var/log
+      - name: etcmachineid
+        hostPath:
+          path: /etc/machine-id
+          type: File
+    
+    daemonSetVolumeMounts:
+      - name: varlog
+        mountPath: /var/log
+      - name: etcmachineid
+        mountPath: /etc/machine-id
+        readOnly: true
+    
+    # 🔗 Environment variables für Verbindung zu Fluentd
+    env:
+      - name: FLUENT_AGGREGATOR_HOST
+        value: fluentd.fluent.svc.cluster.local  # Dein Fluentd Service
+      - name: FLUENT_AGGREGATOR_PORT
+        value: "24224"
+      - name: FLUENT_AGGREGATOR_SHARED_KEY
+        valueFrom:
+          secretKeyRef:
+            name: fluent-bit-env-secret
+            key: FLUENT_AGGREGATOR_SHARED_KEY
+      - name: FLUENT_SELFHOSTNAME
+        valueFrom:
+          fieldRef:
+            fieldPath: spec.nodeName
+    
+    # Use external configMap with YAML syntax
+    config: {}
+    customParsers: {}
+    existingConfigMap: fluent-bit-config
+    
+    # Use YAML config file
+    command:
+      - /fluent-bit/bin/fluent-bit
+    args:
+      - --workdir=/fluent-bit/etc
+      - --config=/fluent-bit/etc/conf/fluent-bit.yaml
+    
+    # Enable installation on control-plane nodes
+    tolerations:
+      - key: node-role.kubernetes.io/control-plane
+        operator: Exists
+        effect: NoSchedule
+    
+    # Init container for directory creation
+    initContainers:
+      - name: init-fluentbit-directory
+        image: busybox
+        command: ['/bin/sh', '-c', 'if [ ! -d /var/log/fluentbit ]; then mkdir -p /var/log/fluentbit; fi ; if [ ! -d /var/log/fluentbit/tail-db ]; then mkdir -p /var/log/fluentbit/tail-db; fi ; if [ ! -d /var/log/fluentbit/storage ]; then mkdir -p /var/log/fluentbit/storage; fi']
+        volumeMounts:
+          - name: varlog
+            mountPath: /var/log
+    
+    # Enable hot-reload
+    hotReload:
+      enabled: true
+    
+    # ARM64 optimierte Ressourcen
+    resources:
+      limits:
+        memory: 200Mi
+        cpu: 100m
+      requests:
+        memory: 100Mi
+        cpu: 50m
+    
+    # Enable monitoring
+    serviceMonitor:
+      enabled: true
+    
+    # Enable Grafana dashboard
+    dashboards:
+      enabled: true
+      labelKey: grafana_dashboard
+      labelValue: 1
+      annotations:
+        grafana_folder: "Logging"

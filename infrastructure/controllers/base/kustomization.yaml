@@ -12,5 +12,6 @@ resources:
   - csi-snapshotter
   - minio
   - eck-operator # ECK Operator für Elasticsearch
-  - elastic-stack/     # Elasticsearch & Kibana
-  - fluentd/          # ✅ KORRIGIERT: war "fluend/"
+  - elastic-stack/     
+  - fluentd/          
+  - fluent-bit/  
