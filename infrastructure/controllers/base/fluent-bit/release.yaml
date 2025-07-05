@@ -16,10 +16,10 @@ spec:
   values:
     kind: DaemonSet
     
-    # ✅ ARM64-kompatibles Alpine Image
+    # ✅ Verwende das Standard-Image mit ARM64-Unterstützung
     image:
       repository: fluent/fluent-bit
-      tag: 3.1.4-alpine
+      tag: 3.0.7  # Ältere Version ohne jemalloc-Probleme
       pullPolicy: IfNotPresent
     
     # Host directories
