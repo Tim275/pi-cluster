@@ -14,13 +14,12 @@ spec:
         name: fluent-bit
         namespace: fluent-bit
   values:
-    # Deploy fluent-bit as daemonSet
     kind: DaemonSet
     
-    # ✅ ARM64-kompatibles Image OHNE jemalloc
+    # ✅ Verwende das CR.IO Registry Image (jemalloc-frei)
     image:
-      repository: fluent/fluent-bit
-      tag: 3.1.4-debug  # Debug-Version hat weniger jemalloc-Probleme
+      repository: cr.fluentbit.io/fluent/fluent-bit
+      tag: 3.1.4
       pullPolicy: IfNotPresent
     
     # Host directories
@@ -40,7 +39,7 @@ spec:
         mountPath: /etc/machine-id
         readOnly: true
     
-    # ✅ Umgebungsvariablen für ARM64
+    # Environment variables
     env:
       - name: FLUENT_AGGREGATOR_HOST
         value: fluentd.fluent.svc.cluster.local
@@ -55,25 +54,20 @@ spec:
         valueFrom:
           fieldRef:
             fieldPath: spec.nodeName
-      # ✅ WICHTIG: Deaktiviere jemalloc für ARM64
-      - name: LD_PRELOAD
-        value: ""
-      - name: MALLOC_ARENA_MAX
-        value: "1"
     
     # External configMap
     config: {}
     customParsers: {}
     existingConfigMap: fluent-bit-config
     
-    # YAML config
+    # Command
     command:
       - /fluent-bit/bin/fluent-bit
     args:
       - --workdir=/fluent-bit/etc
       - --config=/fluent-bit/etc/conf/fluent-bit.yaml
     
-    # Tolerations für control-plane
+    # Tolerations
     tolerations:
       - key: node-role.kubernetes.io/control-plane
         operator: Exists
@@ -88,20 +82,20 @@ spec:
           - name: varlog
             mountPath: /var/log
     
-    # ✅ Deaktiviere Hot-Reload (kann ARM64-Probleme verursachen)
+    # ✅ Keine Hot-Reload
     hotReload:
       enabled: false
     
-    # ✅ ARM64-optimierte Ressourcen
+    # ARM64-optimierte Ressourcen
     resources:
       limits:
-        memory: 150Mi
+        memory: 128Mi
         cpu: 100m
       requests:
-        memory: 100Mi
+        memory: 64Mi
         cpu: 50m
     
-    # ✅ Deaktiviere Probes temporär
+    # ✅ Deaktiviere Health Probes
     livenessProbe:
       enabled: false
     readinessProbe:
@@ -111,7 +105,7 @@ spec:
     serviceMonitor:
       enabled: true
     
-    # Grafana Dashboard
+    # Dashboard
     dashboards:
       enabled: true
       labelKey: grafana_dashboard
