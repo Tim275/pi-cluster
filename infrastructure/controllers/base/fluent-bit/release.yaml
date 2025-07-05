@@ -16,10 +16,10 @@ spec:
   values:
     kind: DaemonSet
     
-    # ✅ Verwende das offizielle ARM64-Image
+    # ✅ Verwende ein bewährtes ARM64-Image
     image:
-      repository: fluent/fluent-bit
-      tag: 2.2.2  # Bewährte Version ohne jemalloc-Probleme
+      repository: rancher/mirrored-fluent-fluent-bit
+      tag: 2.2.2
       pullPolicy: IfNotPresent
     
     # Host directories
