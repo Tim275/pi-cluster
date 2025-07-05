@@ -13,3 +13,4 @@ resources:
   - mongodb
   - eck-operator/      # ECK Operator
   - elastic-stack/     # Elasticsearch & Kibana
+  - fluentd/          # Fluentd für Log Aggregation

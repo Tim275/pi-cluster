@@ -59,7 +59,12 @@ spec:
       selfSignedCertificate:
         disabled: true
 
+#Ja, das ist korrekt konfiguriert!
+#Der ECK Operator hat automatisch ein 2-Node Elasticsearch Cluster erstellt mit:
 
+#Automatischer Replica-Erstellung für neue Indices
+#Cluster Health = Green (keine Yellow-Warnung)
+#High Availability - wenn ein Node ausfällt, läuft der andere weiter
 
 #apiVersion: elasticsearch.k8s.elastic.co/v1
 #kind: Elasticsearch

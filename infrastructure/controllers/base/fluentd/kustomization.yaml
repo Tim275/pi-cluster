@@ -3,8 +3,7 @@ kind: Kustomization
 resources:
   - namespace.yaml
   - repository.yaml
-  - fluent-repository.yaml
-  - elastic-credentials.yaml
-  - elasticsearch
-  - kibana
-  - fluentd
+  - configmap.yaml
+  - secrets.yaml
+  - es-template.yaml
+  - release.yaml

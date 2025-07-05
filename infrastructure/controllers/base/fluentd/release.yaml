@@ -1,0 +1,137 @@
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: fluentd
+  namespace: fluent
+spec:
+  interval: 5m
+  chart:
+    spec:
+      chart: fluentd
+      version: 0.9.4
+      sourceRef:
+        kind: HelmRepository
+        name: fluent
+        namespace: fluent
+  values:
+    # Fluentd image (custom aggregator image aus dem Tutorial)
+    image:
+      repository: "ricsanfre/fluentd-aggregator"
+      pullPolicy: "IfNotPresent"
+      tag: "v1.17.1-debian-1.0"
+
+    # Deploy fluentd as deployment
+    kind: "Deployment"
+    replicaCount: 1
+    
+    # Enabling HPA (disabled for initial setup)
+    autoscaling:
+      enabled: false
+      minReplicas: 1
+      maxReplicas: 100
+      targetCPUUtilizationPercentage: 80
+
+    # Do not create serviceAccount and RBAC
+    serviceAccount:
+      create: false
+    rbac:
+      create: false
+
+    # Security context
+    securityContext:
+      capabilities:
+        drop:
+        - ALL
+      readOnlyRootFilesystem: false
+      runAsNonRoot: true
+      runAsUser: 1000
+
+    # Do not mount logs directories
+    mountVarLogDirectory: false
+    mountDockerContainersDirectory: false
+
+    # Environment variables für Elasticsearch
+    env:
+      - name: FLUENT_ELASTICSEARCH_HOST
+        value: "efk-es-http.elastic.svc.cluster.local"
+      - name: FLUENT_ELASTICSEARCH_PORT
+        value: "9200"
+      - name: FLUENT_ELASTICSEARCH_USER
+        valueFrom:
+          secretKeyRef:
+            name: fluentd-secrets
+            key: es-username
+      - name: FLUENT_ELASTICSEARCH_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            name: fluentd-secrets
+            key: es-password
+      - name: FLUENT_AGGREGATOR_SHARED_KEY
+        valueFrom:
+          secretKeyRef:
+            name: fluentd-secrets
+            key: fluentd-shared-key
+
+    # Providing fluentd external configuration
+    mainConfigMapNameOverride: fluentd-main-config
+    extraFilesConfigMapNameOverride: fluentd-extra-files
+
+    # Do not create additional config maps
+    configMapConfigs: []
+
+    # Additional Volumes and VolumeMounts
+    volumes:
+      - name: fluentd-es-template
+        configMap:
+          name: fluentd-es-template
+          defaultMode: 0777
+
+    volumeMounts:
+      - name: fluentd-es-template
+        mountPath: /etc/fluent/template
+
+    # Service - Exporting forwarder port
+    service:
+      type: "ClusterIP"
+      annotations: {}
+      ports:
+      - name: forwarder
+        protocol: TCP
+        containerPort: 24224
+
+    # Fluentd list of plugins to install
+    plugins: []
+
+    # Enable prometheus Service Monitor
+    metrics:
+      serviceMonitor:
+        enabled: true
+        additionalLabels: {}
+      prometheusRule:
+        enabled: false
+
+    # Grafana Dashboard
+    dashboards:
+      enabled: "true"
+      labels:
+        grafana_dashboard: "1"
+
+    # Ressourcen für Raspberry Pi
+    resources:
+      limits:
+        memory: 1Gi
+        cpu: 500m
+      requests:
+        memory: 512Mi
+        cpu: 250m
+
+    # Node Affinity - bevorzuge p3 für bessere Performance
+    affinity:
+      nodeAffinity:
+        preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          preference:
+            matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values: ["p3"]

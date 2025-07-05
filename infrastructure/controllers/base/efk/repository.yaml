@@ -1,9 +1,0 @@
-# File: infrastructure/controllers/base/efk/repository.yaml
-apiVersion: source.toolkit.fluxcd.io/v1
-kind: HelmRepository
-metadata:
-  name: elastic
-  namespace: logging
-spec:
-  interval: 60m
-  url: https://helm.elastic.co
