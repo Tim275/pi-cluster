@@ -67,6 +67,17 @@ spec:
           keepfiles: 7
           permissions: 0644
     
+    # ✅ DEAKTIVIERE Elasticsearch-Integration
+    elasticsearch:
+      enabled: false
+      
+    # ✅ DEAKTIVIERE Kibana-Integration  
+    kibana:
+      enabled: false
+    
+    # ✅ DEAKTIVIERE automatische Cert-Mounts
+    secretMounts: []
+    
     # ✅ Lass das Chart das ServiceAccount automatisch erstellen
     rbac:
       create: true
