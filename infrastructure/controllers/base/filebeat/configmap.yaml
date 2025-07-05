@@ -1,0 +1,98 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fluentd-config
+  namespace: fluent
+data:
+  fluent.conf: |
+    # Input von Filebeat (Beats Input)
+    <source>
+      @type beats
+      port 5044
+      bind 0.0.0.0
+      tag beats.filebeat
+    </source>
+    
+    # Input von anderen Fluent-Agents (falls vorhanden)
+    <source>
+      @type forward
+      port 24224
+      bind 0.0.0.0
+    </source>
+    
+    # Parse Kubernetes Logs
+    <filter beats.filebeat>
+      @type parser
+      key_name message
+      reserve_data true
+      remove_key_name_field true
+      emit_invalid_record_to_error false
+      <parse>
+        @type json
+        json_parser_class: json
+      </parse>
+    </filter>
+    
+    # Add Kubernetes metadata
+    <filter beats.filebeat>
+      @type record_transformer
+      enable_ruby true
+      <record>
+        cluster_name pi-cluster
+        log_type kubernetes
+        timestamp ${time.strftime('%Y-%m-%dT%H:%M:%S.%3NZ', time)}
+      </record>
+    </filter>
+    
+    # Output zu Elasticsearch
+    <match beats.filebeat>
+      @type elasticsearch
+      host efk-es-http.elastic.svc.cluster.local
+      port 9200
+      scheme http
+      user elastic
+      password "#{ENV['ELASTICSEARCH_PASSWORD']}"
+      index_name filebeat-logs
+      type_name _doc
+      time_key @timestamp
+      time_key_format %Y-%m-%dT%H:%M:%S.%3NZ
+      include_timestamp true
+      logstash_format true
+      logstash_prefix filebeat
+      logstash_dateformat %Y.%m.%d
+      <buffer>
+        flush_interval 5s
+        flush_mode interval
+        retry_forever false
+        retry_max_times 3
+        chunk_limit_size 8MB
+        queue_limit_length 32
+        overflow_action drop_oldest_chunk
+      </buffer>
+    </match>
+    
+    # Fallback für andere Logs
+    <match **>
+      @type elasticsearch
+      host efk-es-http.elastic.svc.cluster.local
+      port 9200
+      scheme http
+      user elastic
+      password "#{ENV['ELASTICSEARCH_PASSWORD']}"
+      index_name general-logs
+      type_name _doc
+      time_key @timestamp
+      include_timestamp true
+      logstash_format true
+      logstash_prefix general
+      logstash_dateformat %Y.%m.%d
+      <buffer>
+        flush_interval 10s
+        flush_mode interval
+        retry_forever false
+        retry_max_times 3
+        chunk_limit_size 8MB
+        queue_limit_length 32
+        overflow_action drop_oldest_chunk
+      </buffer>
+    </match>
