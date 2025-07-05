@@ -26,12 +26,12 @@ spec:
     nodeSelector:
       kubernetes.io/arch: arm64
     
-    # ✅ Environment variables für 16KB Page Size Fix
+    # ✅ Environment variables für 16KB Page Size Fix - jemalloc deaktivieren
     env:
       - name: MALLOC_CONF
-        value: "lg_dirty_mult:-1"
-      - name: LD_PRELOAD
-        value: ""
+        value: "background_thread:false,narenas:1,tcache:false,dirty_decay_ms:0,muzzy_decay_ms:0"
+      - name: FLB_JEMALLOC_DISABLE
+        value: "true"
       - name: FLUENT_AGGREGATOR_HOST
         value: fluentd.fluent.svc.cluster.local
       - name: FLUENT_AGGREGATOR_PORT
