@@ -14,7 +14,23 @@ spec:
         name: grafana
         namespace: tempo
   values:
-    # ✅ Enable trace ingestion (genau wie in der Dokumentation)
+    # ✅ WICHTIG: Globale Konfiguration für Single-Node-Cluster
+    global:
+      extraArgs:
+        - '-config.expand-env=true'
+      extraEnv:
+        - name: MINIO_ACCESS_KEY_ID
+          valueFrom:
+            secretKeyRef:
+              name: tempo-minio-secret
+              key: MINIO_ACCESS_KEY_ID
+        - name: MINIO_SECRET_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: tempo-minio-secret
+              key: MINIO_SECRET_ACCESS_KEY
+    
+    # ✅ Enable trace ingestion
     traces:
       otlp:
         grpc:
@@ -31,7 +47,7 @@ spec:
       opencensus:
         enabled: true
     
-    # ✅ Configure S3 backend (genau wie in der Dokumentation)
+    # ✅ Configure S3 backend
     storage:
       trace:
         backend: s3
@@ -42,13 +58,16 @@ spec:
           access_key: ${MINIO_ACCESS_KEY_ID}
           secret_key: ${MINIO_SECRET_ACCESS_KEY}
           insecure: true
+          forcepathstyle: true  # ✅ Wichtig für Minio
     
-    # ✅ Configure distributor (genau wie in der Dokumentation)
+    # ✅ Configure distributor
     distributor:
-      replicas: 1  # ✅ Reduziert für Pi-Cluster
+      replicas: 1
       config:
         log_received_spans:
           enabled: true
+        ring:
+          replication_factor: 1  # ✅ Hier auch setzen
       extraArgs:
         - '-config.expand-env=true'
       extraEnv:
@@ -70,13 +89,25 @@ spec:
           memory: 256Mi
           cpu: 100m
     
-    # ✅ Configure ingester (genau wie in der Dokumentation)
+    # ✅ Configure ingester - WICHTIGSTE ÄNDERUNG
     ingester:
-      replicas: 1  # ✅ Wichtig: Reduziert für Pi-Cluster
+      replicas: 1
       config:
         lifecycler:
           ring:
-            replication_factor: 1  # ✅ Löst das "2 replicas required" Problem
+            replication_factor: 1  # ✅ Schon da
+            kvstore:
+              store: memberlist
+          num_tokens: 128
+          heartbeat_timeout: 1m
+          join_after: 30s
+          min_ready_duration: 15s
+          final_sleep: 30s
+        # ✅ WICHTIG: Zusätzliche Konfiguration für Single-Node
+        complete_block_timeout: 1m
+        max_block_duration: 30m
+        max_block_bytes: 1000000
+        flush_all_on_shutdown: true
       extraArgs:
         - '-config.expand-env=true'
       extraEnv:
@@ -98,9 +129,12 @@ spec:
           memory: 256Mi
           cpu: 100m
     
-    # ✅ Configure compactor (genau wie in der Dokumentation)
+    # ✅ Configure compactor
     compactor:
       replicas: 1
+      config:
+        ring:
+          replication_factor: 1  # ✅ Hier auch setzen
       extraArgs:
         - '-config.expand-env=true'
       extraEnv:
@@ -122,9 +156,12 @@ spec:
           memory: 256Mi
           cpu: 100m
     
-    # ✅ Configure querier (genau wie in der Dokumentation)
+    # ✅ Configure querier
     querier:
       replicas: 1
+      config:
+        ring:
+          replication_factor: 1  # ✅ Hier auch setzen
       extraArgs:
         - '-config.expand-env=true'
       extraEnv:
@@ -146,7 +183,7 @@ spec:
           memory: 256Mi
           cpu: 100m
     
-    # ✅ Configure query-frontend (genau wie in der Dokumentation)
+    # ✅ Configure query-frontend
     queryFrontend:
       replicas: 1
       extraArgs:
@@ -170,11 +207,11 @@ spec:
           memory: 256Mi
           cpu: 100m
     
-    # ✅ Disable Minio server installation (genau wie in der Dokumentation)
+    # ✅ Disable Minio server installation
     minio:
       enabled: false
     
-    # ✅ ARM64 Node Selection (für dein Pi-Cluster)
+    # ✅ ARM64 Node Selection
     nodeSelector:
       kubernetes.io/arch: arm64
     
