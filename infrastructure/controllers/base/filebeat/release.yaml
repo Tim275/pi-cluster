@@ -8,7 +8,7 @@ spec:
   chart:
     spec:
       chart: filebeat
-      version: 8.5.1
+      version: 7.17.3  # ✅ Ältere Version ohne automatische Elasticsearch-Integration
       sourceRef:
         kind: HelmRepository
         name: elastic
@@ -67,28 +67,9 @@ spec:
           keepfiles: 7
           permissions: 0644
     
-    # ✅ DEAKTIVIERE Elasticsearch-Integration
-    elasticsearch:
-      enabled: false
-      
-    # ✅ DEAKTIVIERE Kibana-Integration  
-    kibana:
-      enabled: false
-    
-    # ✅ DEAKTIVIERE automatische Cert-Mounts
-    secretMounts: []
-    
-    # ✅ Lass das Chart das ServiceAccount automatisch erstellen
+    # ✅ RBAC
     rbac:
       create: true
-    
-    clusterRoleRules:
-      - apiGroups: [""]
-        resources: ["nodes", "namespaces", "pods", "services", "endpoints", "events"]
-        verbs: ["get", "list", "watch"]
-      - apiGroups: ["apps"]
-        resources: ["replicasets", "deployments", "daemonsets", "statefulsets"]
-        verbs: ["get", "list", "watch"]
     
     resources:
       limits:
