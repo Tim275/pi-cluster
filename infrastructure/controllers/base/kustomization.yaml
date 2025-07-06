@@ -16,3 +16,4 @@ resources:
   - fluentd/          
  # - fluent-bit/   ## leider nicht auf arm64 möglich (raspberry pi), daher filebeat
   #- filebeat/         # Filebeat für Log-Forwarding
+  - tempo # Tempo für Tracing

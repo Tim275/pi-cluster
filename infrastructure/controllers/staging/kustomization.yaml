@@ -16,4 +16,5 @@ resources:
 # - fluentd/          # Fluentd für Log Aggregation
  #- fluent-bit/       # nicht kompotibel mit ARM64
   #- filebeat/         # Filebeat für Log Aggregation
+  - tempo # Tempo für Tracing
   
