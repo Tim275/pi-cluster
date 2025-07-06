@@ -14,23 +14,13 @@ spec:
         name: grafana
         namespace: tempo
   values:
-    # ✅ ARM64-native Images
-    image:
-      repository: grafana/tempo
-      tag: 2.6.1
-      pullPolicy: IfNotPresent
-    
-    # ✅ Enable trace ingestion
+    # ✅ Enable trace ingestion (genau wie in der Dokumentation)
     traces:
       otlp:
         grpc:
           enabled: true
-          receiverConfig:
-            endpoint: "0.0.0.0:4317"
         http:
           enabled: true
-          receiverConfig:
-            endpoint: "0.0.0.0:4318"
       zipkin:
         enabled: true
       jaeger:
@@ -41,7 +31,7 @@ spec:
       opencensus:
         enabled: true
     
-    # ✅ Configure S3 backend (Minio)
+    # ✅ Configure S3 backend (genau wie in der Dokumentation)
     storage:
       trace:
         backend: s3
@@ -53,9 +43,9 @@ spec:
           secret_key: ${MINIO_SECRET_ACCESS_KEY}
           insecure: true
     
-    # ✅ Configure distributor
+    # ✅ Configure distributor (genau wie in der Dokumentation)
     distributor:
-      replicas: 1
+      replicas: 1  # ✅ Reduziert für Pi-Cluster
       config:
         log_received_spans:
           enabled: true
@@ -80,9 +70,13 @@ spec:
           memory: 256Mi
           cpu: 100m
     
-    # ✅ Configure ingester
+    # ✅ Configure ingester (genau wie in der Dokumentation)
     ingester:
-      replicas: 1
+      replicas: 1  # ✅ Wichtig: Reduziert für Pi-Cluster
+      config:
+        lifecycler:
+          ring:
+            replication_factor: 1  # ✅ Löst das "2 replicas required" Problem
       extraArgs:
         - '-config.expand-env=true'
       extraEnv:
@@ -104,7 +98,7 @@ spec:
           memory: 256Mi
           cpu: 100m
     
-    # ✅ Configure compactor
+    # ✅ Configure compactor (genau wie in der Dokumentation)
     compactor:
       replicas: 1
       extraArgs:
@@ -128,7 +122,7 @@ spec:
           memory: 256Mi
           cpu: 100m
     
-    # ✅ Configure querier
+    # ✅ Configure querier (genau wie in der Dokumentation)
     querier:
       replicas: 1
       extraArgs:
@@ -152,7 +146,7 @@ spec:
           memory: 256Mi
           cpu: 100m
     
-    # ✅ Configure query-frontend
+    # ✅ Configure query-frontend (genau wie in der Dokumentation)
     queryFrontend:
       replicas: 1
       extraArgs:
@@ -176,19 +170,13 @@ spec:
           memory: 256Mi
           cpu: 100m
     
-    # ✅ Disable Minio server installation
+    # ✅ Disable Minio server installation (genau wie in der Dokumentation)
     minio:
       enabled: false
     
-    # ✅ ARM64 Node Selection
+    # ✅ ARM64 Node Selection (für dein Pi-Cluster)
     nodeSelector:
       kubernetes.io/arch: arm64
-    
-    # ✅ Tolerations für control-plane
-    tolerations:
-      - key: node-role.kubernetes.io/control-plane
-        operator: Exists
-        effect: NoSchedule
     
     # ✅ Service Monitor für Prometheus
     serviceMonitor:
