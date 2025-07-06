@@ -14,10 +14,36 @@ spec:
         name: grafana
         namespace: tempo
   values:
-    # ✅ Kritisch: Konsistente Ring-Konfiguration
-    global:
-      ring:
-        replication_factor: 1
+    # ✅ Kritisch: Explizite Ring-Konfiguration für Single-Node
+    config:
+      memberlist:
+        join_members:
+          - tempo-gossip-ring.tempo.svc.cluster.local:7946
+      distributor:
+        ring:
+          kvstore:
+            store: memberlist
+          replication_factor: 1
+      ingester:
+        lifecycler:
+          ring:
+            kvstore:
+              store: memberlist
+            replication_factor: 1
+      compactor:
+        ring:
+          kvstore:
+            store: memberlist
+          replication_factor: 1
+      querier:
+        ring:
+          kvstore:
+            store: memberlist
+          replication_factor: 1
+    
+    # ✅ Gossip Ring Service
+    gossipRing:
+      enabled: true
     
     # ✅ Alle Komponenten mit gleicher Replikas-Anzahl
     distributor:
@@ -120,7 +146,7 @@ spec:
           secret_key: ${MINIO_SECRET_ACCESS_KEY}
           insecure: true
     
-    # ✅ Minio nicht installieren (du hast dein eigenes)
+    # ✅ Minio nicht installieren
     minio:
       enabled: false
     
