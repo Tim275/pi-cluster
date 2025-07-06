@@ -37,6 +37,8 @@ spec:
           value: "none"
         - name: OTEL_LOGS_EXPORTER
           value: "none"
+        - name: OTEL_RESOURCE_ATTRIBUTES
+          value: "service.name=emoji-service,service.version=v11"
         image: docker.l5d.io/buoyantio/emojivoto-emoji-svc:v11
         name: emoji-svc
         ports:
@@ -91,6 +93,8 @@ spec:
           value: "none"
         - name: OTEL_LOGS_EXPORTER
           value: "none"
+        - name: OTEL_RESOURCE_ATTRIBUTES
+          value: "service.name=voting-service,service.version=v11"
         image: docker.l5d.io/buoyantio/emojivoto-voting-svc:v11
         name: voting-svc
         ports:
@@ -149,6 +153,8 @@ spec:
           value: "none"
         - name: OTEL_LOGS_EXPORTER
           value: "none"
+        - name: OTEL_RESOURCE_ATTRIBUTES
+          value: "service.name=web-service,service.version=v11"
         image: docker.l5d.io/buoyantio/emojivoto-web:v11
         name: web-svc
         ports:

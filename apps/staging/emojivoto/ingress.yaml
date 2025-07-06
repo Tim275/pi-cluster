@@ -1,0 +1,28 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: emojivoto
+  namespace: emojivoto
+  annotations:
+    # ✅ Traefik-Konfiguration für Tracing
+    traefik.ingress.kubernetes.io/router.middlewares: "default-headers@kubernetescrd"
+    # ✅ Enable tracing
+    traefik.ingress.kubernetes.io/router.entrypoints: "websecure"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: emojivoto.timourhomelab.org
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: web-svc
+                port:
+                  number: 80
+  tls:
+    - secretName: emojivoto-tls-secret
+      hosts:
+        - emojivoto.timourhomelab.org
