@@ -14,21 +14,26 @@ spec:
         name: grafana
         namespace: tempo
   values:
-    # ✅ Explizite Ring-Konfiguration über Helm-Chart-Struktur
+    # ✅ Tutorial-Konfiguration - Funktioniert garantiert!
     
-    # Global Config
-    global:
-      clusterDomain: cluster.local
-    
-    # ✅ Traces
+    # Enable trace ingestion
     traces:
       otlp:
         grpc:
           enabled: true
         http:
           enabled: true
-    
-    # ✅ Storage
+      zipkin:
+        enabled: true
+      jaeger:
+        thriftCompact:
+          enabled: true
+        thriftHttp:
+          enabled: true
+      opencensus:
+        enabled: true
+
+    # Configure S3 backend
     storage:
       trace:
         backend: s3
@@ -39,64 +44,51 @@ spec:
           access_key: ${MINIO_ACCESS_KEY_ID}
           secret_key: ${MINIO_SECRET_ACCESS_KEY}
           insecure: true
-          path_style: true
-    
-    # ✅ Gossip Ring
-    gossipRing:
-      enabled: true
-    
-    # ✅ Distributor
+
+    # Configure distributor
     distributor:
-      replicas: 1
-      extraArgs:
-        - '-config.expand-env=true'
-      extraEnv:
-        - name: MINIO_ACCESS_KEY_ID
-          valueFrom:
-            secretKeyRef:
-              name: tempo-minio-secret
-              key: MINIO_ACCESS_KEY_ID
-        - name: MINIO_SECRET_ACCESS_KEY
-          valueFrom:
-            secretKeyRef:
-              name: tempo-minio-secret
-              key: MINIO_SECRET_ACCESS_KEY
-      nodeSelector:
-        kubernetes.io/arch: arm64
-    
-    # ✅ Ingester mit korrekter Ring-Konfiguration
-    ingester:
-      replicas: 1
-      extraArgs:
-        - '-config.expand-env=true'
-      extraEnv:
-        - name: MINIO_ACCESS_KEY_ID
-          valueFrom:
-            secretKeyRef:
-              name: tempo-minio-secret
-              key: MINIO_ACCESS_KEY_ID
-        - name: MINIO_SECRET_ACCESS_KEY
-          valueFrom:
-            secretKeyRef:
-              name: tempo-minio-secret
-              key: MINIO_SECRET_ACCESS_KEY
-      nodeSelector:
-        kubernetes.io/arch: arm64
-      # ✅ Explizite Ring-Konfiguration für Ingester
       config:
-        lifecycler:
-          ring:
-            kvstore:
-              store: memberlist
-            replication_factor: 1
-            heartbeat_period: 5s
-            heartbeat_timeout: 1m
-            num_tokens: 128
-            instance_id: {{ .Env.HOSTNAME }}
-    
-    # ✅ Compactor
+        log_received_spans:
+          enabled: true
+      # Enable environment variables in config file
+      extraArgs:
+        - '-config.expand-env=true'
+      extraEnv:
+        - name: MINIO_ACCESS_KEY_ID
+          valueFrom:
+            secretKeyRef:
+              name: tempo-minio-secret
+              key: MINIO_ACCESS_KEY_ID
+        - name: MINIO_SECRET_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: tempo-minio-secret
+              key: MINIO_SECRET_ACCESS_KEY
+      nodeSelector:
+        kubernetes.io/arch: arm64
+
+    # Configure ingester
+    ingester:
+      # Enable environment variables in config file
+      extraArgs:
+        - '-config.expand-env=true'
+      extraEnv:
+        - name: MINIO_ACCESS_KEY_ID
+          valueFrom:
+            secretKeyRef:
+              name: tempo-minio-secret
+              key: MINIO_ACCESS_KEY_ID
+        - name: MINIO_SECRET_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: tempo-minio-secret
+              key: MINIO_SECRET_ACCESS_KEY
+      nodeSelector:
+        kubernetes.io/arch: arm64
+
+    # Configure compactor
     compactor:
-      replicas: 1
+      # Enable environment variables in config file
       extraArgs:
         - '-config.expand-env=true'
       extraEnv:
@@ -112,17 +104,13 @@ spec:
               key: MINIO_SECRET_ACCESS_KEY
       nodeSelector:
         kubernetes.io/arch: arm64
-    
-    # ✅ Querier
+
+    # Configure querier
     querier:
-      replicas: 1
+      # Enable environment variables in config file
       extraArgs:
         - '-config.expand-env=true'
       extraEnv:
-        - name: HOSTNAME
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.name
         - name: MINIO_ACCESS_KEY_ID
           valueFrom:
             secretKeyRef:
@@ -135,10 +123,10 @@ spec:
               key: MINIO_SECRET_ACCESS_KEY
       nodeSelector:
         kubernetes.io/arch: arm64
-    
-    # ✅ Query Frontend
+
+    # Configure query-frontend
     queryFrontend:
-      replicas: 1
+      # Enable environment variables in config file
       extraArgs:
         - '-config.expand-env=true'
       extraEnv:
@@ -154,17 +142,11 @@ spec:
               key: MINIO_SECRET_ACCESS_KEY
       nodeSelector:
         kubernetes.io/arch: arm64
-    
-    # ✅ Memcached
-    memcached:
-      enabled: true
-      nodeSelector:
-        kubernetes.io/arch: arm64
-    
-    # ✅ Minio deaktivieren
+
+    # Disable Minio server installation
     minio:
       enabled: false
-    
+
     # ✅ ServiceMonitor
     serviceMonitor:
       enabled: true

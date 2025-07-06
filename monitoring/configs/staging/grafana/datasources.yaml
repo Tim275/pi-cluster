@@ -5,7 +5,6 @@ metadata:
   namespace: monitoring
   labels:
     grafana_datasource: "1"
-    #### tempo ist neu
 data:
   datasource.yaml: |-
     apiVersion: 1
@@ -33,7 +32,7 @@ data:
     - name: Tempo
       type: tempo
       uid: tempo
-      url: http://tempo-query-frontend.tempo.svc.cluster.local:3100
+      url: http://tempo-query-frontend-discovery.tempo.svc.cluster.local:3100  # ✅ Tutorial-URL
       access: proxy
       jsonData:
         httpMethod: GET
