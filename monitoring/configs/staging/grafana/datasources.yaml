@@ -29,10 +29,29 @@ data:
       type: loki
       uid: loki
       url: http://loki.monitoring:3100/
+      # ✅ Loki-Tempo-Integration hinzufügen
+      access: proxy
+      jsonData:
+        derivedFields:
+          # ✅ Nginx-Traces integration (für deine Ingress-Logs)
+          - datasourceUid: tempo
+            matcherRegex: '"trace_id": "(\w+)"'
+            name: TraceID
+            url: $${__value.raw}
+          # ✅ B3-Traces integration (für Emojivoto)
+          - datasourceUid: tempo
+            matcherRegex: '"request_X-B3-Traceid":"(\w+)"'
+            name: TraceID
+            url: $${__value.raw}
+          # ✅ Alternative B3-Pattern
+          - datasourceUid: tempo
+            matcherRegex: 'X-B3-Traceid=["\[]?([0-9a-fA-F]+)'
+            name: TraceID
+            url: $${__value.raw}
     - name: Tempo
       type: tempo
       uid: tempo
-      url: http://tempo-query-frontend-discovery.tempo.svc.cluster.local:3100  # ✅ Tutorial-URL
+      url: http://tempo-query-frontend-discovery.tempo.svc.cluster.local:3100
       access: proxy
       jsonData:
         httpMethod: GET
@@ -44,6 +63,61 @@ data:
           enabled: true
         lokiSearch:
           datasourceUid: loki
+        # ✅ Erweiterte Tempo-Integrationen
+        tracesToMetrics:
+          datasourceUid: prometheus
+        tracesToLogs:
+          datasourceUid: loki
 
 
-          {}
+
+
+
+
+#apiVersion: v1
+#kind: ConfigMap
+#metadata:
+  #name: grafana-datasources
+  #namespace: monitoring
+  #labels:
+  #  grafana_datasource: "1"
+#data:
+  #datasource.yaml: |-
+   # apiVersion: 1
+   # datasources:
+   # - name: Prometheus
+   #   type: prometheus
+    #  uid: prometheus
+   #   url: http://kube-prometheus-stack-prometheus.monitoring:9090/
+   #   isDefault: true
+   #   jsonData:
+   #     httpMethod: POST
+   #     timeInterval: 30s
+   # - name: Alertmanager
+    #  type: alertmanager
+  #    uid: alertmanager
+    #  url: http://prometheus-stack-kube-prom-alertmanager.monitoring:9093/
+   #   access: proxy
+    #  jsonData:
+    #    handleGrafanaManagedAlerts: false
+    #    implementation: prometheus
+   # - name: Loki
+   #   type: loki
+   #   uid: loki
+   #   url: http://loki.monitoring:3100/
+  #  - name: Tempo
+  #    type: tempo
+   #   uid: tempo
+   #   url: http://tempo-query-frontend-discovery.tempo.svc.cluster.local:3100  # ✅ Tutorial-URL
+   #   access: proxy
+   #   jsonData:
+   ##     httpMethod: GET
+     #   serviceMap:
+     #     datasourceUid: prometheus
+     #   search:
+     #     hide: false
+     #   nodeGraph:
+     #     enabled: true
+     #   lokiSearch:
+      #    datasourceUid: loki
+

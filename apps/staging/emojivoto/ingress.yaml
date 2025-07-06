@@ -3,6 +3,9 @@ kind: Ingress
 metadata:
   name: emojivoto
   namespace: emojivoto
+  annotations:
+    # ✅ Tracing für Traefik aktivieren
+    traefik.ingress.kubernetes.io/router.middlewares: default-tracing@kubernetescrd
 spec:
   ingressClassName: traefik
   rules:
@@ -16,3 +19,17 @@ spec:
                 name: web-svc
                 port:
                   number: 80
+---
+# ✅ Traefik-Tracing-Middleware
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: tracing
+  namespace: default
+spec:
+  headers:
+    customRequestHeaders:
+      X-B3-TraceId: ""
+      X-B3-SpanId: ""
+      X-B3-ParentSpanId: ""
+      X-B3-Sampled: "1"
