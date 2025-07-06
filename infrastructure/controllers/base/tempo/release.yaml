@@ -14,47 +14,20 @@ spec:
         name: grafana
         namespace: tempo
   values:
-    # ✅ Explizite Tempo-Konfiguration für Ring
-    config: |
-      # Memberlist für Ring-Bildung
+    # ✅ Verwende die richtige Helm-Chart-Struktur
+    
+    # Global Config
+    global:
+      clusterDomain: cluster.local
+    
+    # Tempo Config
+    tempo:
+      # Memberlist Config
       memberlist:
-        node_name: {{ .Env.HOSTNAME }}
-        bind_port: 7946
         join_members:
           - tempo-gossip-ring.tempo.svc.cluster.local:7946
       
-      # Distributor Ring
-      distributor:
-        ring:
-          kvstore:
-            store: memberlist
-          heartbeat_period: 5s
-          heartbeat_timeout: 1m
-          instance_id: {{ .Env.HOSTNAME }}
-          
-      # Ingester Ring
-      ingester:
-        lifecycler:
-          ring:
-            kvstore:
-              store: memberlist
-            replication_factor: 3  # ✅ Für 3 Nodes
-            heartbeat_period: 5s
-            heartbeat_timeout: 1m
-            instance_id: {{ .Env.HOSTNAME }}
-            num_tokens: 128
-          max_transfer_retries: 0
-          
-      # Compactor Ring
-      compactor:
-        ring:
-          kvstore:
-            store: memberlist
-          heartbeat_period: 5s
-          heartbeat_timeout: 1m
-          instance_id: {{ .Env.HOSTNAME }}
-      
-      # Storage
+      # Storage Config
       storage:
         trace:
           backend: s3
@@ -65,6 +38,39 @@ spec:
             access_key: ${MINIO_ACCESS_KEY_ID}
             secret_key: ${MINIO_SECRET_ACCESS_KEY}
             insecure: true
+            path_style: true
+      
+      # Ingester Config
+      ingester:
+        lifecycler:
+          ring:
+            kvstore:
+              store: memberlist
+            replication_factor: 3
+            heartbeat_period: 5s
+            heartbeat_timeout: 1m
+            num_tokens: 128
+      
+      # Distributor Config
+      distributor:
+        ring:
+          kvstore:
+            store: memberlist
+          heartbeat_period: 5s
+          heartbeat_timeout: 1m
+      
+      # Compactor Config
+      compactor:
+        ring:
+          kvstore:
+            store: memberlist
+          heartbeat_period: 5s
+          heartbeat_timeout: 1m
+      
+      # Querier Config
+      querier:
+        frontend_address: tempo-query-frontend.tempo.svc.cluster.local:9095
+        max_concurrent_queries: 20
 
     # ✅ Traces aktivieren
     traces:
@@ -87,16 +93,12 @@ spec:
     gossipRing:
       enabled: true
 
-    # ✅ Distributor (verteilt auf alle Nodes)
+    # ✅ Komponenten-Konfiguration
     distributor:
       replicas: 3
       extraArgs:
         - '-config.expand-env=true'
       extraEnv:
-        - name: HOSTNAME
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.name
         - name: MINIO_ACCESS_KEY_ID
           valueFrom:
             secretKeyRef:
@@ -109,17 +111,22 @@ spec:
               key: MINIO_SECRET_ACCESS_KEY
       nodeSelector:
         kubernetes.io/arch: arm64
+      # ✅ Anti-Affinity für bessere Verteilung
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app.kubernetes.io/component: distributor
+                topologyKey: kubernetes.io/hostname
 
-    # ✅ Ingester (verteilt auf alle Nodes)
     ingester:
       replicas: 3
       extraArgs:
         - '-config.expand-env=true'
       extraEnv:
-        - name: HOSTNAME
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.name
         - name: MINIO_ACCESS_KEY_ID
           valueFrom:
             secretKeyRef:
@@ -132,17 +139,22 @@ spec:
               key: MINIO_SECRET_ACCESS_KEY
       nodeSelector:
         kubernetes.io/arch: arm64
+      # ✅ Anti-Affinity für bessere Verteilung
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app.kubernetes.io/component: ingester
+                topologyKey: kubernetes.io/hostname
 
-    # ✅ Compactor (1 Replik reicht)
     compactor:
       replicas: 1
       extraArgs:
         - '-config.expand-env=true'
       extraEnv:
-        - name: HOSTNAME
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.name
         - name: MINIO_ACCESS_KEY_ID
           valueFrom:
             secretKeyRef:
@@ -156,16 +168,39 @@ spec:
       nodeSelector:
         kubernetes.io/arch: arm64
 
-    # ✅ Querier (verteilt auf alle Nodes)
     querier:
       replicas: 3
       extraArgs:
         - '-config.expand-env=true'
       extraEnv:
-        - name: HOSTNAME
+        - name: MINIO_ACCESS_KEY_ID
           valueFrom:
-            fieldRef:
-              fieldPath: metadata.name
+            secretKeyRef:
+              name: tempo-minio-secret
+              key: MINIO_ACCESS_KEY_ID
+        - name: MINIO_SECRET_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: tempo-minio-secret
+              key: MINIO_SECRET_ACCESS_KEY
+      nodeSelector:
+        kubernetes.io/arch: arm64
+      # ✅ Anti-Affinity für bessere Verteilung
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app.kubernetes.io/component: querier
+                topologyKey: kubernetes.io/hostname
+
+    queryFrontend:
+      replicas: 2
+      extraArgs:
+        - '-config.expand-env=true'
+      extraEnv:
         - name: MINIO_ACCESS_KEY_ID
           valueFrom:
             secretKeyRef:
@@ -179,26 +214,9 @@ spec:
       nodeSelector:
         kubernetes.io/arch: arm64
 
-    # ✅ Query Frontend (Load Balancer)
-    queryFrontend:
-      replicas: 2
-      extraArgs:
-        - '-config.expand-env=true'
-      extraEnv:
-        - name: HOSTNAME
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.name
-        - name: MINIO_ACCESS_KEY_ID
-          valueFrom:
-            secretKeyRef:
-              name: tempo-minio-secret
-              key: MINIO_ACCESS_KEY_ID
-        - name: MINIO_SECRET_ACCESS_KEY
-          valueFrom:
-            secretKeyRef:
-              name: tempo-minio-secret
-              key: MINIO_SECRET_ACCESS_KEY
+    # ✅ Memcached für Query-Performance
+    memcached:
+      enabled: true
       nodeSelector:
         kubernetes.io/arch: arm64
 
