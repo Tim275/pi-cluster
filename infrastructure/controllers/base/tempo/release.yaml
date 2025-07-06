@@ -7,246 +7,109 @@ spec:
   interval: 5m
   chart:
     spec:
-      chart: tempo-distributed
-      version: 1.15.2
+      chart: tempo  # ✅ WICHTIG: Monolithic Chart (nicht tempo-distributed)
+      version: 1.18.0
       sourceRef:
         kind: HelmRepository
         name: grafana
         namespace: tempo
   values:
-    # ✅ Explizite Tempo-Konfiguration für Single-Node
+    # ✅ Simpelste Konfiguration
     tempo:
-      config: |
-        server:
-          http_listen_port: 3100
-          grpc_listen_port: 9095
-          log_level: info
-        
-        distributor:
-          receivers:
-            otlp:
-              protocols:
-                grpc:
-                  endpoint: 0.0.0.0:4317
-                http:
-                  endpoint: 0.0.0.0:4318
-            zipkin:
-              endpoint: 0.0.0.0:9411
-            jaeger:
-              protocols:
-                thrift_compact:
-                  endpoint: 0.0.0.0:6831
-                thrift_http:
-                  endpoint: 0.0.0.0:14268
-          log_received_spans:
-            enabled: true
+      repository: grafana/tempo
+      tag: 2.6.1
+      
+    # ✅ Minio Backend (simpel)
+    config: |
+      server:
+        http_listen_port: 3100
+        grpc_listen_port: 9095
+        log_level: info
+      
+      distributor:
+        receivers:
+          otlp:
+            protocols:
+              grpc:
+                endpoint: 0.0.0.0:4317
+              http:
+                endpoint: 0.0.0.0:4318
+          zipkin:
+            endpoint: 0.0.0.0:9411
+          jaeger:
+            protocols:
+              thrift_compact:
+                endpoint: 0.0.0.0:6831
+              thrift_http:
+                endpoint: 0.0.0.0:14268
+        log_received_spans:
+          enabled: true
+      
+      ingester:
+        lifecycler:
+          address: 127.0.0.1
           ring:
-            replication_factor: 1  # ✅ WICHTIG: Hier explizit setzen
-        
-        ingester:
-          lifecycler:
-            ring:
-              replication_factor: 1  # ✅ WICHTIG: Hier explizit setzen
-              kvstore:
-                store: memberlist
-            num_tokens: 128
-            heartbeat_timeout: 1m
-            join_after: 30s
-            min_ready_duration: 15s
-            final_sleep: 30s
-          complete_block_timeout: 1m
-          max_block_duration: 30m
-          max_block_bytes: 1000000
-          flush_all_on_shutdown: true
-        
-        compactor:
-          ring:
-            replication_factor: 1  # ✅ WICHTIG: Hier explizit setzen
-          compaction:
-            block_retention: 168h
-        
-        querier:
-          ring:
-            replication_factor: 1  # ✅ WICHTIG: Hier explizit setzen
-        
-        storage:
-          trace:
-            backend: s3
-            s3:
-              bucket: k3s-tempo
-              endpoint: minio.minio.svc.cluster.local:9000
-              region: eu-west-1
-              access_key_id: ${MINIO_ACCESS_KEY_ID}
-              secret_access_key: ${MINIO_SECRET_ACCESS_KEY}
-              insecure: true
-              forcepathstyle: true
-        
-        memberlist:
-          join_members:
-            - tempo-gossip-ring:7946
+            kvstore:
+              store: inmemory
+            replication_factor: 1
+      
+      storage:
+        trace:
+          backend: s3
+          s3:
+            bucket: k3s-tempo
+            endpoint: minio.minio.svc.cluster.local:9000
+            region: eu-west-1
+            access_key_id: ${MINIO_ACCESS_KEY_ID}
+            secret_access_key: ${MINIO_SECRET_ACCESS_KEY}
+            insecure: true
+            forcepathstyle: true
+      
+      compactor:
+        compaction:
+          block_retention: 168h
     
-    # ✅ Enable trace ingestion protocols
-    traces:
-      otlp:
-        grpc:
-          enabled: true
-        http:
-          enabled: true
-      zipkin:
-        enabled: true
-      jaeger:
-        thriftCompact:
-          enabled: true
-        thriftHttp:
-          enabled: true
-      opencensus:
-        enabled: true
+    # ✅ Environment Variables für Minio
+    extraEnv:
+      - name: MINIO_ACCESS_KEY_ID
+        valueFrom:
+          secretKeyRef:
+            name: tempo-minio-secret
+            key: MINIO_ACCESS_KEY_ID
+      - name: MINIO_SECRET_ACCESS_KEY
+        valueFrom:
+          secretKeyRef:
+            name: tempo-minio-secret
+            key: MINIO_SECRET_ACCESS_KEY
     
-    # ✅ Global Environment Variables
-    global:
-      extraArgs:
-        - '-config.expand-env=true'
-      extraEnv:
-        - name: MINIO_ACCESS_KEY_ID
-          valueFrom:
-            secretKeyRef:
-              name: tempo-minio-secret
-              key: MINIO_ACCESS_KEY_ID
-        - name: MINIO_SECRET_ACCESS_KEY
-          valueFrom:
-            secretKeyRef:
-              name: tempo-minio-secret
-              key: MINIO_SECRET_ACCESS_KEY
+    # ✅ Simpel: Nur 1 Replica
+    replicas: 1
     
-    # ✅ Configure distributor (reduced replicas)
-    distributor:
-      replicas: 1
-      extraArgs:
-        - '-config.expand-env=true'
-      extraEnv:
-        - name: MINIO_ACCESS_KEY_ID
-          valueFrom:
-            secretKeyRef:
-              name: tempo-minio-secret
-              key: MINIO_ACCESS_KEY_ID
-        - name: MINIO_SECRET_ACCESS_KEY
-          valueFrom:
-            secretKeyRef:
-              name: tempo-minio-secret
-              key: MINIO_SECRET_ACCESS_KEY
-      resources:
-        limits:
-          memory: 512Mi
-          cpu: 200m
-        requests:
-          memory: 256Mi
-          cpu: 100m
+    # ✅ Pi-optimierte Ressourcen
+    resources:
+      limits:
+        memory: 1Gi
+        cpu: 500m
+      requests:
+        memory: 512Mi
+        cpu: 250m
     
-    # ✅ Configure ingester (reduced replicas)
-    ingester:
-      replicas: 1
-      extraArgs:
-        - '-config.expand-env=true'
-      extraEnv:
-        - name: MINIO_ACCESS_KEY_ID
-          valueFrom:
-            secretKeyRef:
-              name: tempo-minio-secret
-              key: MINIO_ACCESS_KEY_ID
-        - name: MINIO_SECRET_ACCESS_KEY
-          valueFrom:
-            secretKeyRef:
-              name: tempo-minio-secret
-              key: MINIO_SECRET_ACCESS_KEY
-      resources:
-        limits:
-          memory: 512Mi
-          cpu: 200m
-        requests:
-          memory: 256Mi
-          cpu: 100m
-    
-    # ✅ Configure compactor (reduced replicas)
-    compactor:
-      replicas: 1
-      extraArgs:
-        - '-config.expand-env=true'
-      extraEnv:
-        - name: MINIO_ACCESS_KEY_ID
-          valueFrom:
-            secretKeyRef:
-              name: tempo-minio-secret
-              key: MINIO_ACCESS_KEY_ID
-        - name: MINIO_SECRET_ACCESS_KEY
-          valueFrom:
-            secretKeyRef:
-              name: tempo-minio-secret
-              key: MINIO_SECRET_ACCESS_KEY
-      resources:
-        limits:
-          memory: 512Mi
-          cpu: 200m
-        requests:
-          memory: 256Mi
-          cpu: 100m
-    
-    # ✅ Configure querier (reduced replicas)
-    querier:
-      replicas: 1
-      extraArgs:
-        - '-config.expand-env=true'
-      extraEnv:
-        - name: MINIO_ACCESS_KEY_ID
-          valueFrom:
-            secretKeyRef:
-              name: tempo-minio-secret
-              key: MINIO_ACCESS_KEY_ID
-        - name: MINIO_SECRET_ACCESS_KEY
-          valueFrom:
-            secretKeyRef:
-              name: tempo-minio-secret
-              key: MINIO_SECRET_ACCESS_KEY
-      resources:
-        limits:
-          memory: 512Mi
-          cpu: 200m
-        requests:
-          memory: 256Mi
-          cpu: 100m
-    
-    # ✅ Configure query-frontend
-    queryFrontend:
-      replicas: 1
-      extraArgs:
-        - '-config.expand-env=true'
-      extraEnv:
-        - name: MINIO_ACCESS_KEY_ID
-          valueFrom:
-            secretKeyRef:
-              name: tempo-minio-secret
-              key: MINIO_ACCESS_KEY_ID
-        - name: MINIO_SECRET_ACCESS_KEY
-          valueFrom:
-            secretKeyRef:
-              name: tempo-minio-secret
-              key: MINIO_SECRET_ACCESS_KEY
-      resources:
-        limits:
-          memory: 512Mi
-          cpu: 200m
-        requests:
-          memory: 256Mi
-          cpu: 100m
-    
-    # ✅ Disable Minio server installation
-    minio:
-      enabled: false
-    
-    # ✅ ARM64 Node Selection
+    # ✅ ARM64 Support
     nodeSelector:
       kubernetes.io/arch: arm64
     
-    # ✅ Service Monitor für Prometheus
+    # ✅ Service für Traces
+    service:
+      type: ClusterIP
+      port: 3100
+      
+    # ✅ Persistence für lokale Daten
+    persistence:
+      enabled: true
+      size: 10Gi
+      storageClass: longhorn
+    
+    # ✅ Service Monitor
     serviceMonitor:
       enabled: true
       labels:
