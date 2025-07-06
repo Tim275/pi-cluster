@@ -14,167 +14,139 @@ spec:
         name: grafana
         namespace: tempo
   values:
-    # ✅ Für Single-Node Setup
-    global:
-      clusterDomain: cluster.local
-    
-    # ✅ Tempo Global Config
-    tempo:
-      retention: 24h
-      storage:
-        trace:
-          backend: s3
-          s3:
-            bucket: k3s-tempo
-            endpoint: minio.minio.svc.cluster.local:9000
-            region: eu-west-1
-            access_key: ${MINIO_ACCESS_KEY_ID}
-            secret_key: ${MINIO_SECRET_ACCESS_KEY}
-            insecure: true
-            path_style: true
-      
-      # ✅ Memberlist für Single-Node
-      memberlist:
-        join_members:
-          - tempo-gossip-ring.tempo.svc.cluster.local:7946
-      
-      # ✅ Distributor Config
-      distributor:
-        ring:
-          kvstore:
-            store: memberlist
-      
-      # ✅ Ingester Config
-      ingester:
-        lifecycler:
-          ring:
-            kvstore:
-              store: memberlist
-            replication_factor: 1
-            num_tokens: 128
-        max_block_duration: 5m
-        max_block_bytes: 1073741824
-        complete_block_timeout: 10m
-      
-      # ✅ Compactor Config
-      compactor:
-        ring:
-          kvstore:
-            store: memberlist
-      
-      # ✅ Querier Config (minimal)
-      querier:
-        max_concurrent_queries: 20
-        frontend_address: tempo-query-frontend.tempo.svc.cluster.local:9095
-    
-    # ✅ Component Replicas
-    distributor:
-      replicas: 1
-      nodeSelector:
-        kubernetes.io/arch: arm64
-      env:
-        - name: MINIO_ACCESS_KEY_ID
-          valueFrom:
-            secretKeyRef:
-              name: tempo-minio-secret
-              key: MINIO_ACCESS_KEY_ID
-        - name: MINIO_SECRET_ACCESS_KEY
-          valueFrom:
-            secretKeyRef:
-              name: tempo-minio-secret
-              key: MINIO_SECRET_ACCESS_KEY
-    
-    ingester:
-      replicas: 1
-      nodeSelector:
-        kubernetes.io/arch: arm64
-      env:
-        - name: MINIO_ACCESS_KEY_ID
-          valueFrom:
-            secretKeyRef:
-              name: tempo-minio-secret
-              key: MINIO_ACCESS_KEY_ID
-        - name: MINIO_SECRET_ACCESS_KEY
-          valueFrom:
-            secretKeyRef:
-              name: tempo-minio-secret
-              key: MINIO_SECRET_ACCESS_KEY
-    
-    compactor:
-      replicas: 1
-      nodeSelector:
-        kubernetes.io/arch: arm64
-      env:
-        - name: MINIO_ACCESS_KEY_ID
-          valueFrom:
-            secretKeyRef:
-              name: tempo-minio-secret
-              key: MINIO_ACCESS_KEY_ID
-        - name: MINIO_SECRET_ACCESS_KEY
-          valueFrom:
-            secretKeyRef:
-              name: tempo-minio-secret
-              key: MINIO_SECRET_ACCESS_KEY
-    
-    querier:
-      replicas: 1
-      nodeSelector:
-        kubernetes.io/arch: arm64
-      env:
-        - name: MINIO_ACCESS_KEY_ID
-          valueFrom:
-            secretKeyRef:
-              name: tempo-minio-secret
-              key: MINIO_ACCESS_KEY_ID
-        - name: MINIO_SECRET_ACCESS_KEY
-          valueFrom:
-            secretKeyRef:
-              name: tempo-minio-secret
-              key: MINIO_SECRET_ACCESS_KEY
-    
-    queryFrontend:
-      replicas: 1
-      nodeSelector:
-        kubernetes.io/arch: arm64
-      env:
-        - name: MINIO_ACCESS_KEY_ID
-          valueFrom:
-            secretKeyRef:
-              name: tempo-minio-secret
-              key: MINIO_ACCESS_KEY_ID
-        - name: MINIO_SECRET_ACCESS_KEY
-          valueFrom:
-            secretKeyRef:
-              name: tempo-minio-secret
-              key: MINIO_SECRET_ACCESS_KEY
-    
-    # ✅ Gossip Ring Service
-    gossipRing:
-      enabled: true
-    
-    # ✅ Traces Configuration
+    # ✅ Einfache Trace-Konfiguration
     traces:
       otlp:
         grpc:
           enabled: true
-          endpoint: 0.0.0.0:4317
         http:
           enabled: true
-          endpoint: 0.0.0.0:4318
-    
-    # ✅ Disable Minio
+      zipkin:
+        enabled: true
+      jaeger:
+        thriftCompact:
+          enabled: true
+        thriftHttp:
+          enabled: true
+      opencensus:
+        enabled: true
+
+    # ✅ S3 Storage mit Umgebungsvariablen
+    storage:
+      trace:
+        backend: s3
+        s3:
+          bucket: k3s-tempo
+          endpoint: minio.minio.svc.cluster.local:9000
+          region: eu-west-1
+          access_key: ${MINIO_ACCESS_KEY_ID}
+          secret_key: ${MINIO_SECRET_ACCESS_KEY}
+          insecure: true
+
+    # ✅ Distributor mit Environment-Variablen
+    distributor:
+      replicas: 1
+      config:
+        log_received_spans:
+          enabled: true
+      extraArgs:
+        - '-config.expand-env=true'
+      extraEnv:
+        - name: MINIO_ACCESS_KEY_ID
+          valueFrom:
+            secretKeyRef:
+              name: tempo-minio-secret
+              key: MINIO_ACCESS_KEY_ID
+        - name: MINIO_SECRET_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: tempo-minio-secret
+              key: MINIO_SECRET_ACCESS_KEY
+      nodeSelector:
+        kubernetes.io/arch: arm64
+
+    # ✅ Ingester mit Environment-Variablen
+    ingester:
+      replicas: 1
+      extraArgs:
+        - '-config.expand-env=true'
+      extraEnv:
+        - name: MINIO_ACCESS_KEY_ID
+          valueFrom:
+            secretKeyRef:
+              name: tempo-minio-secret
+              key: MINIO_ACCESS_KEY_ID
+        - name: MINIO_SECRET_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: tempo-minio-secret
+              key: MINIO_SECRET_ACCESS_KEY
+      nodeSelector:
+        kubernetes.io/arch: arm64
+
+    # ✅ Compactor mit Environment-Variablen
+    compactor:
+      replicas: 1
+      extraArgs:
+        - '-config.expand-env=true'
+      extraEnv:
+        - name: MINIO_ACCESS_KEY_ID
+          valueFrom:
+            secretKeyRef:
+              name: tempo-minio-secret
+              key: MINIO_ACCESS_KEY_ID
+        - name: MINIO_SECRET_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: tempo-minio-secret
+              key: MINIO_SECRET_ACCESS_KEY
+      nodeSelector:
+        kubernetes.io/arch: arm64
+
+    # ✅ Querier mit Environment-Variablen
+    querier:
+      replicas: 1
+      extraArgs:
+        - '-config.expand-env=true'
+      extraEnv:
+        - name: MINIO_ACCESS_KEY_ID
+          valueFrom:
+            secretKeyRef:
+              name: tempo-minio-secret
+              key: MINIO_ACCESS_KEY_ID
+        - name: MINIO_SECRET_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: tempo-minio-secret
+              key: MINIO_SECRET_ACCESS_KEY
+      nodeSelector:
+        kubernetes.io/arch: arm64
+
+    # ✅ Query Frontend mit Environment-Variablen
+    queryFrontend:
+      replicas: 1
+      extraArgs:
+        - '-config.expand-env=true'
+      extraEnv:
+        - name: MINIO_ACCESS_KEY_ID
+          valueFrom:
+            secretKeyRef:
+              name: tempo-minio-secret
+              key: MINIO_ACCESS_KEY_ID
+        - name: MINIO_SECRET_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: tempo-minio-secret
+              key: MINIO_SECRET_ACCESS_KEY
+      nodeSelector:
+        kubernetes.io/arch: arm64
+
+    # ✅ Minio deaktivieren
     minio:
       enabled: false
-    
-    # ✅ ServiceMonitor
+
+    # ✅ ServiceMonitor für Prometheus
     serviceMonitor:
       enabled: true
       labels:
         release: prometheus
-    
-    # ✅ Memcached (für Performance)
-    memcached:
-      enabled: true
-      replicas: 1
-      nodeSelector:
-        kubernetes.io/arch: arm64
