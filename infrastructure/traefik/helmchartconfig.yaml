@@ -1,0 +1,27 @@
+apiVersion: helm.cattle.io/v1
+kind: HelmChartConfig
+metadata:
+  name: traefik
+  namespace: kube-system
+spec:
+  valuesContent: |-
+    logs:
+      access:
+        enabled: true
+        format: json
+        fields:
+          headers:
+            defaultMode: keep
+            names:
+              X-B3-TraceId: keep
+              X-B3-SpanId: keep
+              X-B3-ParentSpanId: keep
+              X-B3-Sampled: keep
+    additionalArguments:
+      - "--accesslog=true"
+      - "--accesslog.format=json"
+      - "--accesslog.fields.headers.defaultmode=keep"
+      - "--accesslog.fields.headers.names.X-B3-TraceId=keep"
+      - "--accesslog.fields.headers.names.X-B3-SpanId=keep"
+      - "--accesslog.fields.headers.names.X-B3-ParentSpanId=keep"
+      - "--accesslog.fields.headers.names.X-B3-Sampled=keep"

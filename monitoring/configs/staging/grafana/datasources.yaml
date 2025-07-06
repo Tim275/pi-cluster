@@ -1,3 +1,4 @@
+# homelabtm/pi-cluster/monitoring/configs/staging/grafana/datasources.yaml
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -14,45 +15,33 @@ data:
       uid: prometheus
       url: http://kube-prometheus-stack-prometheus.monitoring:9090/
       isDefault: true
-      jsonData:
-        httpMethod: POST
-        timeInterval: 30s
-    - name: Alertmanager
-      type: alertmanager
-      uid: alertmanager
-      url: http://prometheus-stack-kube-prom-alertmanager.monitoring:9093/
-      access: proxy
-      jsonData:
-        handleGrafanaManagedAlerts: false
-        implementation: prometheus
     - name: Loki
       type: loki
       uid: loki
-      url: http://loki.monitoring:3100/
-      # ✅ Loki-Tempo-Integration hinzufügen
+      url: http://loki-headless.monitoring:3100/
       access: proxy
       jsonData:
         derivedFields:
-          # ✅ Nginx-Traces integration (für deine Ingress-Logs)
+          # ✅ B3-Traces aus Emojivoto-Logs
           - datasourceUid: tempo
-            matcherRegex: '"trace_id": "(\w+)"'
+            matcherRegex: '"X-B3-Traceid":"([0-9a-fA-F]+)"'
             name: TraceID
             url: $${__value.raw}
-          # ✅ B3-Traces integration (für Emojivoto)
+          # ✅ B3-Traces aus Traefik-Access-Logs
           - datasourceUid: tempo
-            matcherRegex: '"request_X-B3-Traceid":"(\w+)"'
+            matcherRegex: 'X-B3-Traceid=([0-9a-fA-F]+)'
             name: TraceID
             url: $${__value.raw}
-          # ✅ Alternative B3-Pattern
+          # ✅ Generic TraceID-Pattern
           - datasourceUid: tempo
-            matcherRegex: 'X-B3-Traceid=["\[]?([0-9a-fA-F]+)'
+            matcherRegex: 'trace_id["\s]*[:=]["\s]*([0-9a-fA-F]+)'
             name: TraceID
             url: $${__value.raw}
     - name: Tempo
-      type: tempo
       uid: tempo
-      url: http://tempo-query-frontend-discovery.tempo.svc.cluster.local:3100
+      type: tempo
       access: proxy
+      url: http://tempo-query-frontend-discovery.tempo.svc.cluster.local:3100
       jsonData:
         httpMethod: GET
         serviceMap:
@@ -63,12 +52,16 @@ data:
           enabled: true
         lokiSearch:
           datasourceUid: loki
-        # ✅ Erweiterte Tempo-Integrationen
         tracesToMetrics:
           datasourceUid: prometheus
         tracesToLogs:
           datasourceUid: loki
-
+          # ✅ Trace-to-Logs-Korrelation
+          filterByTraceID: true
+          filterBySpanID: true
+          tags:
+            - key: service.name
+              value: service_name
 
 
 
