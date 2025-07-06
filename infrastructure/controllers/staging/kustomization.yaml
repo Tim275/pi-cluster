@@ -12,8 +12,8 @@ resources:
   - minio 
   - mongodb
   - eck-operator/      # ECK Operator
-  - elastic-stack/     # Elasticsearch & Kibana
-  - fluentd/          # Fluentd für Log Aggregation
+  #- elastic-stack/     # Elasticsearch & Kibana
+# - fluentd/          # Fluentd für Log Aggregation
  #- fluent-bit/       # nicht kompotibel mit ARM64
-  - filebeat/         # Filebeat für Log Aggregation
+  #- filebeat/         # Filebeat für Log Aggregation
   

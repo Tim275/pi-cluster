@@ -12,7 +12,7 @@ resources:
   - csi-snapshotter
   - minio
   - eck-operator # ECK Operator für Elasticsearch
-  - elastic-stack/     
+#  - elastic-stack/     
   - fluentd/          
  # - fluent-bit/   ## leider nicht auf arm64 möglich (raspberry pi), daher filebeat
-  - filebeat/         # Filebeat für Log-Forwarding
+  #- filebeat/         # Filebeat für Log-Forwarding
