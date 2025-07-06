@@ -8,7 +8,7 @@ spec:
   chart:
     spec:
       chart: filebeat
-      version: 7.17.3  # ✅ Ältere Version ohne automatische Elasticsearch-Integration
+      version: 7.17.3  # ✅ Verwende die funktionierende Version
       sourceRef:
         kind: HelmRepository
         name: elastic
@@ -66,6 +66,14 @@ spec:
           name: filebeat
           keepfiles: 7
           permissions: 0644
+    
+    # ✅ DEAKTIVIERE Readiness Probe
+    readinessProbe:
+      enabled: false
+      
+    # ✅ DEAKTIVIERE Liveness Probe (optional)
+    livenessProbe:
+      enabled: false
     
     # ✅ RBAC
     rbac:
