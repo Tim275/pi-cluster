@@ -22,7 +22,7 @@ data:
         @label @BEATS
         bind "#{ENV['FLUENTD_BEATS_BIND'] || '0.0.0.0'}"
         port "#{ENV['FLUENTD_BEATS_PORT'] || '5044'}"
-        metadata_as_tag true
+        # metadata_as_tag true  # ✅ ENTFERNT - kann Probleme verursachen
     </source>
     
     ## ✅ KOMMENTIERT: Sources - logs von Fluent Bit forwarders
@@ -69,7 +69,7 @@ data:
             @type parser
             key_name message
             reserve_data true
-            remove_key_name_field true
+            remove_key_name_field false  # ✅ GEÄNDERT: Behalte message field
             emit_invalid_record_to_error false
             <parse>
                 @type json
@@ -85,6 +85,7 @@ data:
                 cluster_name pi-cluster
                 log_source filebeat
                 timestamp ${time.strftime('%Y-%m-%dT%H:%M:%S.%3NZ', time)}
+                fluentd_processed true  # ✅ HINZUGEFÜGT: Debug-Info
             </record>
         </filter>
         
@@ -151,7 +152,7 @@ data:
             @type record_transformer
             enable_ruby
             <record>
-                index_name ${record['kubernetes'] && record['kubernetes']['namespace'] ? record['kubernetes']['namespace'] : 'filebeat'}
+                index_name ${record['kubernetes'] && record['kubernetes']['namespace'] ? record['kubernetes']['namespace'] : 'filebeat-logs'}  # ✅ GEÄNDERT: Besserer Fallback
             </record>
         </filter>
         
@@ -193,41 +194,34 @@ data:
             suppress_type_name true
             sniffer_class_name Fluent::Plugin::ElasticsearchSimpleSniffer
             
-            # ✅ AKTIV: Filebeat-Format
-            logstash_format false
-            index_name fluentd-${index_name}
-            time_key time
+            # ✅ VERBESSERT: Logstash-Format für bessere Kompatibilität
+            logstash_format true
+            logstash_prefix filebeat
+            logstash_dateformat %Y.%m.%d
+            time_key @timestamp
             include_timestamp true
             
-            # ✅ KOMMENTIERT: Fluent Bit-Format
-            ## Für Fluent Bit aktivieren, für Filebeat deaktivieren
-            # logstash_format false
-            # index_name fluentd-${index_name}
-            # time_key time
-            # include_timestamp true
+            # ✅ VEREINFACHT: ILM Settings deaktiviert für Stabilität
+            # index_date_pattern ""
+            # enable_ilm true
+            # ilm_policy_id fluentd-policy
+            # ilm_policy {"policy":{"phases":{"hot":{"min_age":"0ms","actions":{"rollover":{"max_size":"10gb","max_age":"7d"}}},"warm":{"min_age":"2d","actions":{"shrink":{"number_of_shards":1},"forcemerge":{"max_num_segments":1}}},"delete":{"min_age":"7d","actions":{"delete":{"delete_searchable_snapshot":true}}}}}}
+            # ilm_policy_overwrite true
             
-            # ILM Settings - WITH ROLLOVER support
-            index_date_pattern ""
-            enable_ilm true
-            ilm_policy_id fluentd-policy
-            ilm_policy {"policy":{"phases":{"hot":{"min_age":"0ms","actions":{"rollover":{"max_size":"10gb","max_age":"7d"}}},"warm":{"min_age":"2d","actions":{"shrink":{"number_of_shards":1},"forcemerge":{"max_num_segments":1}}},"delete":{"min_age":"7d","actions":{"delete":{"delete_searchable_snapshot":true}}}}}}
-            ilm_policy_overwrite true
+            # ✅ VEREINFACHT: Template Settings deaktiviert für Stabilität
+            # use_legacy_template false
+            # template_overwrite true
+            # template_name fluentd-${index_name}
+            # template_file "/etc/fluent/template/fluentd-es-template.json"
+            # customize_template {"<<shard>>": "1","<<replica>>": "1", "<<TAG>>":"${index_name}"}
+            # remove_keys index_name
             
-            # index template
-            use_legacy_template false
-            template_overwrite true
-            template_name fluentd-${index_name}
-            template_file "/etc/fluent/template/fluentd-es-template.json"
-            # Angepasst für deine 2-Node Elasticsearch
-            customize_template {"<<shard>>": "1","<<replica>>": "1", "<<TAG>>":"${index_name}"}
-            remove_keys index_name
-            
-            <buffer tag, index_name>
-                flush_thread_count "#{ENV['FLUENT_ELASTICSEARCH_BUFFER_FLUSH_THREAD_COUNT'] || '8'}"
-                flush_interval "#{ENV['FLUENT_ELASTICSEARCH_BUFFER_FLUSH_INTERVAL'] || '5s'}"
-                chunk_limit_size "#{ENV['FLUENT_ELASTICSEARCH_BUFFER_CHUNK_LIMIT_SIZE'] || '2M'}"
-                queue_limit_length "#{ENV['FLUENT_ELASTICSEARCH_BUFFER_QUEUE_LIMIT_LENGTH'] || '32'}"
-                retry_max_interval "#{ENV['FLUENT_ELASTICSEARCH_BUFFER_RETRY_MAX_INTERVAL'] || '30'}"
+            <buffer tag>
+                flush_thread_count 2  # ✅ REDUZIERT: Von 8 auf 2 für Stabilität
+                flush_interval 5s
+                chunk_limit_size 2M
+                queue_limit_length 32
+                retry_max_interval 30
                 retry_forever true
             </buffer>
         </match>
