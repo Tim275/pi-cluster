@@ -14,13 +14,11 @@ spec:
         name: grafana
         namespace: tempo
   values:
-    # ✅ Verwende die richtige Helm-Chart-Struktur
-    
-    # Global Config
+    # ✅ Global Config
     global:
       clusterDomain: cluster.local
     
-    # Tempo Config
+    # ✅ Tempo Config - Überarbeitet für korrekte Ring-Kommunikation
     tempo:
       # Memberlist Config
       memberlist:
@@ -40,7 +38,7 @@ spec:
             insecure: true
             path_style: true
       
-      # Ingester Config
+      # ✅ Ingester Config
       ingester:
         lifecycler:
           ring:
@@ -50,27 +48,37 @@ spec:
             heartbeat_period: 5s
             heartbeat_timeout: 1m
             num_tokens: 128
+            instance_id: ${HOSTNAME}
       
-      # Distributor Config
+      # ✅ Distributor Config
       distributor:
         ring:
           kvstore:
             store: memberlist
           heartbeat_period: 5s
           heartbeat_timeout: 1m
+          instance_id: ${HOSTNAME}
       
-      # Compactor Config
+      # ✅ Compactor Config
       compactor:
         ring:
           kvstore:
             store: memberlist
           heartbeat_period: 5s
           heartbeat_timeout: 1m
+          instance_id: ${HOSTNAME}
       
-      # Querier Config
+      # ✅ Querier Config - Das war das Problem!
       querier:
         frontend_address: tempo-query-frontend.tempo.svc.cluster.local:9095
         max_concurrent_queries: 20
+        # ✅ Querier braucht auch Ring-Zugang für Ingester-Queries
+        ring:
+          kvstore:
+            store: memberlist
+          heartbeat_period: 5s
+          heartbeat_timeout: 1m
+          instance_id: ${HOSTNAME}
 
     # ✅ Traces aktivieren
     traces:
@@ -93,12 +101,16 @@ spec:
     gossipRing:
       enabled: true
 
-    # ✅ Komponenten-Konfiguration
+    # ✅ Distributor
     distributor:
       replicas: 3
       extraArgs:
         - '-config.expand-env=true'
       extraEnv:
+        - name: HOSTNAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
         - name: MINIO_ACCESS_KEY_ID
           valueFrom:
             secretKeyRef:
@@ -111,7 +123,6 @@ spec:
               key: MINIO_SECRET_ACCESS_KEY
       nodeSelector:
         kubernetes.io/arch: arm64
-      # ✅ Anti-Affinity für bessere Verteilung
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
@@ -122,11 +133,16 @@ spec:
                     app.kubernetes.io/component: distributor
                 topologyKey: kubernetes.io/hostname
 
+    # ✅ Ingester
     ingester:
       replicas: 3
       extraArgs:
         - '-config.expand-env=true'
       extraEnv:
+        - name: HOSTNAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
         - name: MINIO_ACCESS_KEY_ID
           valueFrom:
             secretKeyRef:
@@ -139,7 +155,6 @@ spec:
               key: MINIO_SECRET_ACCESS_KEY
       nodeSelector:
         kubernetes.io/arch: arm64
-      # ✅ Anti-Affinity für bessere Verteilung
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
@@ -150,11 +165,16 @@ spec:
                     app.kubernetes.io/component: ingester
                 topologyKey: kubernetes.io/hostname
 
+    # ✅ Compactor
     compactor:
       replicas: 1
       extraArgs:
         - '-config.expand-env=true'
       extraEnv:
+        - name: HOSTNAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
         - name: MINIO_ACCESS_KEY_ID
           valueFrom:
             secretKeyRef:
@@ -168,11 +188,16 @@ spec:
       nodeSelector:
         kubernetes.io/arch: arm64
 
+    # ✅ Querier - Jetzt mit HOSTNAME für Ring-Zugang
     querier:
       replicas: 3
       extraArgs:
         - '-config.expand-env=true'
       extraEnv:
+        - name: HOSTNAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
         - name: MINIO_ACCESS_KEY_ID
           valueFrom:
             secretKeyRef:
@@ -185,7 +210,6 @@ spec:
               key: MINIO_SECRET_ACCESS_KEY
       nodeSelector:
         kubernetes.io/arch: arm64
-      # ✅ Anti-Affinity für bessere Verteilung
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
@@ -196,11 +220,16 @@ spec:
                     app.kubernetes.io/component: querier
                 topologyKey: kubernetes.io/hostname
 
+    # ✅ Query Frontend
     queryFrontend:
       replicas: 2
       extraArgs:
         - '-config.expand-env=true'
       extraEnv:
+        - name: HOSTNAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
         - name: MINIO_ACCESS_KEY_ID
           valueFrom:
             secretKeyRef:
@@ -214,7 +243,7 @@ spec:
       nodeSelector:
         kubernetes.io/arch: arm64
 
-    # ✅ Memcached für Query-Performance
+    # ✅ Memcached
     memcached:
       enabled: true
       nodeSelector:
