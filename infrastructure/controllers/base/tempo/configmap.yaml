@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tempo-config
+  namespace: tempo
+data:
+  tempo.yaml: |
+    server:
+      http_listen_port: 3100
+      grpc_listen_port: 9095
+    distributor:
+      ring:
+        replication_factor: 1
+    ingester:
+      lifecycler:
+        ring:
+          replication_factor: 1
+    compactor:
+      ring:
+        replication_factor: 1
+    querier:
+      ring:
+        replication_factor: 1
