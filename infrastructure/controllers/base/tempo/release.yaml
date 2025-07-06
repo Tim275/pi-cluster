@@ -14,8 +14,8 @@ spec:
         name: grafana
         namespace: tempo
   values:
-    # ✅ Kritisch: Explizite Ring-Konfiguration für Single-Node
-    config:
+    # ✅ Konfiguration als YAML-String (nicht als Map!)
+    config: |
       memberlist:
         join_members:
           - tempo-gossip-ring.tempo.svc.cluster.local:7946
@@ -45,7 +45,7 @@ spec:
     gossipRing:
       enabled: true
     
-    # ✅ Alle Komponenten mit gleicher Replikas-Anzahl
+    # ✅ Alle Komponenten mit 1 Replik
     distributor:
       replicas: 1
       extraArgs:
