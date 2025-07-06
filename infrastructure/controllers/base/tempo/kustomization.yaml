@@ -5,4 +5,4 @@ resources:
   - repository.yaml
   - secret.yaml
   - release.yaml
-  - configmap.yaml
+  #- configmap.yaml
