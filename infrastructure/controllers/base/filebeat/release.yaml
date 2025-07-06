@@ -8,7 +8,7 @@ spec:
   chart:
     spec:
       chart: filebeat
-      version: 8.5.1
+      version: 7.17.3  # ✅ Ältere Version ohne automatische Elasticsearch-Integration
       sourceRef:
         kind: HelmRepository
         name: elastic
@@ -67,48 +67,9 @@ spec:
           keepfiles: 7
           permissions: 0644
     
-    # ✅ KOMPLETT DEAKTIVIERE Elasticsearch-Integration
-    elasticsearch:
-      enabled: false
-      host: ""
-      port: ""
-      username: ""
-      password: ""
-      protocol: ""
-      
-    # ✅ KOMPLETT DEAKTIVIERE Kibana-Integration  
-    kibana:
-      enabled: false
-      host: ""
-      port: ""
-    
-    # ✅ EXPLIZIT DEAKTIVIERE Secret-Mounts
-    secretMounts: []
-    
-    # ✅ EXPLIZIT DEAKTIVIERE Default-Volumes
-    extraVolumes: []
-    extraVolumeMounts: []
-    
-    # ✅ EXPLIZIT DEAKTIVIERE Elasticsearch-Volumes
-    elasticsearchHosts: []
-    
-    # ✅ EXPLIZIT DEAKTIVIERE SSL/TLS
-    elasticsearchCertificateSecret: ""
-    elasticsearchCertificateAuthoritiesFile: ""
-    elasticsearchCertificateFile: ""
-    elasticsearchKeyFile: ""
-    
     # ✅ RBAC
     rbac:
       create: true
-    
-    clusterRoleRules:
-      - apiGroups: [""]
-        resources: ["nodes", "namespaces", "pods", "services", "endpoints", "events"]
-        verbs: ["get", "list", "watch"]
-      - apiGroups: ["apps"]
-        resources: ["replicasets", "deployments", "daemonsets", "statefulsets"]
-        verbs: ["get", "list", "watch"]
     
     resources:
       limits:
