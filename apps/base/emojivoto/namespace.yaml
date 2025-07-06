@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: emojivoto
+  labels:
+    name: emojivoto
+    app.kubernetes.io/name: emojivoto
